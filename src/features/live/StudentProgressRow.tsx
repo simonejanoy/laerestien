@@ -21,9 +21,14 @@ export function StudentProgressRow({ student, progress, total }: StudentProgress
       : 'Ikke startet'
 
   return (
-    <li className="flex h-24 flex-col justify-center gap-2.5 border-b border-divider bg-background px-4">
+    <li className="flex min-h-24 flex-col justify-center gap-2.5 border-b border-divider bg-background px-4 py-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-small font-medium leading-normal text-primary">{student.name}</span>
+        <span className="flex min-w-0 items-center gap-2">
+          {student.photo && (
+            <img src={student.photo} alt="" className="size-8 shrink-0 rounded-full object-cover object-top" />
+          )}
+          <span className="truncate text-small font-medium leading-normal text-primary">{student.name}</span>
+        </span>
         <span className={`shrink-0 text-xs ${finished ? 'text-understanding' : 'text-secondary'}`}>{status}</span>
       </div>
       <div className="flex items-center gap-2">

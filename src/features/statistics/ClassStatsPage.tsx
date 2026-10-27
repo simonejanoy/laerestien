@@ -102,9 +102,13 @@ export function ClassStatsPage() {
                       to={`/statistikk/elev/${studentId}`}
                       className="flex items-center gap-3 rounded-lg bg-background px-2.5 py-1.5 hover:bg-tertiary"
                     >
-                      <span className="flex rounded-full bg-surface p-1 text-primary">
-                        <UserRound className="size-5" />
-                      </span>
+                      {student.photo ? (
+                        <img src={student.photo} alt="" className="size-7 rounded-full object-cover object-top" />
+                      ) : (
+                        <span className="flex rounded-full bg-surface p-1 text-primary">
+                          <UserRound className="size-5" />
+                        </span>
+                      )}
                       <span className="flex-1 text-small text-on-background">
                         {first} {last?.[0]}.
                       </span>
