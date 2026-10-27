@@ -8,7 +8,6 @@ export interface NewStudent {
   name: string
   email: string
   password: string
-  level: Level
   classId: string
 }
 
@@ -31,9 +30,10 @@ export function subscribeClassStudents(
   )
 }
 
-export async function createStudent({ name, email, password, level, classId }: NewStudent) {
+/** Lager eleven uten nivå – alle elever starter på nivå 1 i et tema. */
+export async function createStudent({ name, email, password, classId }: NewStudent) {
   const uid = await createAccount(email, password)
-  await setDoc(doc(db, 'users', uid), { name, email, role: 'student', classId, level })
+  await setDoc(doc(db, 'users', uid), { name, email, role: 'student', classId })
 }
 
 export function updateStudentLevel(uid: string, level: Level) {

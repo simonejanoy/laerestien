@@ -8,6 +8,7 @@ import { StudentCarousel } from './StudentCarousel'
 import { TopicTasksDialog } from './TopicTasksDialog'
 import { classMastery, classPatterns, readyForChallenge, topicInsights, weekTopic } from './mockData'
 import { MasteryTable, PatternContent, StatPanel } from './parts'
+import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
 
 const levels: Level[] = [1, 2, 3]
 const levelNumber = { 1: 'text-level1', 2: 'text-level2', 3: 'text-level3' } as const
@@ -21,6 +22,7 @@ export function ClassStatsPage() {
   return (
     <div className="flex max-w-[1133px] flex-col gap-8">
       <div className="flex flex-col gap-8">
+        <PageBreadcrumbs inClass items={[{ label: 'Statistikk' }]} />
         <h1 className="text-h1 text-black">Statistikk</h1>
         <p className="text-h3 text-black">Matematikk - klasse 4A</p>
       </div>
@@ -29,7 +31,7 @@ export function ClassStatsPage() {
 
       <h2 className="text-h3 text-black">Generell statistikk for klasse 4A</h2>
 
-      <div className="grid grid-cols-2 items-start gap-8">
+      <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-2">
         <div className="flex flex-col gap-8">
           <section className="flex flex-col gap-1.5 rounded-lg bg-surface-light px-5 py-[19px] text-on-background shadow-[2px_4px_4px_rgba(0,0,0,0.25)]">
             <p className="text-small">Ukens tema</p>

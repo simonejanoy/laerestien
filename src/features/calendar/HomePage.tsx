@@ -1,41 +1,109 @@
 import { PencilLine } from 'lucide-react'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { DeleteSessionDialog } from '../sessions/DeleteSessionDialog'
+import { SessionFormDialog } from '../sessions/SessionFormDialog'
+import { useSessions } from '../sessions/sessionsContext'
 import { SessionOverviewCard } from './SessionOverviewCard'
 import { WeekCalendar } from './WeekCalendar'
-import { breaks, currentWeek, sessions, timeSlots, weekdays } from './mockData'
+import { breaks, currentWeek, timeSlots, weekdays } from './mockData'
+import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
 
 export function HomePage() {
   const navigate = useNavigate()
+  const { sessions, calendarEntries, getStatus, addSession, updateSession, removeSession } = useSessions()
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [removingId, setRemovingId] = useState<string | null>(null)
+  const editing = sessions.find((s) => s.id === editingId)
+  const removing = sessions.find((s) => s.id === removingId)
   const [week, setWeek] = useState(currentWeek.week)
-  const weekSessions = week === currentWeek.week ? sessions : []
-  const nextSession = sessions.find((s) => s.sessionNumber === currentWeek.completedSessions + 1)
+  const [creating, setCreating] = useState(false)
+  const [createdId, setCreatedId] = useState<string | null>(null)
+  const created = sessions.find((s) => s.id === createdId)
+
+  // Alt under regnes ut fra øktene, så kalenderen oppdaterer seg når økter legges til, endres eller fjernes.
+  const weekSessionIds = new Set(sessions.filter((s) => s.week === week).map((s) => s.id))
+  const weekEntries = calendarEntries.filter((e) => weekSessionIds.has(e.sessionId))
+  const topicSessions = sessions.filter((s) => s.topicId === sessions[0]?.topicId)
+  const completed = topicSessions
+    .filter((s) => getStatus(s.id) === 'completed')
+    .reduce((n, s) => n + s.numbers.length, 0)
+  const nextSession = topicSessions.find((s) => getStatus(s.id) !== 'completed')
 
   return (
     <div className="flex max-w-[1061px] flex-col items-start gap-5">
+      <PageBreadcrumbs />
       <h1 className="text-h1 text-on-background">Matematikk - 4A</h1>
 
-      <SessionOverviewCard
-        dateLabel={currentWeek.dateLabel}
-        week={currentWeek.week}
-        topic={currentWeek.topic}
-        completedSessions={currentWeek.completedSessions}
-        totalSessions={currentWeek.totalSessions}
-        onNextSession={() => nextSession && navigate(`/okt/${nextSession.sessionId}`)}
-      />
+      {topicSessions[0] && (
+        <SessionOverviewCard
+          dateLabel={currentWeek.dateLabel}
+          week={topicSessions[0].week}
+          topic={topicSessions[0].topic}
+          completedSessions={completed}
+          totalSessions={topicSessions[0].totalSessions}
+          onNextSession={() => nextSession && navigate(`/okt/${nextSession.id}`)}
+        />
+      )}
 
-      <div className="w-full overflow-x-auto">
+      <div className="w-full">
         <WeekCalendar
           week={week}
           weekdays={weekdays}
           timeSlots={timeSlots}
           breaks={breaks}
-          sessions={weekSessions}
+          sessions={weekEntries}
           onPreviousWeek={() => setWeek((w) => w - 1)}
           onNextWeek={() => setWeek((w) => w + 1)}
-          onAdd={() => navigate('/tema')}
+          onAdd={() => setCreating(true)}
+          onEditSession={setEditingId}
+          onRemoveSession={setRemovingId}
         />
       </div>
+
+      {created && (
+        <p role="status" className="rounded-lg bg-level2-surface px-4 py-2.5 text-small text-on-surface">
+          Ny økt lagt til {created.date?.toLowerCase()} kl. {created.time}.{' '}
+          <Link to={`/okt/${created.id}`} className="underline">
+            Gå til økta
+          </Link>
+        </p>
+      )}
+
+      {creating && (
+        <SessionFormDialog
+          open
+          onClose={() => setCreating(false)}
+          onSave={(input) => {
+            setCreatedId(addSession(input))
+            setCreating(false)
+          }}
+        />
+      )}
+
+      {editing && (
+        <SessionFormDialog
+          open
+          session={editing}
+          onClose={() => setEditingId(null)}
+          onSave={(input) => {
+            updateSession(editing.id, input)
+            setEditingId(null)
+          }}
+        />
+      )}
+
+      {removing && (
+        <DeleteSessionDialog
+          session={removing}
+          onCancel={() => setRemovingId(null)}
+          onConfirm={() => {
+            removeSession(removing.id)
+            setRemovingId(null)
+            if (createdId === removing.id) setCreatedId(null)
+          }}
+        />
+      )}
 
       <button
         type="button"

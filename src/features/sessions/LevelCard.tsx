@@ -19,7 +19,7 @@ export function LevelCard({ group, to, compact = false }: LevelCardProps) {
     <Link
       to={to}
       className={`flex flex-col justify-center gap-3 overflow-hidden rounded-lg px-[18px] py-[15px] transition-shadow hover:shadow-md ${
-        compact ? '' : 'min-h-[200px]'
+        compact ? '' : 'min-h-40'
       } ${style.surface}`}
     >
       <div className="flex items-center justify-between">

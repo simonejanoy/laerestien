@@ -1,13 +1,26 @@
 import { createContext, useContext } from 'react'
-import type { Session, SessionStatus, Task } from '../../types'
+import type { CalendarSession, CalendarSlot, Session, SessionStatus, Task } from '../../types'
+
+/** Det læreren fyller inn når en økt lages eller endres. */
+export interface SessionInput {
+  topicId: string
+  heading: string
+  description: string
+  slots: CalendarSlot[]
+}
 
 export interface SessionsContextValue {
   sessions: Session[]
+  /** Lappene i kalenderen, regnet ut fra øktene. */
+  calendarEntries: CalendarSession[]
   getStatus: (id: string) => SessionStatus
   /** Tidligere økter som verken er gjennomført eller hoppet over. */
   getBlockers: (id: string) => Session[]
   skip: (ids: string[]) => void
   complete: (id: string) => void
+  addSession: (input: SessionInput) => string
+  updateSession: (id: string, input: SessionInput) => void
+  removeSession: (id: string) => void
   getTasks: (sessionId: string) => Task[]
   saveTasks: (sessionId: string, tasks: Task[]) => void
 }

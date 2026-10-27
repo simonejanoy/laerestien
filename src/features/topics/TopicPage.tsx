@@ -6,6 +6,7 @@ import { SessionBrowser } from './SessionBrowser'
 import { TopicGoals } from './TopicGoals'
 import { TopicPlan } from './TopicPlan'
 import { terms, topicDetails } from './mockData'
+import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
 
 export function TopicPage() {
   const { topicId } = useParams()
@@ -31,6 +32,7 @@ export function TopicPage() {
   return (
     <div className="flex max-w-[1128px] flex-col gap-[25px]">
       <header className="flex flex-col gap-2.5">
+        <PageBreadcrumbs items={[{ label: 'Alle tema', to: '/tema' }, { label: topic.name }]} />
         <h1 className="text-h1 text-on-background">{topic.name}</h1>
         <div className="flex items-center gap-[15px] text-small text-secondary">
           {sessionCount > 0 && (
@@ -53,7 +55,7 @@ export function TopicPage() {
       </header>
 
       {details ? (
-        <div className="grid grid-cols-[644fr_460fr] items-start gap-6">
+        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[644fr_460fr]">
           {selected ? (
             <SessionBrowser
               session={selected}

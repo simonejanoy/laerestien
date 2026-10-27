@@ -14,7 +14,7 @@ export function LevelTabs({ levels, selected, countFor, onSelect }: LevelTabsPro
   return (
     <section className="flex flex-col gap-2.5">
       <h2 className="text-h3 text-primary">Velg nivå</h2>
-      <div role="tablist" className="flex items-start gap-3">
+      <div role="tablist" className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-start">
         {levels.map((group) => {
           const style = levelStyles[group.level]
           const isSelected = group.level === selected

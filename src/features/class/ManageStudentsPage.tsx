@@ -6,9 +6,10 @@ import { useAuth } from '../../hooks/useAuth'
 import { createStudent, removeStudent, subscribeClassStudents, updateStudentLevel } from '../../lib/users'
 import type { Level, UserProfile } from '../../types'
 import { authErrorMessage } from '../auth/authErrors'
+import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
 
 const levels: Level[] = [1, 2, 3]
-const emptyForm = { name: '', email: '', password: '', level: 1 as Level }
+const emptyForm = { name: '', email: '', password: '' }
 
 const inputClass =
   'w-full rounded-md border border-surface bg-background px-3 py-2 text-small text-primary outline-none focus:border-secondary'
@@ -59,9 +60,11 @@ export function ManageStudentsPage() {
   return (
     <div className="flex max-w-[1109px] flex-col gap-8">
       <div className="flex flex-col gap-2">
+        <PageBreadcrumbs inClass />
         <h1 className="text-h1 text-on-background">Elever i klasse {classId}</h1>
         <p className="text-small text-secondary">
-          Lag innlogging til elevene dine. Eleven logger inn med e-posten og passordet du velger her.
+          Lag innlogging til elevene dine. Eleven logger inn med e-posten og passordet du velger her. Alle elever
+          starter på nivå 1, og du kan endre nivået i listen.
         </p>
       </div>
 
@@ -70,7 +73,7 @@ export function ManageStudentsPage() {
           <UserPlus className="size-6" />
           Ny elev
         </h2>
-        <div className="grid grid-cols-[2fr_2fr_1.5fr_1fr] items-end gap-3">
+        <div className="grid grid-cols-1 items-end gap-3 md:grid-cols-[2fr_2fr_1.5fr]">
           <label className="flex flex-col gap-1 text-xs text-secondary">
             Navn
             <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} />
@@ -95,27 +98,13 @@ export function ManageStudentsPage() {
               className={inputClass}
             />
           </label>
-          <label className="flex flex-col gap-1 text-xs text-secondary">
-            Nivå
-            <select
-              value={form.level}
-              onChange={(e) => setForm({ ...form, level: Number(e.target.value) as Level })}
-              className={`${inputClass} cursor-pointer`}
-            >
-              {levels.map((l) => (
-                <option key={l} value={l}>
-                  Nivå {l}
-                </option>
-              ))}
-            </select>
-          </label>
         </div>
         <div className="flex items-center gap-4">
           <Button type="submit" disabled={submitting}>
             {submitting ? 'Lager konto …' : 'Lag elevkonto'}
           </Button>
           {message && (
-            <p role={message.tone === 'error' ? 'alert' : 'status'} className={`text-small ${message.tone === 'error' ? 'text-error' : 'text-level2'}`}>
+            <p role={message.tone === 'error' ? 'alert' : 'status'} className={`text-small ${message.tone === 'error' ? 'text-error' : 'text-on-surface'}`}>
               {message.text}
             </p>
           )}

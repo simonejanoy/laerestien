@@ -8,11 +8,15 @@ export function SessionGoals({ title, goals }: { title: string; goals: string[] 
         <Target className="size-6 text-goal" />
         {title}
       </h3>
-      <ol className="flex list-decimal flex-col gap-[15px] ps-6 text-body text-black">
-        {goals.map((goal) => (
-          <li key={goal}>{goal}</li>
-        ))}
-      </ol>
+      {goals.length === 0 ? (
+        <p className="text-small text-on-surface-variant">Ingen mål lagt inn for denne økta ennå.</p>
+      ) : (
+        <ol className="flex list-decimal flex-col gap-[15px] ps-6 text-body text-black">
+          {goals.map((goal) => (
+            <li key={goal}>{goal}</li>
+          ))}
+        </ol>
+      )}
     </section>
   )
 }

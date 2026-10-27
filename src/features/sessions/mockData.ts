@@ -8,7 +8,8 @@ const standardPlan: PlanItem[] = [
   { title: 'Felles oppsummering', minutes: 10, description: 'felles gjennomgang og oppsummering av dagens tema' },
 ]
 
-const base = {
+/** Standardinnhold for nye økter i temaet. */
+export const sessionBase = {
   topicId: 'addisjon-og-subtraksjon',
   title: 'Addisjon',
   topic: 'Addisjon & subtraksjon',
@@ -20,9 +21,14 @@ const base = {
 
 export const sessions: Session[] = [
   {
-    ...base,
+    ...sessionBase,
     id: 'okt-1-2',
     numbers: [1, 2],
+    week: 44,
+    slots: [
+      { day: 'Mandag', time: '08.30' },
+      { day: 'Mandag', time: '09.30' },
+    ],
     date: 'Mandag 26. oktober',
     time: '8.30 - 10.30',
     heading: 'Tiere, enere og smarte regnestrategier',
@@ -40,9 +46,11 @@ export const sessions: Session[] = [
     ],
   },
   {
-    ...base,
+    ...sessionBase,
     id: 'okt-3',
     numbers: [3],
+    week: 44,
+    slots: [{ day: 'Onsdag', time: '10.30' }],
     date: 'Onsdag 28. oktober',
     time: '10.30 - 11.30',
     heading: 'Addisjon med tierovergang – øve og bruke',
@@ -60,9 +68,11 @@ export const sessions: Session[] = [
     ],
   },
   {
-    ...base,
+    ...sessionBase,
     id: 'okt-4',
     numbers: [4],
+    week: 44,
+    slots: [{ day: 'Fredag', time: '09.30' }],
     date: 'Fredag 30. oktober',
     time: '9.30 - 10.30',
     heading: 'Subtraksjon – ta bort og finne forskjellen',

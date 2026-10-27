@@ -1,16 +1,20 @@
-import { Check, ChevronLeft, ChevronRight, PencilLine } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, PencilLine, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { PlayIcon } from '../../components/ui/icons'
 import { startLiveSession } from '../../lib/liveSession'
 import { FullPageMessage } from '../auth/ProtectedRoute'
+import { DeleteSessionDialog } from './DeleteSessionDialog'
 import { LevelCard } from './LevelCard'
+import { SessionFormDialog } from './SessionFormDialog'
 import { SessionGoals } from './SessionGoals'
 import { SessionPlan } from './SessionPlan'
 import { SessionSummaryCard } from './SessionSummaryCard'
 import { SkipSessionModal } from './SkipSessionModal'
 import { StartSessionModal } from './StartSessionModal'
 import { sessionLabel, useSessions } from './sessionsContext'
+import { sessionCrumbs } from './crumbs'
+import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
 
 const HIDE_EXPLANATION_KEY = 'laerestien:skjulStartForklaring'
 
@@ -25,8 +29,8 @@ function readHideExplanation() {
 export function SessionPage() {
   const { sessionId } = useParams()
   const navigate = useNavigate()
-  const { sessions, getStatus, getBlockers, skip, getTasks } = useSessions()
-  const [modal, setModal] = useState<'start' | 'skip' | null>(null)
+  const { sessions, getStatus, getBlockers, skip, getTasks, updateSession, removeSession } = useSessions()
+  const [modal, setModal] = useState<'start' | 'skip' | 'edit' | 'delete' | null>(null)
 
   const index = sessions.findIndex((s) => s.id === sessionId)
   const session = sessions[index]
@@ -61,17 +65,36 @@ export function SessionPage() {
   }
 
   return (
-    <div className="flex max-w-[1109px] flex-col gap-10">
-      <div className="flex flex-col gap-5 pr-5 pb-[30px]">
-        <div className="flex items-center gap-2.5 p-2.5 text-on-background">
+    <div className="flex max-w-[1109px] flex-col gap-8">
+      <div className="flex flex-col gap-4">
+        <PageBreadcrumbs items={sessionCrumbs(session, true)} />
+        <div className="flex flex-wrap items-center gap-2.5 text-on-background">
           <SessionArrow to={previous && `/okt/${previous.id}`} label="Forrige økt" direction="left" />
           <h1 className="text-h1">
             {session.title} - økt. {sessionLabel(session)}
           </h1>
           <SessionArrow to={next && `/okt/${next.id}`} label="Neste økt" direction="right" />
+          <div className="ml-auto flex gap-2">
+            <button
+              type="button"
+              onClick={() => setModal('edit')}
+              className="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-surface px-3 text-small text-primary hover:bg-surface-light"
+            >
+              <PencilLine className="size-4" aria-hidden />
+              Rediger økt
+            </button>
+            <button
+              type="button"
+              onClick={() => setModal('delete')}
+              className="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-surface px-3 text-small text-error hover:bg-surface-light"
+            >
+              <Trash2 className="size-4" aria-hidden />
+              Slett økt
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-start justify-between gap-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <SessionSummaryCard session={session} />
 
           <div className="flex flex-col items-end gap-2.5">
@@ -79,7 +102,7 @@ export function SessionPage() {
               type="button"
               disabled={!canStart}
               onClick={handleStartClick}
-              className="flex h-[70px] cursor-pointer items-center gap-2.5 rounded-[10px] bg-primary px-[30px] text-h3 text-on-primary drop-shadow-[0_2px_2px_rgba(0,0,0,0.25)] transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-primary/50 disabled:shadow-[0_2px_4px_rgba(0,0,0,0.25)] disabled:drop-shadow-none"
+              className="flex h-12 cursor-pointer items-center gap-2.5 rounded-lg bg-primary px-5 text-body text-on-primary drop-shadow-[0_2px_2px_rgba(0,0,0,0.25)] transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-primary/50 disabled:shadow-[0_2px_4px_rgba(0,0,0,0.25)] disabled:drop-shadow-none"
             >
               <PlayIcon />
               Start økt
@@ -115,7 +138,7 @@ export function SessionPage() {
             Rediger oppgavene
           </Link>
         </div>
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {session.levels.map((group) => (
             <LevelCard
               key={group.level}
@@ -130,11 +153,32 @@ export function SessionPage() {
         </div>
       </section>
 
-      <div className="flex items-start gap-10">
+      <div className="flex flex-col items-stretch gap-6 lg:flex-row lg:items-start">
         <SessionGoals title="Mål for økten" goals={session.goals} />
         <SessionPlan items={session.plan} />
       </div>
 
+      {modal === 'edit' && (
+        <SessionFormDialog
+          open
+          session={session}
+          onClose={() => setModal(null)}
+          onSave={(input) => {
+            updateSession(session.id, input)
+            setModal(null)
+          }}
+        />
+      )}
+      {modal === 'delete' && (
+        <DeleteSessionDialog
+          session={session}
+          onCancel={() => setModal(null)}
+          onConfirm={() => {
+            removeSession(session.id)
+            navigate('/')
+          }}
+        />
+      )}
       <StartSessionModal
         open={modal === 'start'}
         session={session}

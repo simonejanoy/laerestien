@@ -8,11 +8,11 @@ export function SessionSummaryCard({ session }: { session: Session }) {
   const items = ['Tema', session.topic, ...(session.numbers.length > 1 ? ['Dobbeltøkt'] : [])]
 
   return (
-    <div className="flex flex-col items-center gap-5 rounded-[7px] bg-surface px-10 py-[30px] drop-shadow-[0_2px_2px_rgba(0,0,0,0.17)]">
-      <div className="flex items-center gap-5 text-body text-on-surface">
+    <div className="flex flex-col items-center gap-3 rounded-[7px] bg-surface px-6 py-4 drop-shadow-[0_2px_2px_rgba(0,0,0,0.17)]">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-body text-on-surface">
         {items.map((item, i) => (
           <Fragment key={item}>
-            {i > 0 && <span className="h-10 w-px bg-secondary" aria-hidden />}
+            {i > 0 && <span className="h-6 w-px bg-secondary" aria-hidden />}
             <span>{item}</span>
           </Fragment>
         ))}

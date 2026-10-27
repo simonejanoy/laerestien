@@ -22,8 +22,8 @@ export function SessionOverviewCard({
   return (
     <section className="flex w-full max-w-[600px] flex-col gap-[5px]">
       <p className="text-small text-secondary">{dateLabel}</p>
-      <div className="flex min-h-[120px] items-center justify-between gap-6 rounded-lg bg-surface px-7 py-[26px]">
-        <div className="flex flex-col gap-[19px]">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg bg-surface px-6 py-4">
+        <div className="flex flex-col gap-3">
           <div className="flex items-center gap-[19px] text-body text-on-surface">
             <span>Uke. {week}</span>
             <span className="h-10 w-px bg-secondary" aria-hidden />

@@ -1,12 +1,13 @@
 import { Check, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
-import { Breadcrumbs } from '../../components/ui/Breadcrumbs'
 import type { Level, Task } from '../../types'
 import { FullPageMessage } from '../auth/ProtectedRoute'
 import { sessionLabel, useSessions } from '../sessions/sessionsContext'
 import { LevelTabs } from './LevelTabs'
 import { TaskCard } from './TaskCard'
+import { sessionCrumbs } from '../sessions/crumbs'
+import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
 
 const toLevel = (value: string | null): Level => (value === '2' ? 2 : value === '3' ? 3 : 1)
 
@@ -59,14 +60,8 @@ export function EditTasksPage() {
   return (
     <div className="flex max-w-[1109px] flex-col gap-6">
       <div className="flex flex-col gap-4">
-        <Breadcrumbs
-          items={[
-            { label: 'Alle tema', to: '/tema' },
-            { label: session.area, to: '/tema' },
-            { label: session.title },
-          ]}
-        />
-        <div className="flex items-center justify-between gap-6">
+        <PageBreadcrumbs items={[...sessionCrumbs(session), { label: 'Rediger oppgaver' }]} />
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
             <h1 className="text-h1 text-primary">
               {session.title} · Økt {sessionLabel(session)}
@@ -128,7 +123,7 @@ export function EditTasksPage() {
             Ingen oppgaver på dette nivået ennå. Trykk «Legg til oppgave» for å lage den første.
           </p>
         ) : (
-          <div className="grid grid-cols-2 items-start gap-4">
+          <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
             {levelTasks.map((task, i) => (
               <TaskCard
                 key={task.id}

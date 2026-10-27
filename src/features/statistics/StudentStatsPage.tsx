@@ -9,6 +9,7 @@ import { StudentCarousel } from './StudentCarousel'
 import { SuggestedTasksDialog } from './SuggestedTasksDialog'
 import { months, statsFor, suggestedTasks } from './mockData'
 import { DotTag, MasteryTable, PatternContent, StatPanel } from './parts'
+import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
 
 const possessive = (name: string) => (name.endsWith('s') ? `${name}'` : `${name}s`)
 
@@ -34,17 +35,21 @@ export function StudentStatsPage() {
         Tilbake
       </Link>
 
+      <PageBreadcrumbs
+        inClass
+        items={[{ label: 'Statistikk', to: '/statistikk' }, { label: `${firstName} ${student.name.split(' ')[1]?.[0] ?? ''}.` }]}
+      />
       <h1 className="text-h1 text-black">Statistikk</h1>
 
       <StudentSummary student={student} stats={stats} onShowSuggestions={() => setDialogOpen(true)} />
 
       {added !== null && (
-        <p role="status" className="rounded-lg bg-level2-surface px-5 py-3 text-small text-level2">
+        <p role="status" className="rounded-lg bg-level2-surface px-5 py-3 text-small text-on-surface">
           {added} oppgaver er lagt til for {firstName}.
         </p>
       )}
 
-      <div className="grid grid-cols-[615fr_486fr] items-start gap-8">
+      <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-[615fr_486fr]">
         <div className="flex flex-col gap-8">
           <StatPanel title="Faglig progresjon" small className="px-5">
             <ProgressChart values={stats.progress} labels={months} />
@@ -104,7 +109,7 @@ function StudentSummary({
 
   return (
     <section className="flex flex-col drop-shadow-[2px_4px_2px_rgba(0,0,0,0.25)]">
-      <div className="flex items-stretch gap-8 rounded-t-lg bg-surface-light p-5">
+      <div className="flex flex-wrap items-stretch gap-6 rounded-t-lg bg-surface-light p-5">
         <div className="flex flex-col gap-3 p-2">
           <h2 className="text-h3 text-black">
             {first} {last?.[0]}.
@@ -117,7 +122,7 @@ function StudentSummary({
             </span>
           )}
         </div>
-        <div className="flex flex-1 gap-3 pt-9 pb-1">
+        <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 xl:pt-9">
           <div className={`${card} justify-center gap-0.5 py-5`}>
             <span className="text-h2 text-on-background">{stats.firstTry} %</span>
             <span className="pb-5 text-small text-secondary">riktig på første forsøk</span>
@@ -148,7 +153,7 @@ function StudentSummary({
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-5 rounded-b-lg bg-secondary py-3 pr-3 pl-5 text-[15px] font-medium text-on-secondary">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-b-lg bg-secondary py-3 pr-3 pl-5 text-[15px] font-medium text-on-secondary">
         <Sparkles className="size-[22px] shrink-0" />
         <p className="flex-1">
           AI har laget 5 oppgaver til {first} basert på hva {first} trenger støtte i
@@ -156,7 +161,7 @@ function StudentSummary({
         <button
           type="button"
           onClick={onShowSuggestions}
-          className="flex w-[308px] cursor-pointer items-center justify-center gap-2 rounded-md border border-on-primary py-[9px] pr-3.5 pl-4 text-on-primary hover:bg-on-primary/10"
+          className="flex w-full cursor-pointer items-center sm:w-auto sm:min-w-[19rem] justify-center gap-2 rounded-md border border-on-primary py-[9px] pr-3.5 pl-4 text-on-primary hover:bg-on-primary/10"
         >
           Se foreslåtte oppgaver
           <ArrowRight className="size-[18px]" />

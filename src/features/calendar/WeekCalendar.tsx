@@ -11,6 +11,8 @@ interface WeekCalendarProps {
   onPreviousWeek: () => void
   onNextWeek: () => void
   onAdd: () => void
+  onEditSession: (sessionId: string) => void
+  onRemoveSession: (sessionId: string) => void
 }
 
 const cell = 'border-t border-r border-secondary bg-calendar-background'
@@ -25,12 +27,13 @@ export function WeekCalendar({
   onPreviousWeek,
   onNextWeek,
   onAdd,
+  onEditSession,
+  onRemoveSession,
 }: WeekCalendarProps) {
-  const findSession = (day: Weekday, time: string) =>
-    sessions.find((s) => s.day === day && s.time === time)
+  const findSession = (day: Weekday, time: string) => sessions.find((s) => s.day === day && s.time === time)
 
   return (
-    <section className="flex w-full min-w-[680px] flex-col">
+    <section className="flex w-full flex-col">
       <div className="flex h-9 items-center justify-between px-[5px] text-body text-primary">
         <div className="flex items-center gap-[5px]">
           <button type="button" onClick={onPreviousWeek} aria-label="Forrige uke" className="cursor-pointer">
@@ -47,47 +50,62 @@ export function WeekCalendar({
         </button>
       </div>
 
-      <div className="flex h-10">
-        <div className={`${cell} w-12 shrink-0 border-l`} />
-        {weekdays.map((day) => (
-          <div key={day} className="flex flex-1 items-center justify-center bg-secondary text-body text-on-secondary">
-            {day}
-          </div>
-        ))}
-      </div>
-
-      {timeSlots.map((time, rowIndex) => {
-        const isLast = rowIndex === timeSlots.length - 1
-        const breakLabel = breaks[time]
-
-        if (breakLabel) {
-          return (
-            <div key={time} className="flex h-[54px]">
-              <div className={timeCell}>{time}</div>
-              <div className="flex flex-1 items-center justify-center border-t border-r border-secondary bg-surface text-body text-primary">
-                {breakLabel}
+      {/* Bare rutenettet ruller sidelengs på smale skjermer – uke-navigasjon og «Legg til» blir stående. */}
+      <div className="overflow-x-auto">
+        <div className="flex min-w-[44rem] flex-col">
+          <div className="flex h-9">
+            <div className={`${cell} w-12 shrink-0 border-l`} />
+            {weekdays.map((day) => (
+              <div
+                key={day}
+                className="flex flex-1 items-center justify-center bg-secondary text-body text-on-secondary"
+              >
+                {day}
               </div>
-            </div>
-          )
-        }
+            ))}
+          </div>
 
-        return (
-          <div key={time} className="flex h-[100px]">
-            <div className={`${timeCell} ${isLast ? 'border-b' : ''}`}>{time}</div>
-            {weekdays.map((day) => {
-              const session = findSession(day, time)
+          {timeSlots.map((time, rowIndex) => {
+            const isLast = rowIndex === timeSlots.length - 1
+            const breakLabel = breaks[time]
+
+            if (breakLabel) {
               return (
-                <div
-                  key={day}
-                  className={`${cell} flex flex-1 items-center justify-center p-2 ${isLast ? 'border-b' : ''}`}
-                >
-                  {session && <SessionNote session={session} />}
+                <div key={time} className="flex h-11">
+                  <div className={timeCell}>{time}</div>
+                  <div className="flex flex-1 items-center justify-center border-t border-r border-secondary bg-surface text-body text-primary">
+                    {breakLabel}
+                  </div>
                 </div>
               )
-            })}
-          </div>
-        )
-      })}
+            }
+
+            return (
+              <div key={time} className="flex h-22">
+                <div className={`${timeCell} ${isLast ? 'border-b' : ''}`}>{time}</div>
+                {weekdays.map((day) => {
+                  const session = findSession(day, time)
+                  return (
+                    <div
+                      key={day}
+                      className={`${cell} flex min-w-0 flex-1 items-center justify-center p-1.5 ${isLast ? 'border-b' : ''}`}
+                    >
+                      {session && (
+                        <SessionNote
+                          session={session}
+                          onEdit={onEditSession}
+                          onRemove={onRemoveSession}
+                          openUp={rowIndex >= timeSlots.length - 2}
+                        />
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </section>
   )
 }

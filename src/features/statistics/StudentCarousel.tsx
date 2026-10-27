@@ -74,33 +74,33 @@ export function StudentCarousel({ students, activeId }: { students: Student[]; a
         </button>
       </div>
 
-      <ul className="flex gap-4 overflow-hidden">
-        {visible.map((student) => (
-          <li key={student.id} className="w-[120px] shrink-0">
-            <Link
-              to={`/statistikk/elev/${student.id}`}
-              aria-current={student.id === activeId ? 'page' : undefined}
-              className="group flex flex-col gap-2"
-            >
-              {student.photo ? (
-                <img
-                  src={student.photo}
-                  alt=""
-                  className={`size-[120px] rounded object-cover object-top ${student.id === activeId ? 'ring-3 ring-secondary' : ''}`}
-                />
-              ) : (
-                <span
-                  className={`flex size-[120px] items-center justify-center rounded bg-surface-variant text-primary transition-colors group-hover:bg-surface ${
-                    student.id === activeId ? 'ring-3 ring-secondary' : ''
-                  }`}
-                >
-                  <User className="size-[90px]" strokeWidth={1} />
+      <ul className="flex flex-wrap gap-3 p-1">
+        {visible.map((student) => {
+          const active = student.id === activeId
+          return (
+            <li key={student.id} className="w-[124px] shrink-0">
+              <Link
+                to={`/statistikk/elev/${student.id}`}
+                aria-current={active ? 'page' : undefined}
+                className="group flex flex-col gap-2 rounded-lg focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+              >
+                {/* Rammen ligger inne i elementet, så den ikke klippes. Gjennomsiktig når ikke valgt. */}
+                <span className={`rounded-lg border-4 p-0.5 ${active ? 'border-primary' : 'border-transparent'}`}>
+                  {student.photo ? (
+                    <img src={student.photo} alt="" className="size-[108px] rounded object-cover object-top" />
+                  ) : (
+                    <span className="flex size-[108px] items-center justify-center rounded bg-surface-variant text-primary transition-colors group-hover:bg-surface">
+                      <User className="size-[80px]" strokeWidth={1} />
+                    </span>
+                  )}
                 </span>
-              )}
-              <span className="truncate text-body text-black group-hover:underline">{shortName(student.name)}</span>
-            </Link>
-          </li>
-        ))}
+                <span className={`truncate px-1 text-body text-black group-hover:underline ${active ? 'font-semibold' : ''}`}>
+                  {shortName(student.name)}
+                </span>
+              </Link>
+            </li>
+          )
+        })}
         {visible.length === 0 && <li className="text-small text-secondary">Ingen elever heter det.</li>}
       </ul>
 

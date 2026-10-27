@@ -1,7 +1,6 @@
 import { CircleCheck, Clock3, PencilLine, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Breadcrumbs } from '../../components/ui/Breadcrumbs'
 import { PlayIcon } from '../../components/ui/icons'
 import { endLiveSession, setLiveStatus } from '../../lib/liveSession'
 import type { Level, StudentProgress } from '../../types'
@@ -10,6 +9,8 @@ import { useSessions } from '../sessions/sessionsContext'
 import { StudentProgressRow } from './StudentProgressRow'
 import { students } from '../class/students'
 import { initialProgress } from './mockData'
+import { sessionCrumbs } from '../sessions/crumbs'
+import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
 
 // Simulerer elevene til sanntidsdata fra Firestore er på plass.
 const SIMULATION_INTERVAL_MS = 4000
@@ -96,15 +97,9 @@ export function LiveSessionPage() {
   return (
     <div className="flex max-w-[1109px] flex-col gap-7">
       <div className="flex flex-col gap-6">
-        <Breadcrumbs
-          items={[
-            { label: 'Alle tema', to: '/tema' },
-            { label: session.area, to: `/tema/${session.topicId}` },
-            { label: session.title },
-          ]}
-        />
+        <PageBreadcrumbs items={[...sessionCrumbs(session), { label: 'Følg elevenes arbeid' }]} />
 
-        <div className="flex items-center justify-between gap-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-col gap-2">
             <h1 className="text-h1 text-primary">Følg elevenes arbeid</h1>
             <p className="text-base text-secondary">
@@ -115,14 +110,14 @@ export function LiveSessionPage() {
             <button
               type="button"
               onClick={endSession}
-              className="h-[52px] cursor-pointer rounded-lg border-[0.5px] border-neutral-400 bg-background px-5 text-body text-primary hover:bg-neutral-100"
+              className="h-12 cursor-pointer rounded-lg border-[0.5px] border-neutral-400 bg-background px-5 text-body text-primary hover:bg-neutral-100"
             >
               Avslutt økt
             </button>
             <button
               type="button"
               onClick={togglePause}
-              className="flex h-[52px] w-[224px] cursor-pointer items-center justify-center gap-[47px] rounded-lg border border-on-primary bg-primary text-lg font-medium text-on-primary drop-shadow-[0_4px_6px_rgba(36,58,95,0.2)] hover:bg-primary/90"
+              className="flex h-12 cursor-pointer items-center justify-center gap-6 px-5 rounded-lg border border-on-primary bg-primary text-lg font-medium text-on-primary drop-shadow-[0_4px_6px_rgba(36,58,95,0.2)] hover:bg-primary/90"
             >
               {paused ? 'Fortsett økt' : 'Pause økt'}
               {paused ? (
@@ -147,7 +142,7 @@ export function LiveSessionPage() {
         </div>
       </div>
 
-      <div className="flex gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {stats.map(({ icon: Icon, value, label }) => (
           <div key={label} className="flex flex-1 items-center gap-3.5 rounded-lg bg-background p-[18px]">
             <span className="flex size-10 items-center justify-center rounded-lg bg-tertiary text-secondary">
@@ -170,7 +165,7 @@ export function LiveSessionPage() {
           <p className="text-small text-secondary">{students.length} elever</p>
         </div>
 
-        <div className="grid grid-cols-3 items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
           {columns.map((column, i) => (
             <ul key={i} className="overflow-hidden rounded-lg bg-background">
               {column.map((student) => (

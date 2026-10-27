@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name,
         email,
         role: 'teacher',
-        title: 'Lærer',
+        title: 'Kontaktlærer',
         classId,
         teacherCode,
       })

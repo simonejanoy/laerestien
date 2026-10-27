@@ -16,6 +16,13 @@ export interface UserProfile {
 
 export type Weekday = 'Mandag' | 'Tirsdag' | 'Onsdag' | 'Torsdag' | 'Fredag'
 
+export interface CalendarSlot {
+  day: Weekday
+  /** Starttid som i timeplanen, f.eks. «08.30». */
+  time: string
+}
+
+/** Én lapp i kalenderen, regnet ut fra øktene. */
 export interface CalendarSession {
   id: string
   /** Økta lappen åpner (en dobbeltøkt har to lapper). */
@@ -61,6 +68,9 @@ export interface Session {
   time?: string
   /** Øktnumre – to tall betyr dobbeltøkt. */
   numbers: number[]
+  /** Uka økta ligger i, og plassen i timeplanen (én per øktnummer). */
+  week: number
+  slots: CalendarSlot[]
   totalSessions: number
   levels: LevelGroup[]
   goals: string[]
