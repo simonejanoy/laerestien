@@ -1,0 +1,46 @@
+import type { ReactNode } from 'react'
+import paper from '../../assets/student/ruteark.png'
+import board from '../../assets/student/tavle.png'
+
+interface StudentLayoutProps {
+  /** Vises etter «Lærestien /», f.eks. «Addisjon økt 4». */
+  label?: string
+  /** Ruteark i vanlig visning, mørk tavle når læreren har pause. */
+  background?: 'paper' | 'board'
+  onLogout: () => void
+  children: ReactNode
+}
+
+export function StudentLayout({ label, background = 'paper', onLogout, children }: StudentLayoutProps) {
+  return (
+    <div className="relative flex min-h-screen flex-col">
+      <img
+        src={background === 'board' ? board : paper}
+        alt=""
+        className="pointer-events-none absolute inset-0 size-full object-cover"
+      />
+      {background === 'paper' && (
+        <div className="pointer-events-none absolute inset-x-0 top-[173px] bottom-0 bg-linear-to-b from-cream to-transparent" />
+      )}
+
+      <header className="relative flex h-[88px] items-center justify-between border-b border-rule bg-background px-20">
+        <div className="flex items-center gap-3">
+          <span className="text-[23px] text-primary">Lærestien</span>
+          {label && (
+            <>
+              <span className="text-2xl text-secondary" aria-hidden>
+                /
+              </span>
+              <span className="text-body text-muted">{label}</span>
+            </>
+          )}
+        </div>
+        <button type="button" onClick={onLogout} className="cursor-pointer text-small text-muted hover:underline">
+          Logg ut
+        </button>
+      </header>
+
+      <main className="relative flex flex-1 flex-col">{children}</main>
+    </div>
+  )
+}

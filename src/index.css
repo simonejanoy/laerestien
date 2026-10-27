@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+/* Design-tokens fra Figma (Katrine-sider). Navnene følger Figma-variablene. */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --color-background: #ffffff;
+  --color-on-background: #243a5f;
+
+  --color-primary: #243a5f;
+  --color-on-primary: #edf4fa;
+  --color-secondary: #4f7697;
+  --color-on-secondary: #ffffff;
+  --color-tertiary: #edf4fa;
+  --color-on-tertiary: #243a5f;
+
+  --color-surface: #d0e3f2;
+  --color-on-surface: #243a5f;
+  --color-surface-light: #edf4fa;
+  --color-surface-variant: #fff2bd;
+  --color-on-surface-variant: #243a5f;
+
+  --color-sidebar: #4c7292;
+  --color-on-sidebar: #ffffff;
+  --color-calendar-background: #f5f5f5;
+
+  /* Brukes i Figma, men er ikke variabler der ennå */
+  --color-neutral-100: #f4f4f2;
+  --color-neutral-300: #d4d4d0;
+  --color-neutral-400: #a8a8a4;
+  --color-neutral-500: #767676;
+  --color-goal: #ff9900;
+  --color-border: #e5e5e5;
+  --color-divider: #dfe7ee;
+
+  /* Elevvisningen */
+  --color-muted: #61748b;
+  --color-card-border: #aab8c4;
+  --color-rule: #dce5ed;
+  --color-group: #e9f6ff;
+  --color-correct: #f5fff8;
+  --color-step: #bcbbbb;
+  --color-cream: rgb(255 252 245 / 0.95);
+  --color-foreground: #0a0a0a;
+
+  --color-error: #b21010;
+  --color-on-error: #ffffff;
+
+  --color-level1: #c92b70;
+  --color-level1-surface: #fadfea;
+  --color-level2: #43815b;
+  --color-level2-surface: #dff2e5;
+  --color-level3: #5e3090;
+  --color-level3-surface: #ede3fa;
+  --color-on-level1: #ffffff;
+  --color-on-level2: #ffffff;
+  --color-on-level3: #ffffff;
+
+  --color-understanding: #3c8c76;
+  --color-needs-support: #c8893e;
+  --color-insufficient: #666666;
+
+  /* Typografi: Heading/H1–H3, Body/Regular, Body/Small */
+  --text-h1: 30px;
+  --text-h1--line-height: 1.2;
+  --text-h1--font-weight: 500;
+  --text-h2: 24px;
+  --text-h2--line-height: 1.2;
+  --text-h2--font-weight: 500;
+  --text-h3: 20px;
+  --text-h3--line-height: 1.2;
+  --text-h3--font-weight: 500;
+  --text-body: 16px;
+  --text-body--line-height: 32px;
+  --text-body--font-weight: 500;
+  --text-small: 14px;
+  --text-small--line-height: 20px;
+  --text-small--font-weight: 400;
+}
+
+body {
+  @apply bg-background font-sans text-on-background antialiased;
+}
