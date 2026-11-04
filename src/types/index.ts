@@ -31,6 +31,8 @@ export interface CalendarSession {
   sessionNumber: number
   day: Weekday
   time: string
+  /** Timen er over (eller økta er markert som gjennomført). */
+  completed?: boolean
 }
 
 export type Level = 1 | 2 | 3

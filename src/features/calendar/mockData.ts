@@ -31,7 +31,7 @@ export const lessonSlots = timeSlots.filter((t) => !breaks[t])
 const short = (time: string) => time.replace(/^0/, '')
 
 /** Slutttid for en time: neste timestart, eller én time etter den siste. */
-function endOf(time: string) {
+export function endOf(time: string) {
   const i = timeSlots.indexOf(time)
   if (i >= 0 && i < timeSlots.length - 1) return timeSlots[i + 1]
   const [h, m] = time.split('.').map(Number)
@@ -46,4 +46,27 @@ export function describeSlots(slots: { day: Weekday; time: string }[]) {
     date: `${first.day} ${dayDates[first.day]}`,
     time: `${short(first.time)} - ${short(endOf(last.time))}`,
   }
+}
+
+/** «08.30» → minutter etter midnatt. */
+export function minutesOf(time: string) {
+  const [h, m] = time.split('.').map(Number)
+  return h * 60 + m
+}
+
+/** Datoen til en ukedag i en uke (ISO-ukenummer) i inneværende år. */
+export function dateOf(week: number, day: Weekday, year = new Date().getFullYear()) {
+  // 4. januar ligger alltid i uke 1.
+  const jan4 = new Date(year, 0, 4)
+  const mondayOfWeek1 = 4 - ((jan4.getDay() + 6) % 7)
+  return new Date(year, 0, mondayOfWeek1 + (week - 1) * 7 + weekdays.indexOf(day))
+}
+
+export const isSameDate = (a: Date, b: Date) => a.toDateString() === b.toDateString()
+
+/** Er timen (dag + starttid i en uke) over? */
+export function hasEnded(week: number, day: Weekday, time: string, now: Date) {
+  const end = dateOf(week, day)
+  end.setMinutes(minutesOf(endOf(time)))
+  return now >= end
 }

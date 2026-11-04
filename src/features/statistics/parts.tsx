@@ -90,11 +90,16 @@ export function MasteryTable({ rows, columns, onSelect }: MasteryTableProps) {
   )
 }
 
-/** «Oppdaget mønster»: AI-tekst, sammenligning og et tips. */
-export function PatternContent({ pattern }: { pattern: Pattern }) {
+/**
+ * «Oppdaget mønster»: AI-tekst, sammenligning og et tips.
+ * `reserveSpace` holder av to linjer til tekstene, så høyden ikke hopper når innholdet byttes ut.
+ */
+export function PatternContent({ pattern, reserveSpace = false }: { pattern: Pattern; reserveSpace?: boolean }) {
   return (
     <>
-      <p className="flex items-start gap-5 p-2.5 text-small text-on-background">
+      <p
+        className={`flex items-start gap-5 p-2.5 text-small text-on-background ${reserveSpace ? 'min-h-[calc(2lh+1.25rem)]' : ''}`}
+      >
         <Sparkles className="size-6 shrink-0 text-primary" />
         {pattern.text}
       </p>
@@ -110,7 +115,7 @@ export function PatternContent({ pattern }: { pattern: Pattern }) {
           </div>
         ))}
       </div>
-      <p className="text-small text-black">{pattern.tip}</p>
+      <p className={`text-small text-black ${reserveSpace ? 'min-h-[2lh]' : ''}`}>{pattern.tip}</p>
     </>
   )
 }

@@ -6,7 +6,8 @@ import { SessionFormDialog } from '../sessions/SessionFormDialog'
 import { useSessions } from '../sessions/sessionsContext'
 import { SessionOverviewCard } from './SessionOverviewCard'
 import { WeekCalendar } from './WeekCalendar'
-import { breaks, currentWeek, timeSlots, weekdays } from './mockData'
+import { breaks, currentWeek, hasEnded, timeSlots, weekdays } from './mockData'
+import { useNow } from '../../hooks/useNow'
 import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
 
 export function HomePage() {
@@ -20,10 +21,16 @@ export function HomePage() {
   const [creating, setCreating] = useState(false)
   const [createdId, setCreatedId] = useState<string | null>(null)
   const created = sessions.find((s) => s.id === createdId)
+  const now = useNow()
 
   // Alt under regnes ut fra øktene, så kalenderen oppdaterer seg når økter legges til, endres eller fjernes.
   const weekSessionIds = new Set(sessions.filter((s) => s.week === week).map((s) => s.id))
-  const weekEntries = calendarEntries.filter((e) => weekSessionIds.has(e.sessionId))
+  const weekEntries = calendarEntries
+    .filter((e) => weekSessionIds.has(e.sessionId))
+    .map((e) => ({
+      ...e,
+      completed: hasEnded(week, e.day, e.time, now) || getStatus(e.sessionId) === 'completed',
+    }))
   const topicSessions = sessions.filter((s) => s.topicId === sessions[0]?.topicId)
   const completed = topicSessions
     .filter((s) => getStatus(s.id) === 'completed')
@@ -53,6 +60,7 @@ export function HomePage() {
           timeSlots={timeSlots}
           breaks={breaks}
           sessions={weekEntries}
+          now={now}
           onPreviousWeek={() => setWeek((w) => w - 1)}
           onNextWeek={() => setWeek((w) => w + 1)}
           onAdd={() => setCreating(true)}

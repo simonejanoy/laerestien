@@ -1,4 +1,4 @@
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, X } from 'lucide-react'
 import { CircleCheckIcon, EditIcon } from '../../components/ui/icons'
 import type { Operator, Task, TaskType } from '../../types'
 import { answerOf, expressionOf, operatorSymbol } from './taskUtils'
@@ -9,7 +9,17 @@ const inputClass =
   'w-full rounded-md border border-surface bg-background px-2.5 py-[7px] text-small text-primary outline-none focus:border-secondary'
 
 /** «Redigeringspanel» – bare synlig for læreren. */
-export function TaskEditor({ task, onChange }: { task: Task; onChange: (task: Task) => void }) {
+export function TaskEditor({
+  task,
+  taskNumber,
+  onChange,
+  onClose,
+}: {
+  task: Task
+  taskNumber: number
+  onChange: (task: Task) => void
+  onClose: () => void
+}) {
   const setNumber = (key: 'a' | 'b', value: string) => {
     const n = Number(value.replace(/\s/g, ''))
     if (Number.isFinite(n) && n >= 0) onChange({ ...task, [key]: n })
@@ -17,14 +27,25 @@ export function TaskEditor({ task, onChange }: { task: Task; onChange: (task: Ta
 
   return (
     <div className="flex flex-col gap-2.5 rounded-md bg-surface-light p-3.5">
-      <p className="flex items-center gap-1.5 text-[13px] text-secondary">
-        <EditIcon className="text-primary" />
-        Redigering · bare synlig for læreren
-      </p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="flex items-center gap-1.5 text-[13px] text-secondary">
+          <EditIcon className="text-primary" />
+          Redigering · bare synlig for læreren
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={`Lukk redigering av oppgave ${taskNumber}`}
+          className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-primary hover:bg-surface focus-visible:outline-2 focus-visible:outline-primary"
+        >
+          <X className="size-[18px]" aria-hidden />
+        </button>
+      </div>
 
       <label className="flex flex-col gap-[5px] text-xs text-secondary">
         Oppgavetekst
         <input
+          autoFocus
           value={task.instruction}
           onChange={(e) => onChange({ ...task, instruction: e.target.value })}
           className={`${inputClass} min-h-9 py-2`}

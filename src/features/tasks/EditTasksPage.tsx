@@ -20,7 +20,8 @@ export function EditTasksPage() {
   // Utkast som lagres med «Lagre endringer».
   const [draft, setDraft] = useState<Task[]>(() => getTasks(sessionId))
   const [dirty, setDirty] = useState(false)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  // Oppgaven som redigeres, og hvordan den så ut før redigeringen startet («Avbryt» setter den tilbake).
+  const [editing, setEditing] = useState<{ id: string; original: Task } | null>(null)
 
   if (!session) return <FullPageMessage text="Fant ikke økten." />
 
@@ -35,7 +36,7 @@ export function EditTasksPage() {
 
   const selectLevel = (next: Level) => {
     setSearchParams({ niva: String(next) }, { replace: true })
-    setSelectedId(null)
+    setEditing(null)
   }
 
   const addTask = () => {
@@ -49,12 +50,27 @@ export function EditTasksPage() {
       b: 0,
     }
     update([...draft, task])
-    setSelectedId(task.id)
+    setEditing({ id: task.id, original: task })
   }
 
   const save = () => {
     saveTasks(session.id, draft)
     setDirty(false)
+  }
+
+  const isChanged = (task: Task) => {
+    const original = editing?.id === task.id ? editing.original : task
+    return (Object.keys(task) as (keyof Task)[]).some((key) => task[key] !== original[key])
+  }
+
+  const cancelEdit = () => {
+    if (editing) setDraft((prev) => prev.map((t) => (t.id === editing.id ? editing.original : t)))
+    setEditing(null)
+  }
+
+  const saveEdit = () => {
+    save()
+    setEditing(null)
   }
 
   return (
@@ -129,10 +145,16 @@ export function EditTasksPage() {
                 key={task.id}
                 task={task}
                 number={i + 1}
-                selected={task.id === selectedId}
-                onSelect={() => setSelectedId(task.id)}
+                selected={task.id === editing?.id}
+                changed={isChanged(task)}
+                onSelect={() => setEditing({ id: task.id, original: task })}
                 onChange={(changed) => update(draft.map((t) => (t.id === changed.id ? changed : t)))}
-                onDelete={() => update(draft.filter((t) => t.id !== task.id))}
+                onDelete={() => {
+                  update(draft.filter((t) => t.id !== task.id))
+                  if (editing?.id === task.id) setEditing(null)
+                }}
+                onSave={saveEdit}
+                onCancel={cancelEdit}
               />
             ))}
           </div>

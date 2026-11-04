@@ -12,7 +12,11 @@ const shortName = (name: string) => {
 
 /** «Elever (18)» med søk og bla-knapper. Trykk på en elev for å se statistikken. */
 export function StudentCarousel({ students, activeId }: { students: Student[]; activeId?: string }) {
-  const [page, setPage] = useState(0)
+  // Start på siden der den valgte eleven er, så den er synlig i lista.
+  const [page, setPage] = useState(() => {
+    const sorted = [...students].sort((a, b) => a.name.localeCompare(b.name, 'nb'))
+    return Math.max(0, Math.floor(sorted.findIndex((s) => s.id === activeId) / PAGE_SIZE))
+  })
   const [searching, setSearching] = useState(false)
   const [query, setQuery] = useState('')
 
