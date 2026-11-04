@@ -31,6 +31,8 @@ export interface CalendarSession {
   sessionNumber: number
   day: Weekday
   time: string
+  year: number
+  week: number
   /** Timen er over (eller økta er markert som gjennomført). */
   completed?: boolean
 }
@@ -70,7 +72,8 @@ export interface Session {
   time?: string
   /** Øktnumre – to tall betyr dobbeltøkt. */
   numbers: number[]
-  /** Uka økta ligger i, og plassen i timeplanen (én per øktnummer). */
+  /** Uka økta ligger i (år + ISO-uke), og plassen i timeplanen (én per øktnummer). */
+  year: number
   week: number
   slots: CalendarSlot[]
   totalSessions: number
@@ -84,9 +87,12 @@ export type SessionStatus = 'completed' | 'skipped' | 'available' | 'locked'
 
 export type TaskType = 'Hoderegning' | 'Oppstilling'
 
-export type Operator = '+' | '-'
+/** Pluss, minus, gange (·) og dele (:). */
+export type Operator = '+' | '-' | '*' | '/'
 
+/** Regnestykke (tall – regneart – tall). Appen sjekker svaret selv. */
 export interface Task {
+  kind?: 'math'
   id: string
   level: Level
   type: TaskType
@@ -96,6 +102,27 @@ export interface Task {
   operator: Operator
   b: number
 }
+
+/** Fritekstoppgave, f.eks. laget med AI-assistenten. Eleven skriver svaret, og læreren vurderer det. */
+export interface TextTask {
+  kind: 'text'
+  id: string
+  level: Level
+  /** Oppgaveteksten eleven ser. */
+  text: string
+  /** Fasit eller løsningsforslag – bare for læreren. */
+  solution: string
+  /** Kompetansemål læreren har oppgitt (tomt hvis ikke oppgitt). */
+  competenceGoal: string
+  /** Hvordan oppgaven er tilpasset. */
+  adaptation: string
+  /** Laget av AI-assistenten (vises bare for læreren). */
+  aiGenerated: boolean
+  /** Læreren har selv sett gjennom oppgaven. */
+  reviewed: boolean
+}
+
+export type SessionTask = Task | TextTask
 
 export interface Topic {
   id: string
@@ -186,15 +213,4 @@ export interface TopicInsight {
   struggles: { expression: string; text: string }[]
   notTried: { level: Level; students: string[] }
   goingWell: string
-}
-
-export interface SuggestedTask {
-  id: string
-  title: string
-  subtitle: string
-  category: string
-  level: Level
-  instruction: string
-  /** Regnestykke som kan gjøres lettere/vanskeligere. Mangler for tekstoppgaver o.l. */
-  math?: { a: number; operator: Operator; b: number }
 }

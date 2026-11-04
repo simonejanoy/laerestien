@@ -14,6 +14,8 @@ import { answerOf, expressionOf, needsWorksheet } from './taskUtils'
 interface TaskCardProps {
   task: Task
   number: number
+  /** Temaet for økta – gis til AI-assistenten som kontekst. */
+  topic: string
   selected: boolean
   /** Oppgaven er endret siden redigeringen startet. */
   changed: boolean
@@ -26,7 +28,7 @@ interface TaskCardProps {
 }
 
 /** «Oppgavekort». Valgt kort viser redigeringspanel og AI-assistent. */
-export function TaskCard({ task, number, selected, changed, onSelect, onChange, onDelete, onSave, onCancel }: TaskCardProps) {
+export function TaskCard({ task, number, topic, selected, changed, onSelect, onChange, onDelete, onSave, onCancel }: TaskCardProps) {
   const level = levelStyles[task.level]
   const levelTag = `${level.surface} ${level.text}`
   const [confirming, setConfirming] = useState(false)
@@ -96,7 +98,7 @@ export function TaskCard({ task, number, selected, changed, onSelect, onChange, 
               Lagre
             </Button>
           </div>
-          <AiAssistant task={task} taskNumber={number} />
+          <AiAssistant task={task} taskNumber={number} topic={topic} />
         </>
       ) : (
         <>

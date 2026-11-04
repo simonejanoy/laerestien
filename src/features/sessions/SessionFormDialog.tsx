@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Button } from '../../components/ui/Button'
 import { Modal, ModalCloseButton } from '../../components/ui/Modal'
 import type { CalendarSlot, Session, Weekday } from '../../types'
-import { breaks, lessonSlots, timeSlots, weekdays } from '../calendar/mockData'
+import { breaks, isSameWeek, lessonSlots, timeSlots, weekdays, type WeekRef } from '../calendar/mockData'
 import { terms } from '../topics/mockData'
 import { useSessions, type SessionInput } from './sessionsContext'
 
@@ -10,6 +10,8 @@ interface SessionFormDialogProps {
   open: boolean
   /** Økta som redigeres. Mangler når en ny økt lages. */
   session?: Session
+  /** Uka en ny økt legges i. En eksisterende økt blir i sin uke. */
+  week?: WeekRef
   onClose: () => void
   onSave: (input: SessionInput) => void
 }
@@ -25,7 +27,7 @@ function nextLesson(time: string) {
 }
 
 /** Popup for å lage en ny undervisningsøkt eller endre en eksisterende. */
-export function SessionFormDialog({ open, session, onClose, onSave }: SessionFormDialogProps) {
+export function SessionFormDialog({ open, session, week, onClose, onSave }: SessionFormDialogProps) {
   const { calendarEntries } = useSessions()
 
   const [topicId, setTopicId] = useState(session?.topicId ?? 'addisjon-og-subtraksjon')
@@ -39,13 +41,21 @@ export function SessionFormDialog({ open, session, onClose, onSave }: SessionFor
   const secondTime = nextLesson(time)
   const canBeDouble = secondTime !== undefined
 
+  const at = session ?? week
+
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
     const slots: CalendarSlot[] = [{ day, time }]
     if (double && secondTime) slots.push({ day, time: secondTime })
 
     const taken = slots.find((slot) =>
-      calendarEntries.some((e) => e.sessionId !== session?.id && e.day === slot.day && e.time === slot.time),
+      calendarEntries.some(
+        (e) =>
+          e.sessionId !== session?.id &&
+          (!at || isSameWeek(e, at)) &&
+          e.day === slot.day &&
+          e.time === slot.time,
+      ),
     )
     if (taken) {
       setError(`Det er allerede en økt ${taken.day.toLowerCase()} kl. ${taken.time}. Velg en annen tid.`)

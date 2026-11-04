@@ -1,11 +1,13 @@
 import { Check, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
-import type { Level, Task } from '../../types'
+import type { Level, SessionTask, Task } from '../../types'
 import { FullPageMessage } from '../auth/ProtectedRoute'
 import { sessionLabel, useSessions } from '../sessions/sessionsContext'
+import { AiTaskGenerator } from './AiTaskGenerator'
 import { LevelTabs } from './LevelTabs'
 import { TaskCard } from './TaskCard'
+import { TextTaskCard } from './TextTaskCard'
 import { sessionCrumbs } from '../sessions/crumbs'
 import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
 
@@ -18,7 +20,7 @@ export function EditTasksPage() {
   const session = sessions.find((s) => s.id === sessionId)
 
   // Utkast som lagres med «Lagre endringer».
-  const [draft, setDraft] = useState<Task[]>(() => getTasks(sessionId))
+  const [draft, setDraft] = useState<SessionTask[]>(() => getTasks(sessionId))
   const [dirty, setDirty] = useState(false)
   // Oppgaven som redigeres, og hvordan den så ut før redigeringen startet («Avbryt» setter den tilbake).
   const [editing, setEditing] = useState<{ id: string; original: Task } | null>(null)
@@ -29,7 +31,7 @@ export function EditTasksPage() {
   const group = session.levels.find((g) => g.level === level)
   const levelTasks = draft.filter((t) => t.level === level)
 
-  const update = (tasks: Task[]) => {
+  const update = (tasks: SessionTask[]) => {
     setDraft(tasks)
     setDirty(true)
   }
@@ -109,6 +111,8 @@ export function EditTasksPage() {
         </div>
       </div>
 
+      <AiTaskGenerator session={session} onAdd={(tasks) => update([...draft, ...tasks])} />
+
       <LevelTabs
         levels={session.levels}
         selected={level}
@@ -140,23 +144,38 @@ export function EditTasksPage() {
           </p>
         ) : (
           <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
-            {levelTasks.map((task, i) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                number={i + 1}
-                selected={task.id === editing?.id}
-                changed={isChanged(task)}
-                onSelect={() => setEditing({ id: task.id, original: task })}
-                onChange={(changed) => update(draft.map((t) => (t.id === changed.id ? changed : t)))}
-                onDelete={() => {
-                  update(draft.filter((t) => t.id !== task.id))
-                  if (editing?.id === task.id) setEditing(null)
-                }}
-                onSave={saveEdit}
-                onCancel={cancelEdit}
-              />
-            ))}
+            {levelTasks.map((task, i) => {
+              const onChange = (changed: SessionTask) => update(draft.map((t) => (t.id === changed.id ? changed : t)))
+              const onDelete = () => {
+                update(draft.filter((t) => t.id !== task.id))
+                if (editing?.id === task.id) setEditing(null)
+              }
+              return task.kind === 'text' ? (
+                <TextTaskCard
+                  key={task.id}
+                  task={task}
+                  number={i + 1}
+                  topic={session.topic}
+                  className={session.className}
+                  onChange={onChange}
+                  onDelete={onDelete}
+                />
+              ) : (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  number={i + 1}
+                  topic={session.topic}
+                  selected={task.id === editing?.id}
+                  changed={isChanged(task)}
+                  onSelect={() => setEditing({ id: task.id, original: task })}
+                  onChange={onChange}
+                  onDelete={onDelete}
+                  onSave={saveEdit}
+                  onCancel={cancelEdit}
+                />
+              )
+            })}
           </div>
         )}
       </section>

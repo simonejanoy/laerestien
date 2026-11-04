@@ -1,13 +1,14 @@
 import { useState, type ReactNode } from 'react'
-import type { CalendarSession, LevelGroup, Session } from '../../types'
-import { describeSlots, timeSlots, weekdays } from '../calendar/mockData'
+import type { CalendarSession, LevelGroup, Session, SessionTask, TextTask } from '../../types'
+import { describeSlots, timeSlots, weekdays, type WeekRef } from '../calendar/mockData'
 import { terms, topicDetails } from '../topics/mockData'
 import { initialProgress, initialTasks, sessionBase, sessions as initialSessions } from './mockData'
+import { scheduled } from './schedule'
 import { SessionsContext, type SessionInput } from './sessionsContext'
 
 const slotOrder = (s: Session) => {
   const first = s.slots[0]
-  return s.week * 1000 + weekdays.indexOf(first.day) * 100 + timeSlots.indexOf(first.time)
+  return (s.year * 100 + s.week) * 1000 + weekdays.indexOf(first.day) * 100 + timeSlots.indexOf(first.time)
 }
 
 /** Sorterer øktene etter timeplanen og nummererer dem fortløpende per tema. */
@@ -37,9 +38,10 @@ const emptyLevels: LevelGroup[] = ([1, 2, 3] as const).map((level) => ({
 
 /** Holder styr på øktene, framdriften og oppgavene (bare i minnet foreløpig). */
 export function SessionsProvider({ children }: { children: ReactNode }) {
-  const [sessions, setSessions] = useState(() => normalize(initialSessions))
+  const [sessions, setSessions] = useState(() => normalize([...initialSessions, ...scheduled.sessions]))
   const [progress, setProgress] = useState(initialProgress)
-  const [tasks, setTasks] = useState(initialTasks)
+  const [tasks, setTasks] = useState<Record<string, SessionTask[]>>({ ...initialTasks, ...scheduled.tasks })
+  const [studentTasks, setStudentTasks] = useState<Record<string, TextTask[]>>({})
 
   const calendarEntries: CalendarSession[] = sessions.flatMap((s) =>
     s.slots.map((slot, i) => ({
@@ -49,6 +51,8 @@ export function SessionsProvider({ children }: { children: ReactNode }) {
       sessionNumber: s.numbers[i],
       day: slot.day,
       time: slot.time,
+      year: s.year,
+      week: s.week,
     })),
   )
 
@@ -69,7 +73,7 @@ export function SessionsProvider({ children }: { children: ReactNode }) {
 
   const complete = (id: string) => setProgress((prev) => ({ ...prev, [id]: 'completed' }))
 
-  const addSession = (input: SessionInput) => {
+  const addSession = (input: SessionInput, at: WeekRef) => {
     const id = `okt-${Date.now()}`
     setSessions((prev) => {
       // Ny økt arver tittel, fagområde osv. fra andre økter i samme tema.
@@ -84,10 +88,10 @@ export function SessionsProvider({ children }: { children: ReactNode }) {
         topicId: input.topicId,
         heading: input.heading,
         description: input.description,
-        week: sibling?.week ?? 44,
+        ...at,
         slots: input.slots,
         numbers: [],
-        ...describeSlots(input.slots),
+        ...describeSlots(at, input.slots),
         levels: emptyLevels,
         goals: [],
       }
@@ -101,7 +105,7 @@ export function SessionsProvider({ children }: { children: ReactNode }) {
       normalize(
         prev.map((s) =>
           s.id === id
-            ? { ...s, heading: input.heading, description: input.description, slots: input.slots, ...describeSlots(input.slots) }
+            ? { ...s, heading: input.heading, description: input.description, slots: input.slots, ...describeSlots(s, input.slots) }
             : s,
         ),
       ),
@@ -115,8 +119,13 @@ export function SessionsProvider({ children }: { children: ReactNode }) {
 
   const getTasks = (sessionId: string) => tasks[sessionId] ?? []
 
-  const saveTasks = (sessionId: string, updated: (typeof tasks)[string]) =>
+  const saveTasks = (sessionId: string, updated: SessionTask[]) =>
     setTasks((prev) => ({ ...prev, [sessionId]: updated }))
+
+  const getStudentTasks = (studentId: string) => studentTasks[studentId] ?? []
+
+  const addStudentTasks = (studentId: string, added: TextTask[]) =>
+    setStudentTasks((prev) => ({ ...prev, [studentId]: [...(prev[studentId] ?? []), ...added] }))
 
   return (
     <SessionsContext.Provider
@@ -132,6 +141,8 @@ export function SessionsProvider({ children }: { children: ReactNode }) {
         removeSession,
         getTasks,
         saveTasks,
+        getStudentTasks,
+        addStudentTasks,
       }}
     >
       {children}

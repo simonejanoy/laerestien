@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
+import type { Operator } from '../../types'
 import { subscribeLiveSession, type LiveSession } from '../../lib/liveSession'
 import { sessionLabel, useSessions } from '../sessions/sessionsContext'
 import { Greeting, MessageCard, PausedScreen } from './StatusScreens'
 import { StudentLayout } from './StudentLayout'
 import { TaskScreen } from './TaskScreen'
+import { TextTaskScreen } from './TextTaskScreen'
 
 /** Hvor langt eleven har kommet, lagret i nettleseren så eleven fortsetter der hen slapp. */
 function useSavedIndex(key: string | null) {
@@ -31,6 +33,15 @@ function useSavedIndex(key: string | null) {
     }
   }
   return [state.index, setIndex] as const
+}
+
+/** «Vi legger sammen» osv. – ut fra regneartene i økta. */
+function verbFor(ops: Operator[]) {
+  if (ops.length === 0) return 'Nå setter vi i gang'
+  if (ops.includes('/')) return 'Vi deler'
+  if (ops.includes('*')) return 'Vi ganger'
+  if (ops.includes('-')) return 'Vi trekker fra'
+  return 'Vi legger sammen'
 }
 
 export function StudentHomePage() {
@@ -72,7 +83,7 @@ export function StudentHomePage() {
   }
 
   const task = tasks[index]
-  const verb = tasks.some((t) => t.operator === '-') ? 'Vi trekker fra' : 'Vi legger sammen'
+  const verb = verbFor(tasks.flatMap((t) => (t.kind === 'text' ? [] : [t.operator])))
 
   return (
     <StudentLayout label={label} onLogout={logout}>
@@ -87,7 +98,11 @@ export function StudentHomePage() {
         <MessageCard title="Bra jobba!" text="Du har gjort alle oppgavene i denne økta." />
       ) : (
         <div className="px-20 pb-12">
-          <TaskScreen key={task.id} task={task} index={index} total={tasks.length} onNext={() => setIndex(index + 1)} />
+          {task.kind === 'text' ? (
+            <TextTaskScreen key={task.id} task={task} index={index} total={tasks.length} onNext={() => setIndex(index + 1)} />
+          ) : (
+            <TaskScreen key={task.id} task={task} index={index} total={tasks.length} onNext={() => setIndex(index + 1)} />
+          )}
         </div>
       )}
     </StudentLayout>

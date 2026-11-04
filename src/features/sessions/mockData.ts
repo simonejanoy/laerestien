@@ -2,7 +2,7 @@ import type { Level, Operator, PlanItem, Session, Task, TaskType } from '../../t
 
 // Testdata frem til Firestore er på plass. Tekstene er hentet fra Figma.
 
-const standardPlan: PlanItem[] = [
+export const standardPlan: PlanItem[] = [
   { title: 'Tavleundervisning', minutes: 30, description: 'introduksjon av dagens tema' },
   { title: 'Oppgaver', minutes: 20, description: 'elevene jobber med oppgaver på sitt nivå' },
   { title: 'Felles oppsummering', minutes: 10, description: 'felles gjennomgang og oppsummering av dagens tema' },
@@ -24,6 +24,7 @@ export const sessions: Session[] = [
     ...sessionBase,
     id: 'okt-1-2',
     numbers: [1, 2],
+    year: 2026,
     week: 44,
     slots: [
       { day: 'Mandag', time: '08.30' },
@@ -49,6 +50,7 @@ export const sessions: Session[] = [
     ...sessionBase,
     id: 'okt-3',
     numbers: [3],
+    year: 2026,
     week: 44,
     slots: [{ day: 'Onsdag', time: '10.30' }],
     date: 'Onsdag 28. oktober',
@@ -71,6 +73,7 @@ export const sessions: Session[] = [
     ...sessionBase,
     id: 'okt-4',
     numbers: [4],
+    year: 2026,
     week: 44,
     slots: [{ day: 'Fredag', time: '09.30' }],
     date: 'Fredag 30. oktober',

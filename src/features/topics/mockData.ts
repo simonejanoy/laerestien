@@ -1,4 +1,5 @@
 import type { Term, TopicDetails } from '../../types'
+import { yearPlan } from './yearPlan'
 
 // Årsplanen for 4. trinn, hentet fra Figma. Testdata frem til Firestore er på plass.
 
@@ -71,4 +72,5 @@ export const topicDetails: TopicDetails[] = [
       'Bruke sammenhengen mellom addisjon og subtraksjon til å kontrollere svar.',
     ],
   },
+  ...yearPlan.map(({ topicId, weeks, goals }) => ({ topicId, weeks, goals })),
 ]

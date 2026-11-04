@@ -1,13 +1,16 @@
 import { ArrowLeft, ArrowRight, Sparkles, User } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { Student, StudentStats } from '../../types'
 import { FullPageMessage } from '../auth/ProtectedRoute'
-import { students } from '../class/students'
+import { anonProfile } from '../../ai/anonymize'
+import { useSessions } from '../sessions/sessionsContext'
+import { students, studentsClassId } from '../class/students'
+import { AiProfileSuggestion } from './AiProfileSuggestion'
 import { ProgressChart } from './ProgressChart'
 import { StudentCarousel } from './StudentCarousel'
 import { SuggestedTasksDialog } from './SuggestedTasksDialog'
-import { months, statsFor, suggestedTasks } from './mockData'
+import { months, statsFor } from './mockData'
 import { DotTag, MasteryTable, PatternContent, StatPanel } from './parts'
 import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
 
@@ -22,6 +25,9 @@ export function StudentStatsPage() {
   const [added, setAdded] = useState<{ studentId: string; count: number } | null>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const shownId = useRef(student?.id)
+  const { addStudentTasks } = useSessions()
+  // Det AI-en får vite om eleven: anonym ID og resultater, ikke navn.
+  const profile = useMemo(() => student && anonProfile(student, statsFor(student, index)), [student, index])
 
   // Rolig inntoning når man bytter elev. Siden beholdes (ingen remount); bare innholdet tones inn.
   useEffect(() => {
@@ -31,7 +37,7 @@ export function StudentStatsPage() {
     contentRef.current?.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: 180, easing: 'ease-out' })
   }, [student])
 
-  if (!student) return <FullPageMessage text="Fant ikke eleven." />
+  if (!student || !profile) return <FullPageMessage text="Fant ikke eleven." />
 
   const stats = statsFor(student, index)
   const firstName = student.name.split(' ')[0]
@@ -79,21 +85,26 @@ export function StudentStatsPage() {
             <MasteryTable rows={stats.mastery} columns={['Tema', 'Mestring', 'Neste steg']} />
           </StatPanel>
         </div>
+
+        <AiProfileSuggestion key={student.id} firstName={firstName} classId={studentsClassId} profile={profile} />
       </div>
 
       <StudentCarousel students={students} activeId={student.id} />
 
-      <SuggestedTasksDialog
-        key={student.id}
-        open={dialogOpen}
-        studentName={firstName}
-        initialTasks={suggestedTasks}
-        onClose={() => setDialogOpen(false)}
-        onConfirm={(tasks) => {
-          setAdded({ studentId: student.id, count: tasks.length })
-          setDialogOpen(false)
-        }}
-      />
+      {dialogOpen && (
+        <SuggestedTasksDialog
+          studentName={firstName}
+          studentId={student.id}
+          classId={studentsClassId}
+          profile={profile}
+          onClose={() => setDialogOpen(false)}
+          onConfirm={(tasks) => {
+            addStudentTasks(student.id, tasks)
+            setAdded({ studentId: student.id, count: tasks.length })
+            setDialogOpen(false)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -168,15 +179,13 @@ function StudentSummary({
       </div>
       <div className="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-b-lg bg-secondary py-3 pr-3 pl-5 text-[15px] font-medium text-on-secondary">
         <Sparkles className="size-[22px] shrink-0" />
-        <p className="flex-1">
-          AI har laget 5 oppgaver til {first} basert på hva {first} trenger støtte i
-        </p>
+        <p className="flex-1">AI kan foreslå oppgaver til {first} basert på hva {first} trenger støtte i</p>
         <button
           type="button"
           onClick={onShowSuggestions}
           className="flex w-full cursor-pointer items-center sm:w-auto sm:min-w-[19rem] justify-center gap-2 rounded-md border border-on-primary py-[9px] pr-3.5 pl-4 text-on-primary hover:bg-on-primary/10"
         >
-          Se foreslåtte oppgaver
+          Lag forslag med AI
           <ArrowRight className="size-[18px]" />
         </button>
       </div>

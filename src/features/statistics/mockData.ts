@@ -1,4 +1,4 @@
-import type { MasteryStatus, Pattern, Student, StudentStats, SuggestedTask, TopicInsight, TopicMastery } from '../../types'
+import type { MasteryStatus, Pattern, Student, StudentStats, TopicInsight, TopicMastery } from '../../types'
 
 // Testdata for statistikken. Tallene for klassen og Emma er fra Figma;
 // de andre elevene får utregnede eksempeltall.
@@ -80,14 +80,6 @@ export const topicInsights: TopicInsight[] = [
     notTried: { level: 2, students: ['Sofie L.', 'Oskar A.', 'Isak J.'] },
     goingWell: 'Alle har gjort nivå 1-oppgavene, og nesten alle fikk dem riktig.',
   },
-]
-
-export const suggestedTasks: SuggestedTask[] = [
-  { id: 's1', title: '47 + 38 =', subtitle: 'Tierovergang', category: 'Hoderegning', level: 2, instruction: 'Regn ut. Del gjerne tallene i tiere og enere.', math: { a: 47, operator: '+', b: 38 } },
-  { id: 's2', title: '145 + 37 =', subtitle: 'Tierovergang', category: 'Hoderegning', level: 2, instruction: 'Regn ut. Del gjerne tallene i tiere og enere.', math: { a: 145, operator: '+', b: 37 } },
-  { id: 's3', title: '268 + 157', subtitle: 'Tierovergang', category: 'Oppstilling', level: 2, instruction: 'Still opp og regn ut. Husk å veksle.', math: { a: 268, operator: '+', b: 157 } },
-  { id: 's4', title: 'Elever i klassen – tekstoppgave', subtitle: 'Tolke tekst', category: 'Tekst', level: 1, instruction: 'Det er 14 jenter og 12 gutter i klassen. Hvor mange elever er det til sammen?' },
-  { id: 's5', title: 'Omkrets av rektangel', subtitle: 'Utfordring', category: 'Geometri', level: 3, instruction: 'Et rektangel er 6 cm langt og 4 cm bredt. Hva er omkretsen?' },
 ]
 
 const emmaStats: StudentStats = {

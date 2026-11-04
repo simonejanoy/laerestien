@@ -1,30 +1,71 @@
-import { ArrowUp } from 'lucide-react'
+import { ArrowUp, LoaderCircle } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
+import { AiError, sendChat, subjectContext } from '../../ai/client'
+import type { ChatContent } from '../../ai/contract'
 import { SparkleIcon } from '../../components/ui/icons'
 import type { Task } from '../../types'
-import { expressionOf } from './taskUtils'
+import { answerOf, expressionOf } from './taskUtils'
 
 interface AiAssistantProps {
   task: Task
   taskNumber: number
+  topic: string
 }
 
-/** AI-assistent ved valgt oppgave. Ikke koblet til en AI-tjeneste ennå. */
-export function AiAssistant({ task, taskNumber }: AiAssistantProps) {
+/** Det læreren ser i samtalen. Historikken som sendes til AI-en ligger for seg. */
+interface Message {
+  role: 'user' | 'model'
+  text: string
+}
+
+/**
+ * AI-assistent ved valgt oppgave: fri samtale med vanlig tekst (ikke JSON).
+ * AI-en kan ikke endre oppgaven – læreren gjør endringene selv i feltene over.
+ */
+export function AiAssistant({ task, taskNumber, topic }: AiAssistantProps) {
   const [prompt, setPrompt] = useState('')
-  const [notice, setNotice] = useState<string | null>(null)
+  const [messages, setMessages] = useState<Message[]>([])
+  // Sendes uendret ved hver ny melding, så modellens thought signatures blir med.
+  const [history, setHistory] = useState<ChatContent[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const suggestions = [`Forenkle oppgave ${taskNumber}`, 'Bytt til tekstoppgave', 'Generer ny lignende', 'Legg til hint']
 
-  const ask = (text: string) => {
-    if (!text.trim()) return
-    setNotice(`«${text.trim()}» – AI-assistenten er ikke koblet til ennå.`)
+  const ask = async (text: string) => {
+    const question = text.trim()
+    if (!question || loading) return
+
+    // Første melding får med fag, trinn og oppgaven, så AI-en ikke må spørre.
+    const { subject, grade } = subjectContext()
+    const content =
+      history.length === 0
+        ? `Kontekst fra appen: ${subject}, ${grade}. Tema: ${topic}. Oppgave ${taskNumber}, nivå ${task.level} (${task.type.toLowerCase()}): «${task.instruction}» ${expressionOf(task)} = ${answerOf(task)}.\n\n${question}`
+        : question
+    const userTurn: ChatContent = { role: 'user', parts: [{ text: content }] }
+
+    setMessages((m) => [...m, { role: 'user', text: question }])
+    setPrompt('')
+    setError(null)
+    setLoading(true)
+    try {
+      const reply = await sendChat([...history, userTurn])
+      setHistory([...history, userTurn, reply.content])
+      setMessages((m) => [...m, { role: 'model', text: reply.text }])
+    } catch (err) {
+      if (!(err instanceof AiError)) console.error('Uventet feil i AI-chatten:', err)
+      setError(err instanceof AiError ? err.message : 'Noe gikk galt. Prøv igjen.')
+      // Meldingen ble ikke besvart: ta den ut igjen, så læreren kan sende den på nytt.
+      setMessages((m) => m.slice(0, -1))
+      setPrompt(question)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
-    ask(prompt)
-    setPrompt('')
+    void ask(prompt)
   }
 
   return (
@@ -35,7 +76,7 @@ export function AiAssistant({ task, taskNumber }: AiAssistantProps) {
         </span>
         <div className="flex flex-col gap-0.5">
           <span className="text-small text-primary">AI-assistent</span>
-          <span className="text-xs text-secondary">Tilgjengelig ved oppgavene</span>
+          <span className="text-xs text-secondary">Gir forslag – endringene gjør du selv i feltene over</span>
         </div>
       </div>
 
@@ -49,21 +90,54 @@ export function AiAssistant({ task, taskNumber }: AiAssistantProps) {
           </p>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <p className="text-xs text-secondary">Foreslåtte handlinger:</p>
-          <div className="flex flex-wrap gap-2">
-            {suggestions.map((text) => (
-              <button
-                key={text}
-                type="button"
-                onClick={() => ask(text)}
-                className="cursor-pointer rounded-[20px] border border-surface bg-surface-light px-3 py-[7px] text-[13px] text-primary hover:bg-surface"
+        {messages.length > 0 && (
+          <ol aria-label="Samtale med AI-assistenten" className="flex flex-col gap-2">
+            {messages.map((message, i) => (
+              <li
+                key={i}
+                className={`rounded-lg px-3 py-2 text-[13px] whitespace-pre-wrap ${
+                  message.role === 'user' ? 'self-end bg-surface-light text-primary' : 'bg-tertiary text-on-background'
+                }`}
               >
-                {text}
-              </button>
+                <span className="sr-only">{message.role === 'user' ? 'Du: ' : 'AI-assistenten: '}</span>
+                {message.text}
+              </li>
             ))}
+          </ol>
+        )}
+
+        <p aria-live="polite" className="text-xs text-secondary">
+          {loading && (
+            <span className="flex items-center gap-1.5">
+              <LoaderCircle className="size-3.5 motion-safe:animate-spin" aria-hidden />
+              AI-assistenten skriver …
+            </span>
+          )}
+        </p>
+        {error && (
+          <p role="alert" className="text-xs text-error">
+            {error}
+          </p>
+        )}
+
+        {messages.length === 0 && (
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-secondary">Foreslåtte handlinger:</p>
+            <div className="flex flex-wrap gap-2">
+              {suggestions.map((text) => (
+                <button
+                  key={text}
+                  type="button"
+                  disabled={loading}
+                  onClick={() => void ask(text)}
+                  className="cursor-pointer rounded-[20px] border border-surface bg-surface-light px-3 py-[7px] text-[13px] text-primary hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {text}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
           <input
@@ -75,18 +149,13 @@ export function AiAssistant({ task, taskNumber }: AiAssistantProps) {
           />
           <button
             type="submit"
+            disabled={loading || !prompt.trim()}
             aria-label="Send"
-            className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-primary text-on-primary hover:bg-primary/90"
+            className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-primary text-on-primary hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <ArrowUp className="size-[18px]" />
           </button>
         </form>
-
-        {notice && (
-          <p role="status" className="text-xs text-secondary">
-            {notice}
-          </p>
-        )}
       </div>
     </section>
   )

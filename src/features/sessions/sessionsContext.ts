@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react'
-import type { CalendarSession, CalendarSlot, Session, SessionStatus, Task } from '../../types'
+import type { CalendarSession, CalendarSlot, Session, SessionStatus, SessionTask, TextTask } from '../../types'
+import type { WeekRef } from '../calendar/mockData'
 
 /** Det læreren fyller inn når en økt lages eller endres. */
 export interface SessionInput {
@@ -18,11 +19,15 @@ export interface SessionsContextValue {
   getBlockers: (id: string) => Session[]
   skip: (ids: string[]) => void
   complete: (id: string) => void
-  addSession: (input: SessionInput) => string
+  /** Lager en ny økt i uka `at`. */
+  addSession: (input: SessionInput, at: WeekRef) => string
   updateSession: (id: string, input: SessionInput) => void
   removeSession: (id: string) => void
-  getTasks: (sessionId: string) => Task[]
-  saveTasks: (sessionId: string, tasks: Task[]) => void
+  getTasks: (sessionId: string) => SessionTask[]
+  saveTasks: (sessionId: string, tasks: SessionTask[]) => void
+  /** Individuelle oppgaver læreren har lagt til for en elev. */
+  getStudentTasks: (studentId: string) => TextTask[]
+  addStudentTasks: (studentId: string, tasks: TextTask[]) => void
 }
 
 export const SessionsContext = createContext<SessionsContextValue | null>(null)

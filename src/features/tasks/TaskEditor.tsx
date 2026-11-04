@@ -1,7 +1,7 @@
 import { ChevronDown, X } from 'lucide-react'
 import { CircleCheckIcon, EditIcon } from '../../components/ui/icons'
 import type { Operator, Task, TaskType } from '../../types'
-import { answerOf, expressionOf, operatorSymbol } from './taskUtils'
+import { answerOf, answerProblem, expressionOf, operators, operatorSymbol } from './taskUtils'
 
 const taskTypes: TaskType[] = ['Hoderegning', 'Oppstilling']
 
@@ -64,7 +64,7 @@ export function TaskEditor({
             onChange={(e) => onChange({ ...task, operator: e.target.value as Operator })}
             className={`${inputClass} cursor-pointer text-center`}
           >
-            {(['+', '-'] as const).map((op) => (
+            {operators.map((op) => (
               <option key={op} value={op}>
                 {operatorSymbol(op)}
               </option>
@@ -95,9 +95,9 @@ export function TaskEditor({
         </label>
       </div>
 
-      {answerOf(task) < 0 ? (
+      {answerProblem(task) ? (
         <p role="alert" className="text-xs text-error">
-          Svaret blir negativt ({expressionOf(task)} = {answerOf(task)}). Sjekk tallene.
+          {answerProblem(task)} ({expressionOf(task)}). Sjekk tallene.
         </p>
       ) : (
         <p className="flex items-center gap-[5px] text-xs text-level2">

@@ -27,4 +27,7 @@ const roster: Omit<Student, 'photo'>[] = [
   { id: 'oskar', name: 'Oskar Aas', level: 3 },
 ]
 
+/** Klassen testelevene går i. */
+export const studentsClassId = '4A'
+
 export const students: Student[] = roster.map((s) => ({ ...s, photo: photoFor(s.id) }))

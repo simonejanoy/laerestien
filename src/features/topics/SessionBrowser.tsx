@@ -1,12 +1,12 @@
 import { Calendar, ChevronLeft, ChevronRight, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import type { Session, Task } from '../../types'
+import type { Session, SessionTask } from '../../types'
 import { LevelCard } from '../sessions/LevelCard'
 import { sessionLabel } from '../sessions/sessionsContext'
 
 interface SessionBrowserProps {
   session: Session
-  tasks: Task[]
+  tasks: SessionTask[]
   previous?: Session
   next?: Session
   onSelect: (session: Session) => void

@@ -6,9 +6,17 @@ import { SessionFormDialog } from '../sessions/SessionFormDialog'
 import { useSessions } from '../sessions/sessionsContext'
 import { SessionOverviewCard } from './SessionOverviewCard'
 import { WeekCalendar } from './WeekCalendar'
-import { breaks, currentWeek, hasEnded, timeSlots, weekdays } from './mockData'
+import { breaks, hasEnded, isSameWeek, shiftWeek, timeSlots, weekOf, weekdays } from './mockData'
 import { useNow } from '../../hooks/useNow'
 import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
+
+const dayLabel = new Intl.DateTimeFormat('nb-NO', { weekday: 'long', day: 'numeric', month: 'long' })
+
+/** «Onsdag 4. november» */
+function todayLabel(date: Date) {
+  const label = dayLabel.format(date)
+  return label.charAt(0).toUpperCase() + label.slice(1)
+}
 
 export function HomePage() {
   const navigate = useNavigate()
@@ -17,21 +25,29 @@ export function HomePage() {
   const [removingId, setRemovingId] = useState<string | null>(null)
   const editing = sessions.find((s) => s.id === editingId)
   const removing = sessions.find((s) => s.id === removingId)
-  const [week, setWeek] = useState(currentWeek.week)
+  // Antall uker fra inneværende uke – så kalenderen følger med når uka skifter.
+  const [offset, setOffset] = useState(0)
   const [creating, setCreating] = useState(false)
   const [createdId, setCreatedId] = useState<string | null>(null)
   const created = sessions.find((s) => s.id === createdId)
   const now = useNow()
+  const thisWeek = weekOf(now)
+  const shownWeek = shiftWeek(thisWeek, offset)
 
   // Alt under regnes ut fra øktene, så kalenderen oppdaterer seg når økter legges til, endres eller fjernes.
-  const weekSessionIds = new Set(sessions.filter((s) => s.week === week).map((s) => s.id))
   const weekEntries = calendarEntries
-    .filter((e) => weekSessionIds.has(e.sessionId))
+    .filter((e) => isSameWeek(e, shownWeek))
     .map((e) => ({
       ...e,
-      completed: hasEnded(week, e.day, e.time, now) || getStatus(e.sessionId) === 'completed',
+      completed: hasEnded(e, e.day, e.time, now) || getStatus(e.sessionId) === 'completed',
     }))
-  const topicSessions = sessions.filter((s) => s.topicId === sessions[0]?.topicId)
+  // Temaet vi er i nå: temaet til den første økta som ikke er over ennå.
+  const upcoming = sessions.find((s) => {
+    const last = s.slots[s.slots.length - 1]
+    return !hasEnded(s, last.day, last.time, now)
+  })
+  const currentTopicId = (upcoming ?? sessions[sessions.length - 1])?.topicId
+  const topicSessions = sessions.filter((s) => s.topicId === currentTopicId)
   const completed = topicSessions
     .filter((s) => getStatus(s.id) === 'completed')
     .reduce((n, s) => n + s.numbers.length, 0)
@@ -44,8 +60,8 @@ export function HomePage() {
 
       {topicSessions[0] && (
         <SessionOverviewCard
-          dateLabel={currentWeek.dateLabel}
-          week={topicSessions[0].week}
+          dateLabel={todayLabel(now)}
+          week={thisWeek.week}
           topic={topicSessions[0].topic}
           completedSessions={completed}
           totalSessions={topicSessions[0].totalSessions}
@@ -55,14 +71,16 @@ export function HomePage() {
 
       <div className="w-full">
         <WeekCalendar
-          week={week}
+          week={shownWeek}
+          isCurrentWeek={offset === 0}
           weekdays={weekdays}
           timeSlots={timeSlots}
           breaks={breaks}
           sessions={weekEntries}
           now={now}
-          onPreviousWeek={() => setWeek((w) => w - 1)}
-          onNextWeek={() => setWeek((w) => w + 1)}
+          onPreviousWeek={() => setOffset((o) => o - 1)}
+          onNextWeek={() => setOffset((o) => o + 1)}
+          onThisWeek={() => setOffset(0)}
           onAdd={() => setCreating(true)}
           onEditSession={setEditingId}
           onRemoveSession={setRemovingId}
@@ -81,9 +99,10 @@ export function HomePage() {
       {creating && (
         <SessionFormDialog
           open
+          week={shownWeek}
           onClose={() => setCreating(false)}
           onSave={(input) => {
-            setCreatedId(addSession(input))
+            setCreatedId(addSession(input, shownWeek))
             setCreating(false)
           }}
         />
@@ -119,7 +138,8 @@ export function HomePage() {
         className="flex cursor-pointer items-center gap-[15px] rounded border border-surface p-2.5 text-small text-primary hover:bg-surface-light"
       >
         <PencilLine className="size-5" />
-        {currentWeek.topicSpan}
+        {topicSessions[0] &&
+          `${topicSessions[0].title} satt opp for uke ${topicSessions[0].week} - ${topicSessions[topicSessions.length - 1].week}`}
       </button>
     </div>
   )

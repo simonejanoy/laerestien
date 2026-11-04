@@ -14,7 +14,7 @@ interface SessionNoteProps {
 const menuItem =
   'flex w-full cursor-pointer items-center gap-2 rounded px-3 py-2 text-left text-small hover:bg-surface-light focus-visible:bg-surface-light focus-visible:outline-none'
 
-// Fullførte økter er grå (text-insufficient gir 5.2:1 mot neutral-100) og har hake – ikke bare annen farge.
+// Gjennomførte økter er grå (text-insufficient gir 5.2:1 mot neutral-100) og har hake – ikke bare annen farge.
 const noteStyle = {
   upcoming:
     'bg-surface-variant text-on-surface-variant shadow-[0_4px_4px_rgba(0,0,0,0.25)] transition-transform hover:-translate-y-0.5',
@@ -23,7 +23,7 @@ const noteStyle = {
 
 /**
  * Gul lapp for en økt i kalenderen («matteøkt kort» i Figma), med ⋮-meny for å endre eller fjerne.
- * Økter som er over, vises grå med hake, men kan fortsatt åpnes.
+ * Gjennomførte økter er grå med hake (og «fullført» for skjermlesere), men kan fortsatt åpnes.
  */
 export function SessionNote({ session, onEdit, onRemove, openUp = false }: SessionNoteProps) {
   const [open, setOpen] = useState(false)

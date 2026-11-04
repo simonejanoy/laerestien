@@ -1,58 +1,85 @@
-import { ArrowUp, PencilLine, Sparkles, Trash2 } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { EyeOff, LoaderCircle, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { AiError, newTaskId, requestTasks, subjectContext, toTextTask } from '../../ai/client'
+import type { AnonStudentProfile } from '../../ai/contract'
+import { AiBadge } from '../../components/ui/AiBadge'
 import { Button } from '../../components/ui/Button'
 import { Modal, ModalCloseButton } from '../../components/ui/Modal'
 import { levelStyles } from '../../components/ui/levelStyles'
-import type { SuggestedTask } from '../../types'
-import { formatNumber, operatorSymbol } from '../tasks/taskUtils'
+import type { TextTask } from '../../types'
+import { AiReviseForm } from '../tasks/AiReviseForm'
 
+/** Vises bare når den er åpen – forslagene lages hver gang den åpnes. */
 interface SuggestedTasksDialogProps {
-  open: boolean
+  /** Vises bare for læreren – sendes ikke til AI-en. */
   studentName: string
-  initialTasks: SuggestedTask[]
+  studentId: string
+  classId: string
+  /** Anonymiserte elevdata som AI-en får. */
+  profile: AnonStudentProfile
   onClose: () => void
-  onConfirm: (tasks: SuggestedTask[]) => void
+  onConfirm: (tasks: TextTask[]) => void
 }
 
-const expression = (math: NonNullable<SuggestedTask['math']>) =>
-  `${formatNumber(math.a)} ${operatorSymbol(math.operator)} ${formatNumber(math.b)} =`
+type State = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; message: string }
 
-/** Lettere: halver tallene. Vanskeligere: doble og legg til litt, så det blir tierovergang. */
-const easier = (n: number) => Math.max(1, Math.round(n / 2))
-const harder = (n: number) => n * 2 + 3
+/**
+ * «Forslag fra AI til …»: individuelt tilpassede oppgaver. De er bare forslag – ingenting
+ * legges til før læreren har åpnet hvert forslag og trykket «Legg til oppgaver».
+ */
+export function SuggestedTasksDialog({
+  studentName,
+  studentId,
+  classId,
+  profile,
+  onClose,
+  onConfirm,
+}: SuggestedTasksDialogProps) {
+  const [state, setState] = useState<State>({ status: 'loading' })
+  const [tasks, setTasks] = useState<TextTask[]>([])
+  const [selectedId, setSelectedId] = useState<string>()
+  // Forslagene læreren har åpnet. Alle må åpnes før de kan legges til.
+  const [seen, setSeen] = useState<Set<string>>(new Set())
+  const [attempt, setAttempt] = useState(0)
 
-/** «Foreslåtte oppgaver til …»: læreren ser gjennom, justerer og legger til AI-forslagene. */
-export function SuggestedTasksDialog({ open, studentName, initialTasks, onClose, onConfirm }: SuggestedTasksDialogProps) {
-  const [tasks, setTasks] = useState(initialTasks)
-  const [selectedId, setSelectedId] = useState(initialTasks[0]?.id)
-  const [prompt, setPrompt] = useState('')
-  const [notice, setNotice] = useState<string | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    requestTasks({ kind: 'individual', classId, context: subjectContext(classId), student: profile, count: 4, wishes: '' })
+      .then(({ tasks: drafts, message }) => {
+        if (cancelled) return
+        const suggestions = drafts.map((d) => toTextTask(d, newTaskId(studentId)))
+        setTasks(suggestions)
+        setSelectedId(suggestions[0]?.id)
+        setSeen(new Set(suggestions.slice(0, 1).map((t) => t.id)))
+        setState({ status: 'ready', message })
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        if (!(err instanceof AiError)) console.error('Uventet feil ved individuelle oppgaveforslag:', err)
+        setState({ status: 'error', message: err instanceof AiError ? err.message : 'Noe gikk galt. Prøv igjen.' })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [attempt, classId, profile, studentId])
 
-  const selected = tasks.find((t) => t.id === selectedId) ?? tasks[0]
-  const levels = [...new Set(tasks.map((t) => t.level))].sort()
+  const selected = tasks.find((t) => t.id === selectedId)
+  const unseen = tasks.filter((t) => !seen.has(t.id)).length
 
-  const adjust = (change: (n: number) => number) => {
-    if (!selected?.math) return
-    const math = { ...selected.math, a: change(selected.math.a), b: change(selected.math.b) }
-    setTasks(tasks.map((t) => (t.id === selected.id ? { ...t, math, title: expression(math) } : t)))
+  const select = (id: string) => {
+    setSelectedId(id)
+    setSeen((prev) => new Set(prev).add(id))
   }
 
   const remove = (id: string) => {
     const rest = tasks.filter((t) => t.id !== id)
     setTasks(rest)
-    if (id === selectedId) setSelectedId(rest[0]?.id)
-  }
-
-  const ask = (event: FormEvent) => {
-    event.preventDefault()
-    if (!prompt.trim()) return
-    setNotice(`«${prompt.trim()}» – AI-assistenten er ikke koblet til ennå.`)
-    setPrompt('')
+    if (id === selectedId && rest[0]) select(rest[0].id)
   }
 
   return (
     <Modal
-      open={open}
+      open
       onClose={onClose}
       labelledBy="forslag-tittel"
       wide
@@ -61,108 +88,124 @@ export function SuggestedTasksDialog({ open, studentName, initialTasks, onClose,
       <div className="flex items-start gap-4">
         <div className="flex flex-1 flex-col gap-1.5">
           <h2 id="forslag-tittel" className="text-h2 text-on-background">
-            Foreslåtte oppgaver til {studentName}
+            Forslag fra AI til {studentName}
           </h2>
-          <p className="text-small text-secondary">
-            {tasks.length} oppgaver valgt ut fra det {studentName} øver på. Trykk på en oppgave for å se den.
+          <p className="flex flex-wrap items-center gap-2 text-small text-secondary">
+            <AiBadge status="suggestion" />
+            Oppgavene er ikke lagt til ennå. Åpne og vurder hvert forslag før du legger dem til.
           </p>
         </div>
         <ModalCloseButton onClick={onClose} />
       </div>
 
-      <div className="flex gap-5">
-        <ul className="flex flex-1 flex-col gap-1.5">
-          {tasks.map((task) => {
-            const isSelected = task.id === selected?.id
-            const level = levelStyles[task.level]
-            return (
-              <li
-                key={task.id}
-                className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${
-                  isSelected ? 'border-secondary bg-tertiary' : 'border-surface bg-background'
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(task.id)}
-                  className="flex min-w-0 flex-1 cursor-pointer flex-col text-left"
-                >
-                  <span className="truncate text-body text-on-background">{task.title}</span>
-                  <span className="text-small text-secondary">{task.subtitle}</span>
-                </button>
-                <span className="text-small text-secondary">{task.category}</span>
-                <span className={`rounded-full px-2 py-0.5 text-small ${level.surface} ${level.text}`}>Nivå {task.level}</span>
-                <button
-                  type="button"
-                  aria-label={`Endre ${task.title}`}
-                  onClick={() => setSelectedId(task.id)}
-                  className="cursor-pointer text-primary"
-                >
-                  <PencilLine className="size-5" />
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Fjern ${task.title}`}
-                  onClick={() => remove(task.id)}
-                  className="cursor-pointer text-primary hover:text-error"
-                >
-                  <Trash2 className="size-5" />
-                </button>
-              </li>
-            )
-          })}
-          {tasks.length === 0 && <li className="text-small text-secondary">Alle forslagene er fjernet.</li>}
-        </ul>
+      {state.status === 'loading' && (
+        // Fast høyde, så dialogen ikke hopper når forslagene kommer.
+        <p aria-live="polite" className="flex min-h-64 items-center justify-center gap-2 text-small text-secondary">
+          <LoaderCircle className="size-5 motion-safe:animate-spin" aria-hidden />
+          AI-en lager forslag ut fra {studentName}s resultater …
+        </p>
+      )}
 
-        {selected && (
-          <aside className="flex w-[300px] shrink-0 flex-col gap-3.5 rounded-xl bg-tertiary p-5">
-            <p className="flex items-center gap-3 text-small text-secondary">
-              <PencilLine className="size-5 text-primary" />
-              Endre på oppgaven
+      {state.status === 'error' && (
+        <div className="flex min-h-64 flex-col items-center justify-center gap-3">
+          <p role="alert" className="text-small text-error">
+            {state.message}
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setState({ status: 'loading' })
+              setAttempt((a) => a + 1)
+            }}
+          >
+            Prøv igjen
+          </Button>
+        </div>
+      )}
+
+      {state.status === 'ready' && (
+        <>
+          {state.message && (
+            <p className="rounded-md bg-surface-light px-3 py-2 text-small text-on-background">
+              <span className="font-medium">Fra AI-assistenten:</span> {state.message}
             </p>
-            <div className="flex flex-col items-center gap-3 rounded-xl border border-surface bg-background p-4">
-              <p className="text-center text-small text-secondary">{selected.instruction}</p>
-              {selected.math && (
-                <span className="flex items-center gap-2.5">
-                  <span className="text-h2 text-on-background">{expression(selected.math)}</span>
-                  <span className="h-9 w-14 rounded-lg border-[1.5px] border-secondary bg-background" aria-hidden />
-                </span>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <AdjustButton label="Lettere" disabled={!selected.math} onClick={() => adjust(easier)} />
-              <AdjustButton label="Vanskeligere" disabled={!selected.math} onClick={() => adjust(harder)} />
-            </div>
-            <form onSubmit={ask} className="flex flex-col gap-2">
-              <span className="flex items-center gap-1.5 text-small text-secondary">
-                <Sparkles className="size-[18px] text-primary" />
-                Andre endringer
-              </span>
-              <span className="flex gap-2">
-                <input
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="F.eks. «bruk tall under 50»"
-                  aria-label="Andre endringer"
-                  className="h-10 min-w-0 flex-1 rounded-lg border border-secondary bg-background px-3 text-small text-primary outline-none placeholder:text-secondary"
-                />
-                <button
-                  type="submit"
-                  aria-label="Send"
-                  className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-primary text-on-primary"
-                >
-                  <ArrowUp className="size-[18px]" />
-                </button>
-              </span>
-              {notice && <span className="text-xs text-secondary">{notice}</span>}
-            </form>
-          </aside>
-        )}
-      </div>
+          )}
+          <div className="flex flex-col gap-5 md:flex-row">
+            <ul className="flex flex-1 flex-col gap-1.5">
+              {tasks.map((task, i) => {
+                const isSelected = task.id === selected?.id
+                const level = levelStyles[task.level]
+                return (
+                  <li
+                    key={task.id}
+                    className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${
+                      isSelected ? 'border-secondary bg-tertiary' : 'border-surface bg-background'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => select(task.id)}
+                      aria-current={isSelected ? 'true' : undefined}
+                      className="flex min-w-0 flex-1 cursor-pointer flex-col text-left"
+                    >
+                      <span className="text-body text-on-background">Forslag {i + 1}</span>
+                      <span className="line-clamp-1 text-small text-secondary">{task.text}</span>
+                    </button>
+                    <span className="text-xs text-secondary">{seen.has(task.id) ? 'Åpnet' : 'Ikke åpnet'}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-small ${level.surface} ${level.text}`}>Nivå {task.level}</span>
+                    <button
+                      type="button"
+                      aria-label={`Fjern forslag ${i + 1}`}
+                      onClick={() => remove(task.id)}
+                      className="cursor-pointer text-primary hover:text-error"
+                    >
+                      <Trash2 className="size-5" />
+                    </button>
+                  </li>
+                )
+              })}
+              {tasks.length === 0 && <li className="text-small text-secondary">Ingen forslag igjen.</li>}
+            </ul>
 
-      <div className="flex items-center gap-3">
-        <span className="flex-1 text-small text-secondary">
-          {tasks.length} oppgaver{levels.length > 0 && ` · Nivå ${levels[0]}${levels.length > 1 ? `–${levels[levels.length - 1]}` : ''}`}
+            {selected && (
+              <aside className="flex w-full shrink-0 flex-col gap-3 rounded-xl bg-tertiary p-5 md:w-[340px]">
+                <section className="flex flex-col gap-1.5 rounded-lg bg-background p-3">
+                  <h3 className="text-xs text-secondary">Til eleven</h3>
+                  <p className="text-small whitespace-pre-wrap text-primary">{selected.text}</p>
+                </section>
+                <section className="flex flex-col gap-1.5 rounded-lg border border-dashed border-secondary p-3">
+                  <h3 className="flex items-center gap-1.5 text-xs text-secondary">
+                    <EyeOff className="size-3.5" aria-hidden />
+                    Fasit og løsningsforslag · bare for læreren
+                  </h3>
+                  <p className="text-small whitespace-pre-wrap text-on-background">{selected.solution}</p>
+                </section>
+                {selected.adaptation && (
+                  <p className="text-xs text-secondary">
+                    Tilpasning: <span className="text-on-background">{selected.adaptation}</span>
+                  </p>
+                )}
+                <AiReviseForm
+                  key={selected.id}
+                  task={selected}
+                  context={{ ...subjectContext(classId), topic: 'Individuelt tilpassede oppgaver' }}
+                  classId={classId}
+                  student={profile}
+                  label="Juster forslaget med AI"
+                  onRevised={(revised) => setTasks((all) => all.map((t) => (t.id === selected.id ? revised : t)))}
+                />
+              </aside>
+            )}
+          </div>
+        </>
+      )}
+
+      <div className="flex flex-wrap items-center gap-3">
+        <span aria-live="polite" className="flex-1 text-small text-secondary">
+          {state.status === 'ready' &&
+            (unseen > 0
+              ? `Åpne alle forslagene før du legger dem til (${tasks.length - unseen} av ${tasks.length} åpnet).`
+              : `${tasks.length} forslag er klare. De legges bare til hvis du trykker «Legg til oppgaver».`)}
         </span>
         <button
           type="button"
@@ -171,23 +214,14 @@ export function SuggestedTasksDialog({ open, studentName, initialTasks, onClose,
         >
           Avbryt
         </button>
-        <Button size="lg" disabled={tasks.length === 0} onClick={() => onConfirm(tasks)}>
-          Legg til for {studentName}
+        <Button
+          size="lg"
+          disabled={state.status !== 'ready' || tasks.length === 0 || unseen > 0}
+          onClick={() => onConfirm(tasks)}
+        >
+          Legg til oppgaver
         </Button>
       </div>
     </Modal>
-  )
-}
-
-function AdjustButton({ label, disabled, onClick }: { label: string; disabled: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className="h-10 flex-1 cursor-pointer rounded-lg border border-secondary text-body text-on-background hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
-    >
-      {label}
-    </button>
   )
 }
