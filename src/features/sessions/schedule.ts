@@ -1,27 +1,33 @@
-import type { CalendarSlot, Level, LevelGroup, Session, Task, Weekday } from '../../types'
+import type { CalendarSlot, Level, LevelGroup, Session, SessionTask, Weekday } from '../../types'
 import { dateOf, describeSlots, isSameWeek, shiftWeek, weekdays, timeSlots, type WeekRef } from '../calendar/mockData'
-import { topicDetails } from '../topics/mockData'
-import { additionRest, yearPlan, type TopicSpec } from '../topics/yearPlan'
+import { isTextSpec, tasksFor, unitSpecs, type UnitSpec } from '../topics/yearPlan'
 import { sessionBase, standardPlan } from './mockData'
 
-// Legger resten av årsplanen inn i timeplanen, fra uke 45 og ut skoleåret 2026/27.
-// Hver periode har sitt eget tidsrom, og øktene fordeles jevnt på skoleukene der.
+// Legger årsplanen (se topics/curriculum.ts) inn i timeplanen for skoleåret 2026/27.
+// Tall økt 1–6 ligger i uke 41–43, økt 7–10 i uke 44 (sessions/mockData.ts) og økt 11–14
+// i uke 45. Hvert tidsrom fordeler øktene sine jevnt på skoleukene.
 
-const periods: { from: WeekRef; to: WeekRef; topics: string[] }[] = [
+/** «tall:start» er Tall økt 1–6, «tall:slutt» er økt 11–14 (de har egne id-er, okt-5 til okt-8). */
+const periods: { from: WeekRef; to: WeekRef; units: string[] }[] = [
+  {
+    from: { year: 2026, week: 41 },
+    to: { year: 2026, week: 43 },
+    units: ['tall:start'],
+  },
   {
     from: { year: 2026, week: 45 },
     to: { year: 2026, week: 51 },
-    topics: ['addisjon-og-subtraksjon', 'multiplikasjon', 'deling', 'repetisjon-host'],
+    units: ['tall:slutt', 'multiplikasjon', 'divisjon', 'repetisjon-host'],
   },
   {
     from: { year: 2027, week: 1 },
     to: { year: 2027, week: 13 },
-    topics: ['divisjon', 'figurer-og-vinkler', 'romfigurer', 'brok', 'repetisjon-vinter'],
+    units: ['geometri', 'problemlosing', 'tall-og-regning', 'repetisjon-vinter'],
   },
   {
     from: { year: 2027, week: 14 },
     to: { year: 2027, week: 24 },
-    topics: ['klokke-og-tid', 'penger-og-handel', 'statistikk', 'monstre-og-logikk', 'repetisjon-var'],
+    units: ['strategier-i-divisjon', 'maling', 'monster-og-algoritmer', 'regning', 'repetisjon-var'],
   },
 ]
 
@@ -60,42 +66,32 @@ function schoolWeeks(from: WeekRef, to: WeekRef) {
 
 const slotIndex = (slot: CalendarSlot) => weekdays.indexOf(slot.day) * 100 + timeSlots.indexOf(slot.time)
 
-/** Økt nr. `n` (0, 1, 2 …) i et tema som skal inn i timeplanen. */
+/** Økt nr. `n` (0, 1, 2 …) i en periode som skal inn i timeplanen. */
 interface Planned {
   id: string
-  spec: Pick<TopicSpec, 'topicId' | 'title' | 'topic' | 'area' | 'description' | 'goals' | 'levels' | 'tasks'>
+  spec: UnitSpec
   heading: string
+  skills: string[]
   n: number
 }
 
-/** Økt 5–8 i Addisjon og subtraksjon – økt 1–4 ligger allerede i uke 44. */
-function plannedAddition(): Planned[] {
-  const details = topicDetails.find((d) => d.topicId === 'addisjon-og-subtraksjon')
-  const headings = details?.weeks.flatMap((w) => w.sessions).slice(4) ?? []
-  const spec = {
-    ...additionRest,
-    topicId: sessionBase.topicId,
-    title: sessionBase.title,
-    topic: sessionBase.topic,
-    area: sessionBase.area,
-    goals: details?.goals ?? [],
-  }
-  return headings.map((heading, n) => ({ id: `okt-${n + 5}`, spec, heading, n }))
-}
-
-function planned(topicId: string): Planned[] {
-  if (topicId === 'addisjon-og-subtraksjon') return plannedAddition()
-  const spec = yearPlan.find((t) => t.topicId === topicId)
+function planned(key: string): Planned[] {
+  const [unitId, part] = key.split(':')
+  const spec = unitSpecs.find((u) => u.unitId === unitId)
   if (!spec) return []
-  return spec.weeks
+  const all = spec.weeks
     .flatMap((w) => w.sessions)
-    .map((heading, n) => ({ id: `${topicId}-${n + 1}`, spec, heading, n }))
+    .map(({ heading, skills }, n) => ({ id: `${unitId}-${n + 1}`, spec, heading, skills, n }))
+  if (part === 'start') return all.slice(0, 6)
+  // Tall økt 11–14 har id-ene okt-5 til okt-8 fra før (økt 7–10 er okt-1-2, okt-3 og okt-4).
+  if (part === 'slutt') return all.slice(10).map((p, i) => ({ ...p, id: `okt-${i + 5}` }))
+  return all
 }
 
 /** Seks elever på hvert nivå i 4A. */
 const STUDENTS_PER_LEVEL = 6
 
-function buildSession({ id, spec, heading }: Planned, at: WeekRef, slot: CalendarSlot): Session {
+function buildSession({ id, spec, heading, skills }: Planned, at: WeekRef, slot: CalendarSlot): Session {
   const levels: LevelGroup[] = spec.levels.map((l, i) => ({
     level: (i + 1) as Level,
     ...l,
@@ -104,7 +100,7 @@ function buildSession({ id, spec, heading }: Planned, at: WeekRef, slot: Calenda
   }))
   return {
     id,
-    topicId: spec.topicId,
+    topicId: spec.unitId,
     title: spec.title,
     heading,
     description: spec.description,
@@ -114,6 +110,7 @@ function buildSession({ id, spec, heading }: Planned, at: WeekRef, slot: Calenda
     ...describeSlots(at, [slot]),
     ...at,
     slots: [slot],
+    skillIds: skills,
     // Nummer og antall økter regnes ut i SessionsProvider.
     numbers: [],
     totalSessions: 0,
@@ -123,26 +120,25 @@ function buildSession({ id, spec, heading }: Planned, at: WeekRef, slot: Calenda
   }
 }
 
-function buildTasks({ id, spec, n }: Planned): Task[] {
+function buildTasks({ id, skills, n }: Planned): SessionTask[] {
   return ([1, 2, 3] as const).flatMap((level) =>
-    spec.tasks(level, n).map(([type, a, operator, b, instruction], i) => ({
-      id: `${id}-n${level}-${i + 1}`,
-      level,
-      type,
-      instruction,
-      a,
-      operator,
-      b,
-    })),
+    tasksFor(skills, level, n).map((task, i): SessionTask => {
+      const taskId = `${id}-n${level}-${i + 1}`
+      if (isTextSpec(task)) {
+        return { kind: 'text', id: taskId, level, text: task.text, solution: task.solution, competenceGoal: '', adaptation: '', aiGenerated: false, reviewed: false }
+      }
+      const [type, a, operator, b, instruction] = task
+      return { id: taskId, level, type, instruction, a, operator, b }
+    }),
   )
 }
 
 function buildSchedule() {
   const sessions: Session[] = []
-  const tasks: Record<string, Task[]> = {}
+  const tasks: Record<string, SessionTask[]> = {}
 
   for (const period of periods) {
-    const queue = period.topics.flatMap(planned)
+    const queue = period.units.flatMap(planned)
     const weeks = schoolWeeks(period.from, period.to)
     // Jevn fordeling: de første ukene får én økt ekstra når det ikke går opp.
     const base = Math.floor(queue.length / weeks.length)
@@ -166,5 +162,5 @@ function buildSchedule() {
   return { sessions, tasks }
 }
 
-/** Øktene og oppgavene fra uke 45 og ut skoleåret. */
+/** Øktene og oppgavene i årsplanen som ikke ligger i uke 44. */
 export const scheduled = buildSchedule()

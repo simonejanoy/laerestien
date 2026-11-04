@@ -8,7 +8,7 @@ const termIcons: Record<Term['id'], LucideIcon> = {
   var: Flower,
 }
 
-/** Én periode i årsplanen (Høst/Vinter/Vår) med temaene sine. */
+/** Én periode i årsplanen (Høst/Vinter/Vår) med temaene sine. Undertemaene vises ikke her. */
 export function TermBlock({ term }: { term: Term }) {
   const Icon = termIcons[term.id]
 
@@ -23,14 +23,14 @@ export function TermBlock({ term }: { term: Term }) {
       </div>
 
       <ul className="flex flex-col gap-2">
-        {term.topics.map((topic) => (
-          <li key={topic.id}>
+        {term.units.map((unit) => (
+          <li key={unit.id}>
             <Link
-              to={`/tema/${topic.id}`}
+              to={`/tema/${unit.id}`}
               className="flex items-center justify-between rounded-lg border border-border bg-background px-4 py-2.5 text-body transition-colors hover:bg-surface-light"
             >
-              <span className="text-foreground">{topic.name}</span>
-              <span className="text-black/50">{topic.weeks} uker</span>
+              <span className="text-foreground">{unit.name}</span>
+              <span className="text-black/50">{unit.weeks} uker</span>
             </Link>
           </li>
         ))}

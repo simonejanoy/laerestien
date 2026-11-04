@@ -1,6 +1,7 @@
 import { Check, CircleCheck, EyeOff } from 'lucide-react'
 import { useState, type KeyboardEvent } from 'react'
 import { AiBadge } from '../../components/ui/AiBadge'
+import { TaskFigure } from '../../components/ui/TaskFigure'
 import { Button } from '../../components/ui/Button'
 import { Tag } from '../../components/ui/Tag'
 import { EditIcon, TrashIcon } from '../../components/ui/icons'
@@ -109,6 +110,7 @@ export function TextTaskCard({ task, number, topic, className, onChange, onDelet
           <section className="flex flex-col gap-1.5 rounded-md bg-tertiary p-3">
             <h4 className="text-xs text-secondary">Til eleven</h4>
             <p className="text-small whitespace-pre-wrap text-primary">{task.text}</p>
+            {task.figure && <TaskFigure figure={task.figure} size="sm" />}
           </section>
           <section className="flex flex-col gap-1.5 rounded-md border border-dashed border-secondary p-3">
             <h4 className="flex items-center gap-1.5 text-xs text-secondary">
@@ -160,7 +162,8 @@ export function TextTaskCard({ task, number, topic, className, onChange, onDelet
         </div>
       )}
 
-      {!editing && (
+      {/* AI-en ser ikke figuren, så oppgaver med figur justeres bare manuelt. */}
+      {!editing && !task.figure && (
         <AiReviseForm
           task={task}
           context={{ subject: 'Matematikk', grade: `${parseInt(className)}. trinn`, topic }}

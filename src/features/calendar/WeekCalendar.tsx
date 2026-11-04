@@ -6,8 +6,6 @@ import { SessionNote } from './SessionNote'
 
 interface WeekCalendarProps {
   week: WeekRef
-  /** Uka som vises, er inneværende uke. */
-  isCurrentWeek: boolean
   weekdays: Weekday[]
   timeSlots: string[]
   breaks: Record<string, string>
@@ -16,7 +14,6 @@ interface WeekCalendarProps {
   now: Date
   onPreviousWeek: () => void
   onNextWeek: () => void
-  onThisWeek: () => void
   onAdd: () => void
   onEditSession: (sessionId: string) => void
   onRemoveSession: (sessionId: string) => void
@@ -27,7 +24,6 @@ const timeCell = `${cell} flex w-12 shrink-0 items-center justify-center border-
 
 export function WeekCalendar({
   week,
-  isCurrentWeek,
   weekdays,
   timeSlots,
   breaks,
@@ -35,7 +31,6 @@ export function WeekCalendar({
   now,
   onPreviousWeek,
   onNextWeek,
-  onThisWeek,
   onAdd,
   onEditSession,
   onRemoveSession,
@@ -67,11 +62,6 @@ export function WeekCalendar({
           <button type="button" onClick={onNextWeek} aria-label="Neste uke" className="cursor-pointer">
             <ChevronRight className="size-6" />
           </button>
-          {!isCurrentWeek && (
-            <button type="button" onClick={onThisWeek} className="ml-2 cursor-pointer text-small underline">
-              Denne uka
-            </button>
-          )}
         </div>
         <button type="button" onClick={onAdd} className="flex cursor-pointer items-center gap-[5px]">
           Legg til

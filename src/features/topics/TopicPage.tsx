@@ -5,7 +5,7 @@ import { useSessions } from '../sessions/sessionsContext'
 import { SessionBrowser } from './SessionBrowser'
 import { TopicGoals } from './TopicGoals'
 import { TopicPlan } from './TopicPlan'
-import { terms, topicDetails } from './mockData'
+import { topicDetails, unitById } from './mockData'
 import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
 
 export function TopicPage() {
@@ -13,7 +13,8 @@ export function TopicPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { sessions, getStatus, getTasks } = useSessions()
 
-  const topic = terms.flatMap((t) => t.topics).find((t) => t.id === topicId)
+  // «Tema» her er en periode i årsplanen (også repetisjon).
+  const topic = unitById(topicId ?? '')
   if (!topic) return <FullPageMessage text="Fant ikke temaet." />
 
   const details = topicDetails.find((d) => d.topicId === topic.id)

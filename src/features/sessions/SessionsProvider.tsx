@@ -1,9 +1,10 @@
 import { useState, type ReactNode } from 'react'
 import type { CalendarSession, LevelGroup, Session, SessionTask, TextTask } from '../../types'
 import { describeSlots, timeSlots, weekdays, type WeekRef } from '../calendar/mockData'
-import { terms, topicDetails } from '../topics/mockData'
+import { topicDetails, unitById } from '../topics/mockData'
 import { initialProgress, initialTasks, sessionBase, sessions as initialSessions } from './mockData'
 import { scheduled } from './schedule'
+import { worksheetTasks } from './worksheetTasks'
 import { SessionsContext, type SessionInput } from './sessionsContext'
 
 const slotOrder = (s: Session) => {
@@ -40,7 +41,12 @@ const emptyLevels: LevelGroup[] = ([1, 2, 3] as const).map((level) => ({
 export function SessionsProvider({ children }: { children: ReactNode }) {
   const [sessions, setSessions] = useState(() => normalize([...initialSessions, ...scheduled.sessions]))
   const [progress, setProgress] = useState(initialProgress)
-  const [tasks, setTasks] = useState<Record<string, SessionTask[]>>({ ...initialTasks, ...scheduled.tasks })
+  const [tasks, setTasks] = useState<Record<string, SessionTask[]>>(() => {
+    const all: Record<string, SessionTask[]> = { ...initialTasks, ...scheduled.tasks }
+    // Oppgavene fra arbeidsarkene kommer først i øktene sine.
+    for (const [sessionId, added] of Object.entries(worksheetTasks)) all[sessionId] = [...added, ...(all[sessionId] ?? [])]
+    return all
+  })
   const [studentTasks, setStudentTasks] = useState<Record<string, TextTask[]>>({})
 
   const calendarEntries: CalendarSession[] = sessions.flatMap((s) =>
@@ -78,7 +84,7 @@ export function SessionsProvider({ children }: { children: ReactNode }) {
     setSessions((prev) => {
       // Ny økt arver tittel, fagområde osv. fra andre økter i samme tema.
       const sibling = prev.find((s) => s.topicId === input.topicId)
-      const topicName = terms.flatMap((t) => t.topics).find((t) => t.id === input.topicId)?.name ?? ''
+      const topicName = unitById(input.topicId)?.name ?? ''
       const base = sibling
         ? { ...sessionBase, title: sibling.title, topic: sibling.topic, area: sibling.area, className: sibling.className }
         : { ...sessionBase, title: topicName, topic: topicName, area: 'Matematikk' }

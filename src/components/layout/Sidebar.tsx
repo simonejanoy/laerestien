@@ -5,11 +5,10 @@ import {
   ListOrdered,
   LogOut,
   UserRoundGroup,
-  Users,
   X,
   type LucideIcon,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import logo from '../../assets/logo/logo-hvit.png'
 import { useAuth } from '../../hooks/useAuth'
@@ -20,7 +19,6 @@ const navItems: { to: string; label: string; icon: LucideIcon; match: (path: str
   { to: '/', label: 'Hjem', icon: House, match: (p) => p === '/' },
   { to: '/statistikk', label: 'Statistikk', icon: ChartNoAxesCombined, match: (p) => p.startsWith('/statistikk') },
   { to: '/tema', label: 'Alle tema', icon: ListOrdered, match: (p) => p.startsWith('/tema') || p.startsWith('/okt') },
-  { to: '/elever', label: 'Elever', icon: Users, match: (p) => p.startsWith('/elever') },
 ]
 
 // Bare 4A har data foreløpig – de andre klassene vises som inaktive, som i Figma.
@@ -70,19 +68,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       <div className="flex items-center gap-3">
         <Avatar name={profile?.name ?? ''} />
         <div className="flex min-w-0 flex-col items-start">
-          <p className="max-w-full truncate text-body text-on-primary">{profile?.name}</p>
+          <UserMenu name={profile?.name ?? ''} onLogout={logout} />
           {/* Lærere uten (eller med gammel) tittel vises som kontaktlærer. */}
           <p className="text-small text-on-sidebar">
             {profile?.role === 'teacher' && (!profile.title || profile.title === 'Lærer') ? 'Kontaktlærer' : profile?.title}
           </p>
-          <button
-            type="button"
-            onClick={logout}
-            className="mt-2 flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-on-sidebar px-3 text-small text-on-sidebar transition-colors hover:bg-on-sidebar/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-sidebar"
-          >
-            <LogOut className="size-4" aria-hidden />
-            Logg ut
-          </button>
         </div>
       </div>
 
@@ -123,7 +113,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               aria-current={active ? 'page' : undefined}
               className={`flex h-11 items-center gap-3.5 rounded-[7px] px-2.5 text-body transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-sidebar ${
                 active
-                  ? 'bg-primary font-semibold text-on-primary shadow-[inset_4px_0_0_var(--color-on-sidebar)]'
+                  ? 'bg-primary font-semibold text-on-primary'
                   : 'bg-tertiary text-on-background hover:bg-surface'
               }`}
             >
@@ -136,5 +126,67 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
       <img src={logo} alt="Lærestien" className="mt-auto aspect-[3/1] w-full object-contain pt-4" />
     </aside>
+  )
+}
+
+/** Navnet med pil ned. Åpner en liten meny med «Logg ut». */
+function UserMenu({ name, onLogout }: { name: string; onLogout: () => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  // Lukk menyen ved klikk utenfor.
+  useEffect(() => {
+    if (!open) return
+    const onPointer = (event: PointerEvent) => {
+      if (!ref.current?.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointer)
+    return () => document.removeEventListener('pointerdown', onPointer)
+  }, [open])
+
+  // Escape lukker bare denne menyen (ikke hele sidemenyen på små skjermer).
+  const onKeyDown = (event: ReactKeyboardEvent) => {
+    if (!open || event.key !== 'Escape') return
+    event.stopPropagation()
+    setOpen(false)
+    buttonRef.current?.focus()
+  }
+
+  return (
+    <div ref={ref} onKeyDown={onKeyDown} className="relative max-w-full">
+      <button
+        ref={buttonRef}
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls="brukermeny"
+        onClick={() => setOpen((o) => !o)}
+        className="flex max-w-full cursor-pointer items-center gap-1 rounded-md text-body text-on-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-sidebar"
+      >
+        <span className="truncate">{name}</span>
+        <ChevronDown className={`size-5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
+      </button>
+
+      {open && (
+        <div
+          id="brukermeny"
+          role="menu"
+          aria-label="Brukermeny"
+          className="absolute top-full left-0 z-20 mt-1 w-40 rounded-lg border border-surface bg-background p-1 text-on-background shadow-lg"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            autoFocus
+            onClick={onLogout}
+            className="flex w-full cursor-pointer items-center gap-2 rounded px-3 py-2 text-left text-small hover:bg-surface-light focus-visible:bg-surface-light focus-visible:outline-none"
+          >
+            <LogOut className="size-4" aria-hidden />
+            Logg ut
+          </button>
+        </div>
+      )}
+    </div>
   )
 }

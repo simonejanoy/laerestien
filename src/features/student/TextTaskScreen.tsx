@@ -1,5 +1,6 @@
 import { ChevronRight } from 'lucide-react'
 import { useState } from 'react'
+import { TaskFigure } from '../../components/ui/TaskFigure'
 import type { TextTask } from '../../types'
 import { TaskStepper } from './TaskStepper'
 
@@ -24,6 +25,7 @@ export function TextTaskScreen({ task, index, total, onNext }: TextTaskScreenPro
       <p className="w-full text-small text-muted uppercase">Oppgave {index + 1}</p>
 
       <h2 className="w-full text-h2 whitespace-pre-wrap text-primary">{task.text}</h2>
+      {task.figure && <TaskFigure figure={task.figure} />}
 
       <label className="flex w-full flex-col gap-2 text-body text-primary">
         Ditt svar

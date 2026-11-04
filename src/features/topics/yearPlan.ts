@@ -1,31 +1,41 @@
-import type { Level, Operator, PlanWeek, TaskType } from '../../types'
+import type { Level, LevelGroup, Operator, TaskType, TopicDetails } from '../../types'
 
-// Innholdet i årsplanen fra uke 45 og ut skoleåret: økttitler, mål, nivåer og
-// oppgaver for hvert tema. Testdata frem til Firestore er på plass.
-// Oppgavene lages av enkle regler, så hver økt får nye tall.
+// Innholdet i periodene i årsplanen (se curriculum.ts): økttitler med undertema, mål,
+// nivåer og regler for oppgaver. Oppgavereglene hører til undertemaene (ferdighetene),
+// så repetisjon bruker de samme reglene som temaet den repeterer.
+// Oppgavene lages av enkle regler, så hver økt får nye tall. Testdata frem til Firestore er på plass.
 
-/** [type, tall 1, regneart, tall 2, instruksjon] */
+/** [type, tall 1, regneart, tall 2, instruksjon] – appen retter svaret selv. */
 export type TaskSpec = [TaskType, number, Operator, number, string]
 
-export interface LevelSpec {
-  title: string
-  subtitle: string
-  description: string
+/** Tekstoppgave: tekst til eleven og fasit til læreren (for svar appen ikke kan rette, f.eks. negative tall). */
+export interface TextSpec {
+  text: string
+  solution: string
 }
 
-export interface TopicSpec {
-  topicId: string
+export type GeneratedTask = TaskSpec | TextSpec
+
+type Generator = (level: Level, n: number) => GeneratedTask[]
+
+export interface SessionPlan {
+  heading: string
+  /** Undertemaene (ferdighetene) økta øver på. */
+  skills: string[]
+}
+
+export interface UnitSpec {
+  /** Id-en til perioden i årsplanen. */
+  unitId: string
   /** Kortnavn i overskriften, f.eks. «Multiplikasjon». */
   title: string
   /** Navnet på lappen i kalenderen. */
   topic: string
   area: string
   description: string
-  weeks: PlanWeek[]
+  weeks: { title: string; sessions: SessionPlan[] }[]
   goals: string[]
-  levels: [LevelSpec, LevelSpec, LevelSpec]
-  /** Fem oppgaver på nivået for økt nummer `n` (0, 1, 2 …) i temaet. */
-  tasks: (level: Level, n: number) => TaskSpec[]
+  levels: Omit<LevelGroup, 'level' | 'taskCount' | 'studentCount'>[]
 }
 
 const H = 'Hoderegning'
@@ -34,13 +44,21 @@ const O = 'Oppstilling'
 /** Et tall mellom min og max som varierer med økt (n) og oppgave (i). */
 const vary = (n: number, i: number, min: number, max: number) => min + ((n * 7 + i * 3 + n * i) % (max - min + 1))
 
-const five = (make: (i: number) => TaskSpec) => [0, 1, 2, 3, 4].map(make)
+function five<T>(make: (i: number) => T) {
+  return [0, 1, 2, 3, 4].map(make)
+}
 
 function pick<T>(list: T[], i: number) {
   return list[i % list.length]
 }
 
-/** Gangestykker: `a` grupper med `factor` i hver. */
+/** Typografisk minus for negative tall: −3 */
+const signed = (x: number) => (x < 0 ? `−${-x}` : String(x))
+
+/** 2.5 → «2,5» */
+const dec = (x: number) => String(Math.round(x * 100) / 100).replace('.', ',')
+
+/** Gangestykker: grupper · faktor. */
 const times = (factors: number[], n: number, instruction: string, maxGroups = 10) =>
   five((i): TaskSpec => [H, vary(n, i, 2, maxGroups), '*', pick(factors, i + n), instruction])
 
@@ -51,444 +69,955 @@ const divide = (divisors: number[], n: number, instruction: string, minQ = 2, ma
     return [type, d * vary(n, i, minQ, maxQ), '/', d, instruction]
   })
 
-/** Repetisjon: én oppgave fra hvert av temaene etter tur. */
-const mix =
-  (...specs: (() => TopicSpec)[]) =>
-  (level: Level, n: number) =>
-    five((i) => specs[i % specs.length]().tasks(level, n + i)[i])
+/** Velger regel etter nivå. */
+const byLevel =
+  (one: (n: number) => GeneratedTask[], two: (n: number) => GeneratedTask[], three: (n: number) => GeneratedTask[]): Generator =>
+  (level, n) =>
+    (level === 1 ? one : level === 2 ? two : three)(n)
 
-const repetitionLevels: TopicSpec['levels'] = [
-  { title: 'Grunnleggende', subtitle: 'Tall opptil 100.', description: 'Øve på det vi har lært.' },
-  { title: 'Øve videre', subtitle: 'Større tall.', description: 'Velge en god strategi.' },
-  { title: 'Utfordring', subtitle: 'Store tall og tekstoppgaver.', description: 'Forklare hvordan jeg tenker.' },
-]
+// ---------------------------------------------------------------------------------------
+// Regler per undertema
 
-/** Økt 5–8 i Addisjon og subtraksjon (økt 1–4 ligger i uke 44). Titlene står i temaplanen. */
-export const additionRest: Pick<TopicSpec, 'levels' | 'tasks' | 'description'> = {
-  description:
-    'Elevene trekker fra med veksling og velger om en oppgave handler om addisjon eller subtraksjon. De forklarer strategien sin og kontrollerer svaret.',
-  levels: [
-    { title: 'Ta bort og telle', subtitle: 'Subtraksjon med tall opptil 100.', description: 'Trekke fra med og uten veksling.' },
-    { title: 'Veksle en tier', subtitle: 'Subtraksjon med veksling.', description: 'Veksle en tier til ti enere.' },
-    { title: 'Velge regneart', subtitle: 'Tresifrede tall og tekstoppgaver.', description: 'Velge addisjon eller subtraksjon.' },
-  ],
-  tasks: (level, n) =>
-    five((i): TaskSpec => {
-      if (level === 1) return [H, vary(n, i, 30, 99), '-', vary(n, i, 2, 9), 'Regn ut. Tell bakover hvis du trenger det.']
-      if (level === 2) return [i < 3 ? H : O, vary(n, i, 41, 92), '-', vary(n, i, 14, 39), 'Regn ut. Husk å veksle.']
-      const a = vary(n, i, 210, 890)
-      return i % 2 === 0
-        ? [O, a, '+', vary(n, i, 105, 480), 'Still opp og regn ut.']
-        : [O, a, '-', vary(n, i, 105, 199), 'Still opp og regn ut. Husk å veksle.']
+const skillTasks: Record<string, Generator> = {
+  // Tall – nivåene er tall 1–20, 1–100 og 1–1000.
+  'tall.firesifrede': byLevel(
+    (n) =>
+      five((i): TaskSpec => {
+        const e = vary(n, i, 1, 9)
+        return [H, 10, '+', e, `Sett sammen tallet: 1 tier og ${e} enere. Hvilket tall blir det?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const [t, e] = [vary(n, i, 2, 9), vary(n + 1, i, 1, 9)]
+        return [H, t * 10, '+', e, `Sett sammen tallet: ${t} tiere og ${e} enere. Hvilket tall blir det?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const [h, rest] = [vary(n, i, 1, 9), vary(n + 1, i, 11, 99)]
+        return [H, h * 100, '+', rest, `Sett sammen tallet: ${h} hundrere og ${rest}. Hvilket tall blir det?`]
+      }),
+  ),
+  'tall.hoderegning': byLevel(
+    (n) => five((i): TaskSpec => [H, vary(n, i, 2, 10), '+', vary(n + 1, i, 2, 10), 'Regn i hodet.']),
+    (n) => five((i): TaskSpec => [H, vary(n, i, 23, 68), '+', 10 * vary(n + 1, i, 1, 3), 'Regn i hodet: legg til tierne.']),
+    (n) => five((i): TaskSpec => [H, vary(n, i, 120, 480), i % 2 === 0 ? '+' : '-', 10 * vary(n + 2, i, 2, 9), 'Regn i hodet.']),
+  ),
+  'tall.addisjon-subtraksjon': byLevel(
+    (n) =>
+      five((i): TaskSpec =>
+        i % 2 === 0
+          ? [H, vary(n, i, 2, 9), '+', vary(n + 1, i, 2, 9), 'Regn ut. Finn tiervennene.']
+          : [H, vary(n, i, 11, 19), '-', vary(n + 1, i, 2, 9), 'Regn ut. Tell bakover hvis du trenger det.'],
+      ),
+    (n) => five((i): TaskSpec => [i < 3 ? H : O, vary(n, i, 41, 92), '-', vary(n, i, 14, 39), 'Regn ut. Husk å veksle.']),
+    (n) =>
+      five((i): TaskSpec => {
+        const a = vary(n, i, 210, 490)
+        return i % 2 === 0
+          ? [O, a, '+', vary(n, i, 105, 480), 'Still opp og regn ut.']
+          : [O, a, '-', vary(n, i, 105, 199), 'Still opp og regn ut. Husk å veksle.']
+      }),
+  ),
+  'tall.oppstilling': byLevel(
+    (n) => five((i): TaskSpec => [O, vary(n, i, 21, 68), '+', vary(n + 1, i, 15, 29), 'Still opp og regn ut.']),
+    (n) => five((i): TaskSpec => [O, vary(n, i, 210, 680), '+', vary(n + 1, i, 105, 299), 'Still opp og regn ut.']),
+    (n) => five((i): TaskSpec => [O, vary(n, i, 5205, 9890), '-', vary(n + 1, i, 1105, 4999), 'Still opp og regn ut. Husk å veksle.']),
+  ),
+  'tall.negative': byLevel(
+    (n) =>
+      five((i): TextSpec => {
+        const t = vary(n, i, 1, 5)
+        const d = t + vary(n + 1, i, 1, 4)
+        return { text: `Temperaturen er ${t} grader. Den synker ${d} grader. Hva blir temperaturen?`, solution: `${signed(t - d)} grader  (${t} − ${d} = ${signed(t - d)})` }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const a = vary(n, i, 2, 9)
+        const b = a + vary(n + 2, i, 2, 8)
+        return { text: `Regn ut. Bruk tallinjen.\n${a} − ${b} = ___`, solution: `${signed(a - b)}  (fra ${a} går du ${b} steg ned)` }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const [a, b] = [vary(n, i, 2, 9), vary(n + 1, i, 3, 12)]
+        return { text: `Om morgenen var det −${a} grader. Om ettermiddagen var det ${b} grader. Hvor mange grader steg temperaturen?`, solution: `${a + b} grader  (${a} opp til 0, og ${b} til)` }
+      }),
+  ),
+
+  // Multiplikasjon
+  'mult.tabell-2-10': byLevel(
+    (n) => times([2, 5, 10], n, 'Regn ut. Tenk like grupper.'),
+    (n) => times([3, 4], n, 'Regn ut. Doble hvis du kan.'),
+    (n) => times([3, 4, 5], n, 'Regn ut.'),
+  ),
+  'mult.tabell-6-9': byLevel(
+    (n) => times([6], n, 'Regn ut. Bruk 3-gangen og doble.'),
+    (n) => times([7, 8], n, 'Regn ut.'),
+    (n) => times([6, 7, 8, 9], n, 'Regn ut.'),
+  ),
+  'mult.tiere-hundrere': byLevel(
+    (n) => five((i): TaskSpec => [H, vary(n, i, 2, 9), '*', 10, 'Regn ut. Hva skjer når du ganger med 10?']),
+    (n) => five((i): TaskSpec => [H, vary(n, i, 2, 9), '*', pick([20, 30, 40, 50], i + n), 'Regn ut. Gang med tieren.']),
+    (n) => five((i): TaskSpec => [H, vary(n, i, 2, 9), '*', pick([100, 200, 300, 400, 500], i + n), 'Regn ut med hundrere.']),
+  ),
+  'mult.dele-opp': byLevel(
+    (n) => five((i): TaskSpec => [H, vary(n, i, 11, 19), '*', vary(n + 1, i, 2, 5), 'Del opp: gang tieren og eneren hver for seg.']),
+    (n) => five((i): TaskSpec => [H, vary(n, i, 21, 49), '*', vary(n + 1, i, 3, 6), 'Del opp: gang tierne og enerne hver for seg.']),
+    (n) => five((i): TaskSpec => [O, vary(n, i, 52, 98), '*', vary(n + 1, i, 4, 9), 'Still opp og regn ut.']),
+  ),
+  'mult.blokkmodeller': byLevel(
+    (n) =>
+      five((i): TaskSpec => {
+        const [a, b] = [vary(n, i, 2, 5), vary(n + 1, i, 3, 6)]
+        return [H, a, '*', b, `Tegn en blokkmodell: ${a} esker med ${b} blyanter i hver. Hvor mange blyanter er det?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const [a, b] = [vary(n, i, 3, 8), vary(n + 1, i, 4, 9)]
+        return [H, a, '*', b, `Tegn en blokkmodell: ${a} poser med ${b} klinkekuler i hver. Hvor mange klinkekuler er det?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const [a, b] = [vary(n, i, 3, 6), vary(n + 1, i, 12, 25)]
+        return [H, a, '*', b, `Tegn en blokkmodell: ${a} rader med ${b} stoler i hver. Hvor mange stoler er det?`]
+      }),
+  ),
+  'mult.kombinasjoner': byLevel(
+    (n) =>
+      five((i): TaskSpec => {
+        const [a, b] = [vary(n, i, 2, 3), vary(n + 1, i, 2, 4)]
+        return [H, a, '*', b, `Du har ${a} bukser og ${b} gensere. Hvor mange ulike antrekk kan du lage?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const [a, b] = [vary(n, i, 3, 5), vary(n + 1, i, 3, 6)]
+        return [H, a, '*', b, `En iskiosk har ${a} smaker og ${b} typer strøssel. Hvor mange ulike is med én smak og ett strøssel kan du lage?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const [a, b] = [vary(n, i, 4, 6), vary(n + 1, i, 5, 8)]
+        return [H, a, '*', b, `Du kan velge mellom ${a} typer brød og ${b} typer pålegg. Hvor mange ulike smørbrød kan du lage?`]
+      }),
+  ),
+
+  // Divisjon
+  'div.mult-og-div': byLevel(
+    (n) => divide([2, 5, 10], n, 'Regn ut. Hvilket gangestykke hjelper deg?'),
+    (n) => divide([3, 4, 6], n, 'Regn ut. Hvilket gangestykke hjelper deg?'),
+    (n) => divide([7, 8, 9], n, 'Regn ut, og sjekk svaret med gange.'),
+  ),
+  'div.delings-malings': byLevel(
+    (n) =>
+      five((i): TaskSpec => {
+        const d = pick([2, 3, 4, 5], i + n)
+        const total = d * vary(n, i, 2, 8)
+        return [H, total, '/', d, `Del ${total} klistremerker likt på ${d} barn. Hvor mange får hvert barn?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const d = pick([3, 4, 6], i + n)
+        const total = d * vary(n, i, 3, 9)
+        return [H, total, '/', d, `Du har ${total} egg og legger ${d} i hver eske. Hvor mange esker trenger du?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const d = pick([6, 7, 8, 9], i + n)
+        const total = d * vary(n, i, 3, 9)
+        return i % 2 === 0
+          ? [H, total, '/', d, `${total} elever deles i ${d} like store lag. Hvor mange er det på hvert lag?`]
+          : [H, total, '/', d, `${total} elever skal sitte ${d} ved hvert bord. Hvor mange bord trengs?`]
+      }),
+  ),
+  'div.rest': (level, n) =>
+    five((i): TextSpec => {
+      const d = pick(level === 1 ? [2, 3, 5] : level === 2 ? [4, 6] : [6, 7, 8], i + n)
+      const q = vary(n, i, 2, level === 1 ? 6 : 9)
+      const r = vary(n + 1, i, 1, d - 1)
+      const a = d * q + r
+      return level < 3
+        ? { text: `Regn ut. Hvor mye blir til overs?\n${a} : ${d} = ___`, solution: `${q}, og ${r} til overs  (${q} · ${d} + ${r} = ${a})` }
+        : {
+            text: `${a} elever skal sitte ${d} ved hvert bord. Hvor mange bord trengs?`,
+            solution: `${q + 1} bord  (${a} : ${d} = ${q} med ${r} til overs, så det trengs ett bord til)`,
+          }
     }),
-}
+  'div.modeller': byLevel(
+    (n) => divide([2, 3, 4], n, 'Bruk en tallinje eller en tegning, og regn ut.'),
+    (n) => divide([4, 5, 6], n, 'Tegn en blokkmodell, og regn ut.'),
+    (n) => divide([6, 7, 8, 9], n, 'Tegn en modell, og regn ut.', 4, 12),
+  ),
 
-const multiplication = (): TopicSpec => ({
-  topicId: 'multiplikasjon',
-  title: 'Multiplikasjon',
-  topic: 'Multiplikasjon',
-  area: 'De fire regneartene',
-  description:
-    'Elevene utforsker gange som like grupper og gjentatt addisjon. De øver på gangetabellen og bruker dobling og kjente fakta til å finne nye.',
-  weeks: [
-    { title: 'Uke 1 - gange som gjentatt addisjon', sessions: ['Like grupper og gjentatt addisjon', 'Gangetegnet og rekker med like mange'] },
-    { title: 'Uke 2 - 2-, 5- og 10-gangen', sessions: ['Hopp-telling med 2, 5 og 10', '2-, 5- og 10-gangen – øve og bruke'] },
-    { title: 'Uke 3 - 3-, 4- og 6-gangen', sessions: ['Dobling: fra 2-gangen til 4-gangen', '3- og 6-gangen – finne sammenhenger'] },
-    { title: 'Uke 4 - gangetabellen i bruk', sessions: ['7-, 8- og 9-gangen med smarte strategier', 'Tekstoppgaver med gange'] },
-  ],
-  goals: [
-    'Forstå multiplikasjon som like grupper og gjentatt addisjon.',
-    'Kunne gangetabellen for 2, 3, 4, 5, 6 og 10.',
-    'Bruke dobling og kjente fakta til å finne nye.',
-    'Løse tekstoppgaver med multiplikasjon.',
-  ],
-  levels: [
-    { title: 'Like grupper', subtitle: 'Gange med 2, 5 og 10.', description: 'Telle grupper med like mange.' },
-    { title: 'Gangetabellen', subtitle: 'Gange med 3, 4 og 6.', description: 'Bruke dobling for å finne svaret.' },
-    { title: 'Store gangestykker', subtitle: 'Gange med 7, 8, 9 og tosifrede tall.', description: 'Dele opp tall for å gange.' },
-  ],
-  tasks: (level, n) => {
-    if (level === 1) return times([2, 5, 10], n, 'Regn ut. Tenk like grupper.')
-    if (level === 2) return times([3, 4, 6], n, 'Regn ut. Doble hvis du kan.')
-    return five((i): TaskSpec =>
-      i < 3
-        ? [H, vary(n, i, 3, 10), '*', pick([7, 8, 9], i + n), 'Regn ut.']
-        : [O, vary(n, i, 12, 48), '*', vary(n, i, 2, 5), 'Still opp og regn ut.'],
-    )
-  },
-})
-
-const sharing = (): TopicSpec => ({
-  topicId: 'deling',
-  title: 'Deling',
-  topic: 'Deling',
-  area: 'De fire regneartene',
-  description:
-    'Elevene deler likt og lager grupper, og ser at deling er gange baklengs. De bruker gangetabellen til å finne svaret og løser tekstoppgaver.',
-  weeks: [
-    { title: 'Uke 1 - dele likt', sessions: ['Dele likt mellom flere', 'Hvor mange grupper blir det?'] },
-    { title: 'Uke 2 - deling og gange henger sammen', sessions: ['Deling som omvendt gange', 'Dele med 2, 5 og 10'] },
-    { title: 'Uke 3 - dele med 3, 4 og 6', sessions: ['Dele med 3 og 6', 'Dele med 4 – halvere to ganger'] },
-    { title: 'Uke 4 - deling i hverdagen', sessions: ['Tekstoppgaver med deling', 'Dette mestrer jeg – gange og dele'] },
-  ],
-  goals: [
-    'Forstå deling som å dele likt og å lage grupper.',
-    'Bruke gangetabellen til å dele.',
-    'Dele med 2, 3, 4, 5, 6 og 10.',
-    'Løse tekstoppgaver med deling.',
-  ],
-  levels: [
-    { title: 'Dele likt', subtitle: 'Dele med 2, 5 og 10.', description: 'Dele likt med konkreter.' },
-    { title: 'Dele med tabellen', subtitle: 'Dele med 3, 4 og 6.', description: 'Bruke gangetabellen baklengs.' },
-    { title: 'Dele større tall', subtitle: 'Dele med 7, 8 og 9.', description: 'Dele og sjekke svaret med gange.' },
-  ],
-  tasks: (level, n) => {
-    if (level === 1) return divide([2, 5, 10], n, 'Del likt. Hvor mange får hver?')
-    if (level === 2) return divide([3, 4, 6], n, 'Regn ut. Hvilket gangestykke hjelper deg?')
-    return divide([7, 8, 9], n, 'Regn ut, og sjekk svaret med gange.')
-  },
-})
-
-const autumnReview = (): TopicSpec => ({
-  topicId: 'repetisjon-host',
-  title: 'Repetisjon',
-  topic: 'Repetisjon',
-  area: 'Repetisjon',
-  description: 'Elevene repeterer høstens tema og velger selv strategi og regneart. Økta avsluttes med en felles samtale om hva de mestrer.',
-  weeks: [
-    { title: 'Uke 1 - addisjon og subtraksjon', sessions: ['Repetisjon: addisjon med tierovergang', 'Repetisjon: subtraksjon med veksling'] },
-    { title: 'Uke 2 - gange og dele', sessions: ['Repetisjon: gangetabellen', 'Repetisjon: deling'] },
-    { title: 'Uke 3 - alt sammen', sessions: ['Velg riktig regneart', 'Dette mestrer jeg – høsten oppsummert'] },
-  ],
-  goals: [
-    'Bruke strategier for addisjon og subtraksjon.',
-    'Huske gangetabellen og bruke den til å dele.',
-    'Velge regneart i tekstoppgaver.',
-  ],
-  levels: repetitionLevels,
-  tasks: (level, n) =>
-    five((i) => {
-      const from = [additionRest.tasks, multiplication().tasks, sharing().tasks]
-      return pick(from, i + n)(level, n + i)[i]
-    }),
-})
-
-const division = (): TopicSpec => ({
-  topicId: 'divisjon',
-  title: 'Divisjon',
-  topic: 'Divisjon',
-  area: 'De fire regneartene',
-  description:
-    'Elevene deler tosifrede og tresifrede tall ved å dele tiere og enere hver for seg, halvere og hoppe på tallinjen. De sjekker svaret med gange.',
-  weeks: [
-    { title: 'Uke 1 - dele tosifrede tall', sessions: ['Dele tiere og enere hver for seg', 'Dele med tallinje og hopp'] },
-    { title: 'Uke 2 - smarte strategier', sessions: ['Dele med 4 og 8 – halvere flere ganger', 'Dele store tall med oppstilling'] },
-    { title: 'Uke 3 - divisjon i bruk', sessions: ['Tekstoppgaver med divisjon', 'Dette mestrer jeg – divisjon'] },
-  ],
-  goals: [
-    'Dele tosifrede tall med ensifrede tall.',
-    'Bruke gange til å kontrollere divisjon.',
-    'Velge strategi: dele opp, halvere eller hoppe på tallinjen.',
-  ],
-  levels: [
-    { title: 'Dele med tabellen', subtitle: 'Divisjon innenfor gangetabellen.', description: 'Bruke gangetabellen baklengs.' },
-    { title: 'Tosifrede tall', subtitle: 'Dele tiere og enere hver for seg.', description: 'Dele f.eks. 48 : 4.' },
-    { title: 'Tresifrede tall', subtitle: 'Divisjon med oppstilling.', description: 'Dele og sjekke med gange.' },
-  ],
-  tasks: (level, n) => {
-    if (level === 1) return divide([3, 4, 5, 6, 7, 8, 9], n, 'Regn ut.')
-    if (level === 2) return divide([2, 3, 4], n, 'Del tierne og enerne hver for seg.', 11, 24)
-    return divide([3, 4, 5, 6, 7, 8], n, 'Still opp og regn ut.', 12, 60, O)
-  },
-})
-
-const shapes = (): TopicSpec => ({
-  topicId: 'figurer-og-vinkler',
-  title: 'Geometri',
-  topic: 'Figurer og vinkler',
-  area: 'Geometri',
-  description:
-    'Elevene beskriver og sorterer mangekanter, kjenner igjen ulike vinkler og finner omkretsen av figurer ved å legge sammen eller gange sidene.',
-  weeks: [
-    { title: 'Uke 1 - mangekanter', sessions: ['Trekanter, firkanter og mangekanter', 'Sider og hjørner'] },
-    { title: 'Uke 2 - vinkler', sessions: ['Rette, spisse og butte vinkler', 'Vinklene i en trekant'] },
-    { title: 'Uke 3 - omkrets', sessions: ['Omkrets av mangekanter', 'Dette mestrer jeg – figurer og vinkler'] },
-  ],
-  goals: [
-    'Beskrive og sortere mangekanter etter sider og hjørner.',
-    'Kjenne igjen rette, spisse og butte vinkler.',
-    'Finne omkretsen av mangekanter.',
-  ],
-  levels: [
-    { title: 'Sider og hjørner', subtitle: 'Trekanter og firkanter.', description: 'Telle sider og hjørner.' },
-    { title: 'Omkrets', subtitle: 'Kvadrater og sekskanter.', description: 'Regne ut omkretsen.' },
-    { title: 'Vinkler', subtitle: 'Vinkelsummen i en trekant.', description: 'Bruke at vinklene er 180° til sammen.' },
-  ],
-  tasks: (level, n) =>
-    five((i): TaskSpec => {
-      if (level === 1) {
+  // Geometri
+  'geo.2d': byLevel(
+    (n) =>
+      five((i): TaskSpec => {
         const k = vary(n, i, 2, 9)
         return i % 2 === 0
           ? [H, k, '*', 3, `En trekant har 3 hjørner. Hvor mange hjørner har ${k} trekanter?`]
           : [H, k, '*', 4, `En firkant har 4 sider. Hvor mange sider har ${k} firkanter?`]
-      }
-      if (level === 2) {
+      }),
+    (n) =>
+      five((i): TaskSpec => {
         const s = vary(n, i, 3, 12)
         return i % 2 === 0
           ? [H, 4, '*', s, `Et kvadrat har sider på ${s} cm. Hva er omkretsen?`]
           : [H, 6, '*', s, `En sekskant har seks like lange sider på ${s} cm. Hva er omkretsen?`]
-      }
-      const two = 10 * vary(n, i, 9, 15)
-      return [H, 180, '-', two, `Vinklene i en trekant er 180° til sammen. To av vinklene er ${two}° til sammen. Hvor stor er den tredje?`]
-    }),
-})
-
-const solids = (): TopicSpec => ({
-  topicId: 'romfigurer',
-  title: 'Romfigurer',
-  topic: 'Romfigurer',
-  area: 'Geometri',
-  description:
-    'Elevene kjenner igjen romfigurer, finner areal ved å telle ruter i rader og kolonner, og finner volum ved å bygge med kuber lag for lag.',
-  weeks: [
-    { title: 'Uke 1 - romfigurer og areal', sessions: ['Kube, prisme og sylinder', 'Areal – rader og kolonner'] },
-    { title: 'Uke 2 - volum', sessions: ['Volum – bygge med kuber', 'Dette mestrer jeg – areal og volum'] },
-  ],
-  goals: [
-    'Kjenne igjen og beskrive romfigurer.',
-    'Finne areal ved å regne rader · ruter.',
-    'Finne volum ved å telle kuber i lag.',
-  ],
-  levels: [
-    { title: 'Telle', subtitle: 'Sideflater og ruter.', description: 'Telle sideflater på romfigurer.' },
-    { title: 'Areal', subtitle: 'Rader og kolonner.', description: 'Regne ut arealet av rektangler.' },
-    { title: 'Volum', subtitle: 'Kuber i lag.', description: 'Regne ut volumet av en boks.' },
-  ],
-  tasks: (level, n) =>
-    five((i): TaskSpec => {
-      if (level === 1) {
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const [l, b] = [vary(n, i, 4, 12), vary(n + 1, i, 2, 7)]
+        return { text: `Et rektangel er ${l} cm langt og ${b} cm bredt. Hva er omkretsen?`, solution: `${2 * (l + b)} cm  (${l} + ${b} + ${l} + ${b})` }
+      }),
+  ),
+  'geo.3d': byLevel(
+    (n) =>
+      five((i): TaskSpec => {
         const k = vary(n, i, 2, 8)
         return [H, k, '*', 6, `En kube har 6 sideflater. Hvor mange sideflater har ${k} kuber til sammen?`]
-      }
-      if (level === 2) {
-        const rows = vary(n, i, 2, 9)
-        const cols = vary(n + 1, i, 3, 10)
-        return [H, rows, '*', cols, `Et rektangel har ${rows} rader med ${cols} ruter i hver. Hvor mange ruter er det?`]
-      }
-      const layer = vary(n, i, 6, 20)
-      const layers = vary(n + 2, i, 2, 5)
-      return [H, layers, '*', layer, `Hvert lag i en boks har ${layer} kuber. Hvor mange kuber er det i ${layers} lag?`]
-    }),
-})
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const k = vary(n, i, 2, 9)
+        return [H, k, '*', 8, `En kube har 8 hjørner. Hvor mange hjørner har ${k} kuber til sammen?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const k = vary(n, i, 2, 9)
+        return [H, k, '*', 12, `En kube har 12 kanter. Hvor mange kanter har ${k} kuber til sammen?`]
+      }),
+  ),
+  'geo.3d-til-2d': (level, n) => {
+    const nets = [
+      ['En kube brettes ut. Hvor mange kvadrater består utbrettingen av?', '6 kvadrater'],
+      ['Et trekantet prisme brettes ut. Hvilke figurer består utbrettingen av?', '2 trekanter og 3 rektangler'],
+      ['En pyramide med kvadratisk grunnflate brettes ut. Hvilke figurer ser du?', '1 kvadrat og 4 trekanter'],
+      ['En sylinder brettes ut. Hvilke figurer ser du?', '2 sirkler og 1 rektangel'],
+      ['En eske (et rett prisme med rektangler) brettes ut. Hvor mange rektangler blir det?', '6 rektangler'],
+    ]
+    return five((i): TextSpec => {
+      const [q, a] = pick(nets, i + n)
+      const prefix = level === 3 ? 'Tegn utbrettingen. ' : ''
+      const suffix = level === 2 ? ' Forklar hvordan du vet det.' : ''
+      return { text: `${prefix}${q}${suffix}`, solution: a }
+    })
+  },
+  'geo.vinkler': byLevel(
+    (n) =>
+      five((i): TaskSpec => {
+        const x = 10 * vary(n, i, 1, 8)
+        return [H, 90, '-', x, `En rett vinkel er 90°. Den deles i to vinkler. Den ene er ${x}°. Hvor stor er den andre?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const x = 10 * vary(n, i, 2, 16)
+        return [H, 180, '-', x, `Vinklene på en rett linje er 180° til sammen. Den ene vinkelen er ${x}°. Hvor stor er den andre?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const two = 10 * vary(n, i, 9, 15)
+        return [H, 180, '-', two, `Vinklene i en trekant er 180° til sammen. To av vinklene er ${two}° til sammen. Hvor stor er den tredje?`]
+      }),
+  ),
 
-const fractions = (): TopicSpec => ({
-  topicId: 'brok',
-  title: 'Brøk',
-  topic: 'Brøk',
-  area: 'Tall og algebra',
-  description:
-    'Elevene deler en hel i like store deler, plasserer enkle brøker på tallinjen og finner en brøkdel av et antall ved å dele.',
-  weeks: [
-    { title: 'Uke 1 - deler av en hel', sessions: ['Halvdeler, tredjedeler og fjerdedeler', 'Brøk på tallinjen'] },
-    { title: 'Uke 2 - brøkdel av en mengde', sessions: ['Finne en brøkdel av et antall', 'Dette mestrer jeg – brøk'] },
-  ],
-  goals: [
-    'Forstå brøk som like store deler av en hel.',
-    'Plassere enkle brøker på tallinjen.',
-    'Finne en brøkdel av et antall.',
-  ],
-  levels: [
-    { title: 'Halvparten', subtitle: 'Halvdeler og fjerdedeler.', description: 'Finne halvparten av et antall.' },
-    { title: 'Brøkdel av en mengde', subtitle: 'Tredjedeler, fjerdedeler og femtedeler.', description: 'Dele et antall i like deler.' },
-    { title: 'Større mengder', subtitle: 'Åttedeler og tideler.', description: 'Finne en brøkdel av store tall.' },
-  ],
-  tasks: (level, n) =>
+  // Problemløsing
+  'prob.regnefortellinger': byLevel(
+    (n) =>
+      five((i): TaskSpec => {
+        const [p, q] = [vary(n, i, 12, 45), vary(n + 1, i, 10, 35)]
+        return [H, p, '+', q, `Skriv et regneuttrykk og regn ut: En is koster ${p} kr og en brus koster ${q} kr. Hva koster de til sammen?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const p = vary(n, i, 23, 89)
+        return [H, 100, '-', p, `Skriv et regneuttrykk og regn ut: Du betaler med en 100-lapp for en vare som koster ${p} kr. Hvor mye får du igjen?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const [p, k] = [vary(n, i, 12, 49), vary(n + 2, i, 3, 8)]
+        return [H, k, '*', p, `Skriv et regneuttrykk og regn ut: Én bok koster ${p} kr. Hva koster ${k} bøker?`]
+      }),
+  ),
+  'prob.modeller': byLevel(
+    (n) =>
+      five((i): TaskSpec => {
+        const [a, b] = [vary(n, i, 12, 40), vary(n + 1, i, 3, 15)]
+        return [H, a, '+', b, `Tegn en modell: Ida har ${a} kort. Ola har ${b} flere enn Ida. Hvor mange kort har Ola?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const b = vary(n, i, 12, 40)
+        const a = b + vary(n + 1, i, 5, 30)
+        return [H, a, '-', b, `Tegn en modell: Emil har ${a} kort og Sara har ${b}. Hvor mange flere kort har Emil?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const d = pick([3, 4, 5, 6], i + n)
+        const total = d * vary(n, i, 6, 15)
+        return [H, total, '/', d, `Tegn en modell: ${total} kort deles likt på ${d} barn. Hvor mange får hver?`]
+      }),
+  ),
+  'prob.flersteg': byLevel(
+    (n) =>
+      five((i): TextSpec => {
+        const p = vary(n, i, 10, 20)
+        const m = pick([50, 100], i + n)
+        return { text: `Ola har ${m} kr. Han kjøper 2 is som koster ${p} kr hver. Hvor mye har han igjen?`, solution: `${m - 2 * p} kr  (2 · ${p} = ${2 * p}, ${m} − ${2 * p} = ${m - 2 * p})` }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const d = pick([2, 3, 4], i + n)
+        const total = d * vary(n, i, 5, 8)
+        const girls = vary(n + 1, i, 4, total - 4)
+        return {
+          text: `En klasse har ${girls} jenter og ${total - girls} gutter. De deles i grupper på ${d}. Hvor mange grupper blir det?`,
+          solution: `${total / d} grupper  (${girls} + ${total - girls} = ${total}, ${total} : ${d} = ${total / d})`,
+        }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const [p, d, x] = [vary(n, i, 5, 15), vary(n + 1, i, 3, 7), vary(n + 2, i, 4, 20)]
+        return {
+          text: `Mia leser ${p} sider hver dag i ${d} dager, og så ${x} sider til. Hvor mange sider har hun lest?`,
+          solution: `${p * d + x} sider  (${d} · ${p} = ${p * d}, ${p * d} + ${x} = ${p * d + x})`,
+        }
+      }),
+  ),
+  'prob.flervalg': (level, n) =>
+    five((i): TextSpec => {
+      const a = vary(n, i, level === 1 ? 12 : 25, level === 1 ? 48 : 89)
+      const b = vary(n + 1, i, level === 1 ? 11 : 3, level === 1 ? 39 : 9)
+      const [expression, correct] =
+        level === 1 ? [`${a} + ${b}`, a + b] : level === 2 ? [`${a + b} − ${b}`, a] : [`${b} · ${a}`, a * b]
+      const options = [correct, correct + 10, correct - 1]
+      const order = [i % 3, (i + 1) % 3, (i + 2) % 3]
+      const letters = ['A', 'B', 'C']
+      const shown = order.map((k, j) => `${letters[j]}: ${options[k]}`).join('   ')
+      return { text: `Hvilket svar er riktig?\n${expression} = ?\n${shown}`, solution: `${letters[order.indexOf(0)]}: ${correct}` }
+    }),
+
+  // Tall og regning
+  'tr.add-sub': byLevel(
+    (n) =>
+      five((i): TaskSpec => {
+        const [a, b] = [vary(n, i, 12, 48), vary(n + 1, i, 11, 39)]
+        return [H, a + b, '-', b, `${a} + ${b} = ${a + b}. Bruk det til å finne ${a + b} − ${b}.`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const [a, b] = [vary(n, i, 120, 480), vary(n + 1, i, 110, 390)]
+        return [H, a + b, '-', b, `${a} + ${b} = ${a + b}. Bruk det til å finne ${a + b} − ${b}.`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const [a, b] = [vary(n, i, 1200, 4800), vary(n + 1, i, 1100, 3900)]
+        return [H, a + b, '-', a, `${a} + ${b} = ${a + b}. Bruk det til å finne ${a + b} − ${a}.`]
+      }),
+  ),
+  'tr.mult-div': (level, n) =>
+    five((i): TaskSpec => {
+      const b = pick(level === 1 ? [2, 5, 10] : level === 2 ? [3, 4, 6] : [7, 8, 9], i + n)
+      const a = vary(n, i, 2, 10)
+      return [H, a * b, '/', b, `${a} · ${b} = ${a * b}. Bruk det til å finne ${a * b} : ${b}.`]
+    }),
+  'tr.tideler': byLevel(
+    (n) =>
+      five((i): TextSpec => {
+        const t = vary(n, i, 1, 9)
+        return { text: `Skriv som desimaltall: ${t} tideler`, solution: `0,${t}` }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const [h, t] = [vary(n, i, 1, 9), vary(n + 1, i, 1, 9)]
+        return { text: `Skriv som desimaltall: ${h} hele og ${t} tideler`, solution: `${h},${t}` }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const [a, b] = [vary(n, i, 11, 49), vary(n + 1, i, 1, 9)]
+        return { text: `Regn ut.\n${dec(a / 10)} + ${dec(b / 10)} = ___`, solution: dec((a + b) / 10) }
+      }),
+  ),
+  'tr.desimal-lengde': byLevel(
+    (n) =>
+      five((i): TextSpec => {
+        const [c, mm] = [vary(n, i, 2, 15), vary(n + 1, i, 1, 9)]
+        return { text: `En blyant er ${c} cm og ${mm} mm lang. Skriv lengden i centimeter med desimaltall.`, solution: `${c},${mm} cm` }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const m = vary(n, i, 11, 49)
+        return { text: `${dec(m / 10)} m er hvor mange centimeter?`, solution: `${m * 10} cm` }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const [c, mm] = [vary(n, i, 2, 25), vary(n + 1, i, 1, 9)]
+        return { text: `Hvor mange millimeter er ${c},${mm} cm?`, solution: `${c * 10 + mm} mm` }
+      }),
+  ),
+
+  // Strategier i divisjon
+  'sdiv.hte': byLevel(
+    (n) => divide([2, 3, 4], n, 'Del tierne og enerne hver for seg.', 11, 24),
+    (n) => divide([2, 3, 4, 5], n, 'Del tierne og enerne hver for seg.', 21, 48),
+    (n) => divide([3, 4, 5, 6, 7, 8], n, 'Del hundrerne, tierne og enerne hver for seg.', 25, 120),
+  ),
+  'sdiv.gode-mater': byLevel(
+    (n) => divide([2], n, 'Del på 2 ved å halvere.', 11, 49),
+    (n) => divide([4], n, 'Del på 4: halver to ganger.', 11, 30),
+    (n) => divide([8], n, 'Del på 8: halver tre ganger.', 11, 25),
+  ),
+  'sdiv.sammenhenger': (level, n) =>
+    five((i): TaskSpec => {
+      const d = pick(level === 1 ? [2, 5] : level === 2 ? [3, 4, 6] : [7, 8, 9], i + n)
+      const base = d * vary(n, i, 2, 9)
+      return [H, base * 10, '/', d, `${base} : ${d} = ${base / d}. Hva er ${base * 10} : ${d}?`]
+    }),
+  'sdiv.10-100': byLevel(
+    (n) => five((i): TaskSpec => [H, 10 * vary(n, i, 2, 9), '/', 10, 'Regn ut. Hva skjer med sifrene når du deler på 10?']),
+    (n) => five((i): TaskSpec => [H, 10 * vary(n, i, 11, 99), '/', 10, 'Regn ut. Hva skjer med sifrene når du deler på 10?']),
+    (n) => five((i): TaskSpec => [H, 100 * vary(n, i, 2, 99), '/', 100, 'Regn ut. Hva skjer med sifrene når du deler på 100?']),
+  ),
+  // Samme ferdighet som i høstens divisjon, men med andre tall.
+  'sdiv.malings-delings': (level, n) => skillTasks['div.delings-malings'](level, n + 3),
+  'sdiv.del-av-hel': byLevel(
+    (n) =>
+      five((i): TextSpec => {
+        const d = pick([2, 3, 4, 6, 8], i + n)
+        return { text: `En pizza er delt i ${d} like store biter. Du spiser 1 bit. Hvor stor del av pizzaen har du spist? Skriv som brøk.`, solution: `1/${d}` }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const d = pick([4, 5, 6, 8, 10], i + n)
+        const k = vary(n, i, 2, d - 1)
+        return { text: `En sjokolade har ${d} like store biter. Du spiser ${k} biter. Hvor stor del har du spist? Skriv som brøk.`, solution: `${k}/${d}` }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const a = pick([2, 3, 4, 5], i + n)
+        const b = a + vary(n, i, 1, 6)
+        return { text: `Hvilken brøk er størst: 1/${a} eller 1/${b}? Forklar hvorfor.`, solution: `1/${a}  (jo færre biter en hel deles i, jo større blir hver bit)` }
+      }),
+  ),
+  'sdiv.del-av-mengde': (level, n) =>
     five((i): TaskSpec => {
       const d = pick(level === 1 ? [2, 4] : level === 2 ? [3, 4, 5] : [5, 8, 10], i + n)
       const a = d * vary(n, i, level === 3 ? 5 : 2, level === 3 ? 20 : 10)
       return [H, a, '/', d, `Hva er 1/${d} av ${a}?`]
     }),
-})
 
-const winterReview = (): TopicSpec => ({
-  topicId: 'repetisjon-vinter',
-  title: 'Repetisjon',
-  topic: 'Repetisjon',
-  area: 'Repetisjon',
-  description: 'Elevene repeterer divisjon, brøk og geometri fra vinteren. Økta avsluttes med en felles samtale om hva de mestrer.',
-  weeks: [
-    { title: 'Uke 1 - divisjon og brøk', sessions: ['Repetisjon: divisjon', 'Repetisjon: brøkdel av en mengde'] },
-    { title: 'Uke 2 - geometri', sessions: ['Repetisjon: omkrets, areal og volum', 'Dette mestrer jeg – vinteren oppsummert'] },
-  ],
-  goals: ['Dele med og uten oppstilling.', 'Finne en brøkdel av et antall.', 'Regne ut omkrets, areal og volum.'],
-  levels: repetitionLevels,
-  tasks: mix(division, fractions, shapes, solids),
-})
-
-const time = (): TopicSpec => ({
-  topicId: 'klokke-og-tid',
-  title: 'Klokka',
-  topic: 'Klokke og tid',
-  area: 'Måling',
-  description: 'Elevene leser analog og digital klokke, regner om mellom timer og minutter og finner ut hvor lang tid noe tar.',
-  weeks: [
-    { title: 'Uke 1 - lese klokka', sessions: ['Hel, halv og kvart', 'Analog og digital klokke'] },
-    { title: 'Uke 2 - regne med tid', sessions: ['Hvor lang tid tar det?', 'Dette mestrer jeg – klokke og tid'] },
-  ],
-  goals: ['Lese analog og digital klokke.', 'Regne om mellom timer og minutter.', 'Finne hvor lang tid som har gått.'],
-  levels: [
-    { title: 'Minutter', subtitle: 'Kvarter og halvtimer.', description: 'Regne med kvarter og halvtimer.' },
-    { title: 'Hvor lang tid?', subtitle: 'Tid mellom to klokkeslett.', description: 'Finne hvor mange minutter som har gått.' },
-    { title: 'Timer og minutter', subtitle: 'Regne om timer til minutter.', description: 'Gange med 60.' },
-  ],
-  tasks: (level, n) =>
+  // Måling
+  'mal.volum': (level, n) =>
     five((i): TaskSpec => {
-      if (level === 1) {
+      const layer = vary(n, i, level === 1 ? 4 : 6, level === 1 ? 9 : level === 2 ? 16 : 25)
+      const layers = vary(n + 2, i, 2, level === 3 ? 6 : 4)
+      return [H, layers, '*', layer, `Hvert lag i en boks har ${layer} kuber. Hvor mange kuber er det i ${layers} lag?`]
+    }),
+  'mal.liter-dl': byLevel(
+    (n) => five((i): TaskSpec => [H, vary(n, i, 2, 9), '*', 10, 'Hvor mange desiliter er så mange liter? (1 liter = 10 dl)']),
+    (n) => five((i): TaskSpec => [H, 10 * vary(n, i, 2, 9), '/', 10, 'Hvor mange liter er så mange desiliter? (10 dl = 1 liter)']),
+    (n) =>
+      five((i): TaskSpec => {
+        const g = pick([1, 2, 5], i + n)
+        return [H, 10, '/', g, `Hvor mange glass på ${g} dl kan du fylle fra 1 liter (10 dl)?`]
+      }),
+  ),
+  'mal.desimaltall': byLevel(
+    (n) =>
+      five((i): TextSpec => {
+        const x = vary(n, i, 11, 39)
+        return { text: `${dec(x / 10)} liter er hvor mange desiliter?`, solution: `${x} dl` }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const x = vary(n, i, 11, 49)
+        return { text: `${dec(x / 10)} kg er hvor mange gram?`, solution: `${x * 100} g` }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const x = vary(n, i, 11, 99)
+        return { text: `Skriv ${x} dl som liter med desimaltall.`, solution: `${dec(x / 10)} liter` }
+      }),
+  ),
+  'mal.kg-g': byLevel(
+    (n) => five((i): TaskSpec => [H, vary(n, i, 2, 9), '*', 1000, 'Hvor mange gram er så mange kilo? (1 kg = 1000 g)']),
+    (n) => five((i): TaskSpec => [H, 100 * vary(n, i, 2, 9), '+', 100 * vary(n + 1, i, 1, 8), 'Hvor mange gram er det til sammen?']),
+    (n) =>
+      five((i): TaskSpec => {
+        const p = pick([100, 200, 250, 500], i + n)
+        return [H, 1000, '/', p, `Hvor mange poser på ${p} g går det på 1 kg (1000 g)?`]
+      }),
+  ),
+  'mal.areal': (level, n) =>
+    five((i): TaskSpec => {
+      const rows = vary(n, i, 2, level === 1 ? 5 : 9)
+      const cols = vary(n + 1, i, 3, level === 3 ? 12 : 8)
+      return [H, rows, '*', cols, `Et rektangel har ${rows} rader med ${cols} ruter i hver. Hver rute er 1 cm². Hva er arealet?`]
+    }),
+  'mal.areal-omkrets': byLevel(
+    (n) =>
+      five((i): TaskSpec => {
+        const [l, b] = [vary(n, i, 3, 9), vary(n + 1, i, 2, 6)]
+        return [H, l, '*', b, `Et rektangel er ${l} cm langt og ${b} cm bredt. Hva er arealet i cm²?`]
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const [l, b] = [vary(n, i, 4, 12), vary(n + 1, i, 2, 7)]
+        return { text: `Et rektangel er ${l} cm langt og ${b} cm bredt. Hva er omkretsen, og hva er arealet?`, solution: `Omkrets ${2 * (l + b)} cm, areal ${l * b} cm²` }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const s = vary(n, i, 2, 9)
+        return { text: `Et kvadrat har omkrets ${4 * s} cm. Hva er arealet?`, solution: `${s * s} cm²  (siden er ${4 * s} : 4 = ${s} cm, og ${s} · ${s} = ${s * s})` }
+      }),
+  ),
+  'mal.tid': byLevel(
+    (n) =>
+      five((i): TaskSpec => {
         const k = vary(n, i, 2, 4)
         return [H, k, '*', 15, `Et kvarter er 15 minutter. Hvor mange minutter er ${k} kvarter?`]
-      }
-      if (level === 2) {
+      }),
+    (n) =>
+      five((i): TaskSpec => {
         const start = 5 * vary(n, i, 1, 5)
         const end = start + 5 * vary(n + 3, i, 3, 6)
         const pad = (m: number) => String(m).padStart(2, '0')
         return [H, end, '-', start, `Filmen begynner kl. 18.${pad(start)} og slutter kl. 18.${pad(end)}. Hvor mange minutter varer den?`]
-      }
-      const hours = vary(n, i, 2, 6)
-      return [H, hours, '*', 60, `En time er 60 minutter. Hvor mange minutter er ${hours} timer?`]
-    }),
-})
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const hours = vary(n, i, 2, 6)
+        return [H, hours, '*', 60, `En time er 60 minutter. Hvor mange minutter er ${hours} timer?`]
+      }),
+  ),
 
-const money = (): TopicSpec => ({
-  topicId: 'penger-og-handel',
-  title: 'Penger',
-  topic: 'Penger og handel',
-  area: 'Måling',
-  description: 'Elevene blir kjent med mynter og sedler, legger sammen priser og finner ut hvor mye de får igjen når de handler.',
-  weeks: [
-    { title: 'Uke 1 - mynter og sedler', sessions: ['Kroner, mynter og sedler', 'Betale med ulike mynter'] },
-    { title: 'Uke 2 - handle og få igjen', sessions: ['Hvor mye får jeg igjen?', 'Dette mestrer jeg – i butikken'] },
-  ],
-  goals: ['Kjenne verdien av mynter og sedler.', 'Legge sammen priser.', 'Finne ut hvor mye man får igjen.'],
-  levels: [
-    { title: 'Legge sammen priser', subtitle: 'Priser under 100 kr.', description: 'Finne hva to varer koster til sammen.' },
-    { title: 'Få igjen', subtitle: 'Betale med 100-lapp.', description: 'Finne vekslepenger.' },
-    { title: 'Mange like varer', subtitle: 'Gange med priser.', description: 'Finne prisen for flere like varer.' },
-  ],
-  tasks: (level, n) =>
+  // Mønster og algoritmer
+  'mon.utforske': (level, n) =>
     five((i): TaskSpec => {
-      if (level === 1) {
-        const p = vary(n, i, 12, 45)
-        const q = vary(n + 1, i, 10, 35)
-        return [H, p, '+', q, `En is koster ${p} kr og en brus koster ${q} kr. Hva koster de til sammen?`]
-      }
-      if (level === 2) {
-        const p = vary(n, i, 23, 89)
-        return [H, 100, '-', p, `Du betaler med en 100-lapp for en vare som koster ${p} kr. Hvor mye får du igjen?`]
-      }
-      const p = vary(n, i, 12, 49)
-      const k = vary(n + 2, i, 3, 8)
-      return [H, k, '*', p, `Én bok koster ${p} kr. Hva koster ${k} bøker?`]
+      const d = vary(n, i, level === 1 ? 2 : 3, level === 3 ? 12 : 9)
+      const s = vary(n + 1, i, 1, 20)
+      const seq = [s, s + d, s + 2 * d, s + 3 * d]
+      return [H, seq[3], '+', d, `Tallfølgen er ${seq.join(', ')}. Hva er neste tall?`]
     }),
-})
-
-const statistics = (): TopicSpec => ({
-  topicId: 'statistikk',
-  title: 'Statistikk',
-  topic: 'Statistikk',
-  area: 'Statistikk',
-  description: 'Elevene samler inn data med tellestreker, lager søylediagram og piktogram, og sammenligner det de finner.',
-  weeks: [
-    { title: 'Uke 1 - samle inn data', sessions: ['Tellestreker og tabeller', 'Lage en spørreundersøkelse'] },
-    { title: 'Uke 2 - diagrammer', sessions: ['Søylediagram', 'Piktogram'] },
-    { title: 'Uke 3 - lese og tolke', sessions: ['Sammenligne i diagrammer', 'Dette mestrer jeg – statistikk'] },
-  ],
-  goals: ['Samle inn data med tellestreker og tabeller.', 'Lage og lese søylediagram og piktogram.', 'Sammenligne og tolke data.'],
-  levels: [
-    { title: 'Telle og sortere', subtitle: 'Tellestreker og tabeller.', description: 'Finne hvor mange til sammen.' },
-    { title: 'Søylediagram', subtitle: 'Lese av søyler.', description: 'Finne forskjellen mellom søyler.' },
-    { title: 'Piktogram', subtitle: 'Én figur er flere svar.', description: 'Gange for å finne antallet.' },
-  ],
-  tasks: (level, n) =>
-    five((i): TaskSpec => {
-      if (level === 1) {
-        const a = vary(n, i, 4, 12)
-        const b = vary(n + 1, i, 3, 11)
-        return [H, a, '+', b, `${a} elever liker hund best og ${b} liker katt best. Hvor mange har svart?`]
+  'mon.figurtall': (level, n) =>
+    five((i): TextSpec => {
+      const [s, d] = [vary(n, i, 1, 5), vary(n + 1, i, 2, 4)]
+      const k = level === 1 ? 4 : level === 2 ? 6 : 10
+      return {
+        text: `Figur 1 har ${s} prikker, figur 2 har ${s + d} og figur 3 har ${s + 2 * d}. Hvor mange prikker har figur ${k}?`,
+        solution: `${s + (k - 1) * d} prikker  (det kommer ${d} til hver gang)`,
       }
-      if (level === 2) {
+    }),
+  'mon.tallfolger': byLevel(
+    (n) =>
+      five((i): TaskSpec => {
+        const d = vary(n, i, 2, 9)
+        const k = vary(n + 2, i, 6, 10)
+        return [H, k, '*', d, `Tallfølgen er ${d}, ${2 * d}, ${3 * d} … Hva er tall nummer ${k}?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const d = vary(n, i, 2, 9)
+        const start = vary(n, i, 60, 100)
+        const seq = [start, start - d, start - 2 * d]
+        return [H, seq[2], '-', d, `Tallfølgen er ${seq.join(', ')}. Hva er neste tall?`]
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const start = vary(n, i, 1, 4)
+        const seq = [start, start * 2, start * 4, start * 8]
+        return { text: `Finn regelen og neste tall: ${seq.join(', ')}, ___`, solution: `${start * 16}  (tallet dobles hver gang)` }
+      }),
+  ),
+  'mon.lokker': byLevel(
+    (n) =>
+      five((i): TaskSpec => {
+        const [r, st] = [vary(n, i, 2, 5), vary(n + 1, i, 2, 6)]
+        return [H, r, '*', st, `Koden sier: «Gjenta ${r} ganger: gå ${st} steg.» Hvor mange steg går figuren?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const [r, st] = [vary(n, i, 3, 8), vary(n + 1, i, 3, 9)]
+        return [H, r, '*', st, `Koden sier: «Start på 0. Gjenta ${r} ganger: legg til ${st}.» Hvilket tall ender du på?`]
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const [r, st] = [vary(n, i, 3, 8), vary(n + 1, i, 4, 12)]
+        return { text: `Koden sier: «Start på 100. Gjenta ${r} ganger: trekk fra ${st}.» Hvilket tall ender du på?`, solution: `${signed(100 - r * st)}  (${r} · ${st} = ${r * st}, 100 − ${r * st})` }
+      }),
+  ),
+  'mon.vilkar': (level, n) =>
+    five((i): TextSpec => {
+      let x = vary(n, i, 9, 40)
+      const start = x
+      for (let k = 0; k < level; k++) x = x % 2 === 0 ? x / 2 : x + 1
+      return {
+        text: `Koden sier: «Hvis tallet er et partall, del det på 2. Ellers legg til 1.» Start på ${start}. Hvilket tall har du etter ${level} steg?`,
+        solution: String(x),
+      }
+    }),
+
+  // Regning
+  'reg.diagrammer': byLevel(
+    (n) =>
+      five((i): TaskSpec => {
+        const [a, b] = [vary(n, i, 4, 12), vary(n + 1, i, 3, 11)]
+        return [H, a, '+', b, `I et søylediagram har ${a} elever svart «hund» og ${b} elever «katt». Hvor mange har svart?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
         const b = vary(n, i, 3, 9)
         const a = b + vary(n + 2, i, 2, 8)
         return [H, a, '-', b, `Søylen for fotball viser ${a} og søylen for håndball viser ${b}. Hvor mange flere liker fotball?`]
-      }
-      const f = pick([2, 5, 10], i + n)
-      const k = vary(n, i, 3, 9)
-      return [H, k, '*', f, `I et piktogram betyr hver figur ${f} elever. Hvor mange elever er ${k} figurer?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const f = pick([2, 5, 10], i + n)
+        const k = vary(n, i, 3, 9)
+        return [H, k, '*', f, `I et piktogram betyr hver figur ${f} elever. Hvor mange elever er ${k} figurer?`]
+      }),
+  ),
+  'reg.tabeller': byLevel(
+    (n) =>
+      five((i): TaskSpec => {
+        const b = vary(n, i, 3, 12)
+        const a = b + vary(n + 1, i, 2, 10)
+        return [H, a, '-', b, `Tabellen viser at ${a} elever går til skolen og ${b} sykler. Hvor mange flere går?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const [a, b] = [vary(n, i, 12, 48), vary(n + 1, i, 11, 39)]
+        return [H, a, '+', b, `Tabellen viser at klassen leste ${a} bøker i oktober og ${b} i november. Hvor mange bøker er det til sammen?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const [a, b] = [vary(n, i, 3, 9), vary(n + 1, i, 6, 12)]
+        return [H, a, '*', b, `Tabellen viser at hver pakke har ${b} kjeks. Hvor mange kjeks er det i ${a} pakker?`]
+      }),
+  ),
+  'reg.fire-regnearter': (level, n) =>
+    five((i) => {
+      const from = ['tall.addisjon-subtraksjon', 'mult.tabell-2-10', 'div.mult-og-div', 'mult.tabell-6-9']
+      return skillTasks[pick(from, i + n)](level, n + i)[i]
     }),
-})
-
-const patterns = (): TopicSpec => ({
-  topicId: 'monstre-og-logikk',
-  title: 'Mønstre',
-  topic: 'Mønstre og logikk',
-  area: 'Tall og algebra',
-  description: 'Elevene beskriver og fortsetter figurmønstre og tallfølger, finner regelen og forklarer hvordan mønsteret fortsetter.',
-  weeks: [
-    { title: 'Uke 1 - mønstre med figurer', sessions: ['Gjentakende mønstre', 'Voksende figurmønstre'] },
-    { title: 'Uke 2 - tallmønstre', sessions: ['Tallfølger som øker', 'Tallfølger som minker'] },
-    { title: 'Uke 3 - logikk', sessions: ['Finne regelen', 'Dette mestrer jeg – mønstre og logikk'] },
-  ],
-  goals: ['Beskrive og fortsette gjentakende og voksende mønstre.', 'Finne regelen i en tallfølge.', 'Forklare hvordan et mønster fortsetter.'],
-  levels: [
-    { title: 'Fortsette mønsteret', subtitle: 'Tallfølger som øker.', description: 'Finne neste tall.' },
-    { title: 'Hoppe i tabellen', subtitle: 'Mønstre i gangetabellen.', description: 'Finne et tall langt ut i følgen.' },
-    { title: 'Minkende følger', subtitle: 'Tallfølger som minker.', description: 'Finne regelen og neste tall.' },
-  ],
-  tasks: (level, n) =>
-    five((i): TaskSpec => {
-      const d = vary(n, i, 2, 9)
-      if (level === 1) {
-        const s = vary(n + 1, i, 1, 20)
-        const seq = [s, s + d, s + 2 * d, s + 3 * d]
-        return [H, seq[3], '+', d, `Tallfølgen er ${seq.join(', ')}. Hva er neste tall?`]
-      }
-      if (level === 2) {
-        const k = vary(n + 2, i, 6, 10)
-        return [H, k, '*', d, `Tallfølgen er ${d}, ${2 * d}, ${3 * d} … Hva er tall nummer ${k}?`]
-      }
-      const s = vary(n, i, 60, 100)
-      const seq = [s, s - d, s - 2 * d]
-      return [H, seq[2], '-', d, `Tallfølgen er ${seq.join(', ')}. Hva er neste tall?`]
+  'reg.algebra': (level, n) =>
+    five((i): TextSpec => {
+      const [a, b] = [vary(n, i, 3, 20), vary(n + 1, i, 2, 9)]
+      if (level === 1) return { text: `Hvilket tall skjuler seg bak □?\n□ + ${b} = ${a + b}`, solution: String(a) }
+      if (level === 2) return { text: `Hvilket tall skjuler seg bak □?\n${b} · □ = ${b * a}`, solution: String(a) }
+      return { text: `Hvilket tall skjuler seg bak □?\n□ − ${b} = ${a}`, solution: String(a + b) }
     }),
-})
+}
 
-const springReview = (): TopicSpec => ({
-  topicId: 'repetisjon-var',
-  title: 'Repetisjon',
-  topic: 'Repetisjon',
-  area: 'Repetisjon',
-  description: 'Elevene repeterer skoleårets tema og viser hva de har lært. Økta avsluttes med en felles samtale om hva de mestrer.',
-  weeks: [
-    { title: 'Uke 1 - måling og statistikk', sessions: ['Repetisjon: klokke og penger', 'Repetisjon: diagrammer'] },
-    { title: 'Uke 2 - skoleåret oppsummert', sessions: ['Repetisjon: de fire regneartene', 'Dette mestrer jeg – skoleåret oppsummert'] },
-  ],
-  goals: ['Regne med tid og penger.', 'Lese og tolke diagrammer.', 'Velge regneart og strategi selv.'],
-  levels: repetitionLevels,
-  tasks: mix(time, money, statistics, multiplication, division),
-})
+/** Fem oppgaver på nivået for økt nummer `n`. Har økta flere undertemaer, byttes det på. */
+export function tasksFor(skills: string[], level: Level, n: number): GeneratedTask[] {
+  if (skills.length === 1) return skillTasks[skills[0]](level, n)
+  return five((i) => skillTasks[pick(skills, i)](level, n + i)[i])
+}
 
-/** Temaene i den rekkefølgen de kommer i årsplanen. */
-export const yearPlan: TopicSpec[] = [
-  multiplication(),
-  sharing(),
-  autumnReview(),
-  division(),
-  shapes(),
-  solids(),
-  fractions(),
-  winterReview(),
-  time(),
-  money(),
-  statistics(),
-  patterns(),
-  springReview(),
+export const isTextSpec = (task: GeneratedTask): task is TextSpec => !Array.isArray(task)
+
+/** Alle undertemaene som har oppgaveregler (brukes til å sjekke at årsplanen er komplett). */
+export const skillsWithTasks = Object.keys(skillTasks)
+
+// ---------------------------------------------------------------------------------------
+// Periodene
+
+const repetitionLevels: UnitSpec['levels'] = [
+  { title: 'Grunnleggende', subtitle: 'Det vi har lært.', description: 'Øve på det grunnleggende.' },
+  { title: 'Øve videre', subtitle: 'Større tall.', description: 'Velge en god strategi.' },
+  { title: 'Utfordring', subtitle: 'Store tall og tekstoppgaver.', description: 'Forklare hvordan jeg tenker.' },
 ]
+
+const s = (heading: string, ...skills: string[]): SessionPlan => ({ heading, skills })
+
+export const unitSpecs: UnitSpec[] = [
+  {
+    unitId: 'tall',
+    title: 'Tall',
+    topic: 'Tall',
+    area: 'Tall og algebra',
+    description:
+      'Elevene utforsker plassverdi, regner i hodet og runder av, legger sammen og trekker fra med og uten veksling, stiller opp tall over 1000 og møter negative tall på tallinjen.',
+    // Økt 1–6 ligger i uke 41–43 og økt 7–14 i uke 44–45 (uke 44 står i sessions/mockData.ts).
+    weeks: [
+      {
+        title: 'Uke 1 - plassverdi',
+        sessions: [
+          s('Enere, tiere, hundrere og tusenere', 'tall.firesifrede'),
+          s('Tall på tallinjen', 'tall.firesifrede'),
+          s('Større enn og mindre enn', 'tall.firesifrede'),
+        ],
+      },
+      {
+        title: 'Uke 2 - hoderegning og avrunding',
+        sessions: [
+          s('10 mer og 100 mer – tallmønstre', 'tall.hoderegning'),
+          s('Runde av til nærmeste tier', 'tall.hoderegning'),
+          s('Runde av til nærmeste hundrer', 'tall.hoderegning'),
+        ],
+      },
+      {
+        title: 'Uke 3 - addisjon og subtraksjon',
+        sessions: [
+          s('Tiere, enere og smarte regnestrategier', 'tall.addisjon-subtraksjon'),
+          s('Addisjon med tierovergang – forstå og utforske', 'tall.addisjon-subtraksjon'),
+          s('Addisjon med tierovergang – øve og bruke', 'tall.addisjon-subtraksjon'),
+          s('Subtraksjon – ta bort og finne forskjellen', 'tall.addisjon-subtraksjon'),
+        ],
+      },
+      {
+        title: 'Uke 4 - veksling, oppstilling og negative tall',
+        sessions: [
+          s('Veksle en tier – forstå og utforske', 'tall.addisjon-subtraksjon'),
+          s('Subtraksjon med veksling – øve og bruke', 'tall.addisjon-subtraksjon'),
+          s('Oppstilling med tall over 1000', 'tall.oppstilling'),
+          s('Negative tall og tallinjen', 'tall.negative'),
+        ],
+      },
+    ],
+    goals: [
+      'Forklare plassverdi i tall opptil 10 000.',
+      'Regne i hodet med tiere og hundrere, og runde av.',
+      'Legge sammen og trekke fra, med og uten veksling.',
+      'Stille opp og regne med tall over 1000.',
+      'Plassere negative tall på tallinjen.',
+    ],
+    levels: [
+      { title: 'Tall 1–20', subtitle: 'Tiervenner og tall opptil 20.', description: 'Legge sammen og trekke fra opptil 20.' },
+      { title: 'Tall 1–100', subtitle: 'Tierovergang og ukjente tall.', description: 'Dele opp tall for å regne.' },
+      { title: 'Tall 1–1000', subtitle: 'Tresifrede tall.', description: 'Stille opp og sjekke svaret.' },
+    ],
+  },
+  {
+    unitId: 'multiplikasjon',
+    title: 'Multiplikasjon',
+    topic: 'Multiplikasjon',
+    area: 'De fire regneartene',
+    description:
+      'Elevene utforsker gange som like grupper, øver på gangetabellen, ganger med tiere og hundrere, deler opp tall og bruker blokkmodeller og kombinasjoner.',
+    weeks: [
+      { title: 'Uke 1 - gange som like grupper', sessions: [s('Like grupper og gjentatt addisjon', 'mult.tabell-2-10'), s('Gangetegnet og 0- og 1-gangen', 'mult.tabell-2-10')] },
+      { title: 'Uke 2 - 2-, 3-, 4-, 5- og 10-gangen', sessions: [s('2-, 5- og 10-gangen', 'mult.tabell-2-10'), s('3- og 4-gangen – doble og halvere', 'mult.tabell-2-10')] },
+      { title: 'Uke 3 - 6-, 7-, 8- og 9-gangen', sessions: [s('6-gangen og sammenhenger i tabellen', 'mult.tabell-6-9'), s('7-, 8- og 9-gangen med smarte strategier', 'mult.tabell-6-9')] },
+      { title: 'Uke 4 - store tall', sessions: [s('Multiplisere med tiere og hundrere', 'mult.tiere-hundrere'), s('Dele opp og multiplisere', 'mult.dele-opp')] },
+      { title: 'Uke 5 - modeller og kombinasjoner', sessions: [s('Bruke blokkmodeller', 'mult.blokkmodeller'), s('Antall ulike kombinasjoner', 'mult.kombinasjoner')] },
+    ],
+    goals: [
+      'Forstå multiplikasjon som like grupper og gjentatt addisjon.',
+      'Kunne gangetabellen.',
+      'Gange med tiere og hundrere, og dele opp tall for å gange.',
+      'Bruke blokkmodeller og finne antall kombinasjoner.',
+    ],
+    levels: [
+      { title: 'Like grupper', subtitle: 'Gange med 2, 5 og 10.', description: 'Telle grupper med like mange.' },
+      { title: 'Gangetabellen', subtitle: 'Gange med 3, 4, 6, 7 og 8.', description: 'Bruke dobling og kjente fakta.' },
+      { title: 'Store gangestykker', subtitle: 'Tosifrede tall, tiere og hundrere.', description: 'Dele opp tall for å gange.' },
+    ],
+  },
+  {
+    unitId: 'divisjon',
+    title: 'Divisjon',
+    topic: 'Divisjon',
+    area: 'De fire regneartene',
+    description:
+      'Elevene ser sammenhengen mellom gange og dele, skiller mellom delingsdivisjon og målingsdivisjon, regner med rest og bruker modeller.',
+    weeks: [
+      { title: 'Uke 1 - gange og dele', sessions: [s('Multiplikasjon og divisjon henger sammen', 'div.mult-og-div'), s('Dele med gangetabellen', 'div.mult-og-div')] },
+      { title: 'Uke 2 - to måter å dele på', sessions: [s('Delingsdivisjon – dele likt', 'div.delings-malings'), s('Målingsdivisjon – hvor mange grupper?', 'div.delings-malings')] },
+      { title: 'Uke 3 - noe til overs', sessions: [s('Divisjon med noe til overs', 'div.rest'), s('Rest i hverdagen', 'div.rest')] },
+      { title: 'Uke 4 - modeller', sessions: [s('Bruke modeller i divisjon', 'div.modeller'), s('Dette mestrer jeg – divisjon', 'div.mult-og-div', 'div.delings-malings', 'div.modeller')] },
+    ],
+    goals: [
+      'Bruke gangetabellen til å dele.',
+      'Skille mellom delingsdivisjon og målingsdivisjon.',
+      'Dele med noe til overs og forklare hva resten betyr.',
+      'Bruke modeller til å løse divisjonsoppgaver.',
+    ],
+    levels: [
+      { title: 'Dele likt', subtitle: 'Dele med 2, 3, 4 og 5.', description: 'Dele likt med konkreter.' },
+      { title: 'Dele med tabellen', subtitle: 'Dele med 3, 4 og 6.', description: 'Bruke gangetabellen baklengs.' },
+      { title: 'Dele større tall', subtitle: 'Dele med 6–9 og rest.', description: 'Dele og sjekke svaret med gange.' },
+    ],
+  },
+  {
+    unitId: 'repetisjon-host',
+    title: 'Repetisjon',
+    topic: 'Repetisjon',
+    area: 'Repetisjon',
+    description: 'Elevene repeterer høstens tema og velger selv strategi og regneart. Økta avsluttes med en felles samtale om hva de mestrer.',
+    weeks: [
+      { title: 'Uke 1 - tall', sessions: [s('Repetisjon: tallforståelse og plassverdi', 'tall.firesifrede', 'tall.hoderegning'), s('Repetisjon: addisjon og subtraksjon', 'tall.addisjon-subtraksjon')] },
+      { title: 'Uke 2 - gange og dele', sessions: [s('Repetisjon: gangetabellen', 'mult.tabell-2-10', 'mult.tabell-6-9'), s('Repetisjon: grunnleggende divisjon', 'div.mult-og-div', 'div.delings-malings')] },
+      {
+        title: 'Uke 3 - flere regnearter',
+        sessions: [
+          s('Problemløsing med flere regnearter', 'tall.addisjon-subtraksjon', 'mult.tabell-2-10', 'div.delings-malings'),
+          s('Dette mestrer jeg – høsten oppsummert', 'tall.firesifrede', 'tall.addisjon-subtraksjon', 'mult.tabell-6-9', 'div.mult-og-div'),
+        ],
+      },
+    ],
+    goals: ['Bruke strategier for addisjon og subtraksjon.', 'Huske gangetabellen og bruke den til å dele.', 'Velge regneart i oppgaver med flere steg.'],
+    levels: repetitionLevels,
+  },
+  {
+    unitId: 'geometri',
+    title: 'Geometri',
+    topic: 'Geometri',
+    area: 'Geometri',
+    description: 'Elevene beskriver todimensjonale og tredimensjonale figurer, bretter ut romfigurer og undersøker vinkler.',
+    weeks: [
+      { title: 'Uke 1 - todimensjonale figurer', sessions: [s('Mangekanter – sider og hjørner', 'geo.2d'), s('Omkrets av mangekanter', 'geo.2d')] },
+      { title: 'Uke 2 - tredimensjonale figurer', sessions: [s('Kube, prisme, pyramide og sylinder', 'geo.3d'), s('Fra tredimensjonal til todimensjonal', 'geo.3d-til-2d')] },
+      { title: 'Uke 3 - vinkler', sessions: [s('Rette, spisse og butte vinkler', 'geo.vinkler'), s('Vinkler i trekanter', 'geo.vinkler')] },
+    ],
+    goals: [
+      'Beskrive todimensjonale figurer ut fra sider og hjørner.',
+      'Beskrive tredimensjonale figurer ut fra flater, kanter og hjørner.',
+      'Se sammenhengen mellom en romfigur og utbrettingen av den.',
+      'Kjenne igjen og sammenligne vinkler.',
+    ],
+    levels: [
+      { title: 'Sider og hjørner', subtitle: 'Trekanter og firkanter.', description: 'Telle sider, hjørner og flater.' },
+      { title: 'Omkrets og flater', subtitle: 'Kvadrater og romfigurer.', description: 'Regne ut omkrets og telle flater.' },
+      { title: 'Vinkler og utbrettinger', subtitle: 'Vinkelsum og utbrettinger.', description: 'Bruke at vinklene er 180° til sammen.' },
+    ],
+  },
+  {
+    unitId: 'problemlosing',
+    title: 'Problemløsing',
+    topic: 'Problemløsing',
+    area: 'Problemløsing',
+    description: 'Elevene lager regneuttrykk til regnefortellinger, bruker modeller, løser oppgaver med flere steg og vurderer svaralternativer.',
+    weeks: [
+      { title: 'Uke 1 - fortellinger og modeller', sessions: [s('Regnefortellinger og regneuttrykk', 'prob.regnefortellinger'), s('Bruke modeller', 'prob.modeller')] },
+      { title: 'Uke 2 - flere steg og valg', sessions: [s('Flerstegsoppgaver', 'prob.flersteg'), s('Flervalgsoppgaver', 'prob.flervalg')] },
+    ],
+    goals: ['Skrive regneuttrykk til regnefortellinger.', 'Bruke modeller til å løse oppgaver.', 'Løse oppgaver med flere steg og vurdere om svaret er rimelig.'],
+    levels: [
+      { title: 'Ett steg', subtitle: 'Regnefortellinger med pluss.', description: 'Skrive regneuttrykket.' },
+      { title: 'Modeller', subtitle: 'Pluss, minus og modeller.', description: 'Tegne en modell før jeg regner.' },
+      { title: 'Flere steg', subtitle: 'Oppgaver med to steg.', description: 'Planlegge og sjekke svaret.' },
+    ],
+  },
+  {
+    unitId: 'tall-og-regning',
+    title: 'Tall og regning',
+    topic: 'Tall og regning',
+    area: 'Tall og algebra',
+    description: 'Elevene bruker sammenhengen mellom regneartene, og blir kjent med desimaltall med tideler og i lengdemåling.',
+    weeks: [
+      { title: 'Uke 1 - sammenhenger', sessions: [s('Sammenhengen mellom addisjon og subtraksjon', 'tr.add-sub'), s('Sammenhengen mellom multiplikasjon og divisjon', 'tr.mult-div')] },
+      { title: 'Uke 2 - tideler', sessions: [s('Desimaltall med tideler', 'tr.tideler'), s('Tideler på tallinjen', 'tr.tideler')] },
+      { title: 'Uke 3 - desimaltall i måling', sessions: [s('Desimaltall i lengdemåling', 'tr.desimal-lengde'), s('Måle og skrive lengder med desimaltall', 'tr.desimal-lengde')] },
+    ],
+    goals: ['Bruke sammenhengen mellom regneartene til å sjekke svar.', 'Forstå og skrive desimaltall med tideler.', 'Bruke desimaltall i lengdemåling.'],
+    levels: [
+      { title: 'Sammenhenger', subtitle: 'Pluss og minus, gange og dele.', description: 'Bruke ett regnestykke til å finne et annet.' },
+      { title: 'Tideler', subtitle: 'Hele og tideler.', description: 'Skrive desimaltall.' },
+      { title: 'Desimaltall i bruk', subtitle: 'Regne og måle med desimaltall.', description: 'Bytte mellom enheter.' },
+    ],
+  },
+  {
+    unitId: 'repetisjon-vinter',
+    title: 'Repetisjon',
+    topic: 'Repetisjon',
+    area: 'Repetisjon',
+    description: 'Elevene repeterer vinterens tema: figurer og vinkler, problemløsing med flere steg, sammenhenger mellom regneartene og tideler.',
+    weeks: [
+      { title: 'Uke 1 - geometri', sessions: [s('Repetisjon: todimensjonale og tredimensjonale figurer', 'geo.2d', 'geo.3d'), s('Repetisjon: vinkler og geometriske egenskaper', 'geo.vinkler')] },
+      { title: 'Uke 2 - regning', sessions: [s('Repetisjon: problemløsing og sammenhenger', 'prob.flersteg', 'tr.add-sub', 'tr.mult-div'), s('Repetisjon: desimaltall og tideler', 'tr.tideler')] },
+    ],
+    goals: ['Beskrive figurer og vinkler.', 'Løse oppgaver med flere steg.', 'Bruke sammenhenger mellom regneartene og tideler.'],
+    levels: repetitionLevels,
+  },
+  {
+    unitId: 'strategier-i-divisjon',
+    title: 'Divisjon',
+    topic: 'Strategier i divisjon',
+    area: 'De fire regneartene',
+    description:
+      'Elevene deler større tall ved å dele opp i hundrere, tiere og enere, finner gode måter å dele på, deler med 10 og 100 og finner del av en hel og del av en mengde.',
+    weeks: [
+      { title: 'Uke 1 - dele opp tall', sessions: [s('Dele tall i hundrere, tiere og enere', 'sdiv.hte'), s('Dele tall på gode måter', 'sdiv.gode-mater')] },
+      { title: 'Uke 2 - sammenhenger', sessions: [s('Sammenhenger i divisjon', 'sdiv.sammenhenger'), s('Dividere med 10 og 100', 'sdiv.10-100')] },
+      { title: 'Uke 3 - deler', sessions: [s('Målingsdivisjon og delingsdivisjon', 'sdiv.malings-delings'), s('Del av en hel og del av en mengde', 'sdiv.del-av-hel', 'sdiv.del-av-mengde')] },
+    ],
+    goals: ['Dele større tall ved å dele opp i hundrere, tiere og enere.', 'Velge en god måte å dele på.', 'Dele med 10 og 100.', 'Finne del av en hel og del av en mengde.'],
+    levels: [
+      { title: 'Dele opp', subtitle: 'Tosifrede tall.', description: 'Dele tiere og enere hver for seg.' },
+      { title: 'Gode måter', subtitle: 'Halvere og bruke sammenhenger.', description: 'Velge strategi.' },
+      { title: 'Store tall', subtitle: 'Tresifrede tall og brøk.', description: 'Dele og sjekke svaret med gange.' },
+    ],
+  },
+  {
+    unitId: 'maling',
+    title: 'Måling',
+    topic: 'Måling',
+    area: 'Måling',
+    description: 'Elevene måler volum, masse, areal, omkrets og tid, og bytter mellom måleenheter.',
+    weeks: [
+      { title: 'Uke 1 - volum og masse', sessions: [s('Måle volum – liter og desiliter', 'mal.volum', 'mal.liter-dl'), s('Kilogram og gram', 'mal.kg-g')] },
+      { title: 'Uke 2 - enheter og areal', sessions: [s('Sammenligne måleenheter og desimaltall', 'mal.desimaltall'), s('Måle areal', 'mal.areal')] },
+      { title: 'Uke 3 - omkrets og tid', sessions: [s('Areal og omkrets', 'mal.areal-omkrets'), s('Tid – klokka og hvor lang tid', 'mal.tid')] },
+    ],
+    goals: ['Måle og sammenligne volum, masse og lengde.', 'Bytte mellom måleenheter.', 'Finne areal og omkrets.', 'Lese klokka og regne med tid.'],
+    levels: [
+      { title: 'Måle', subtitle: 'Hele enheter.', description: 'Måle og telle.' },
+      { title: 'Bytte enheter', subtitle: 'Liter, dl, kg og g.', description: 'Gjøre om mellom enheter.' },
+      { title: 'Regne med måling', subtitle: 'Desimaltall, areal og tid.', description: 'Bruke måling i oppgaver.' },
+    ],
+  },
+  {
+    unitId: 'monster-og-algoritmer',
+    title: 'Mønster',
+    topic: 'Mønster og algoritmer',
+    area: 'Tall og algebra',
+    description: 'Elevene utforsker mønster, figurtall og tallfølger, og lager koder med løkker og vilkår.',
+    weeks: [
+      { title: 'Uke 1 - mønster', sessions: [s('Utforske mønster og figurtall', 'mon.utforske', 'mon.figurtall'), s('Mønster i tallfølger', 'mon.tallfolger')] },
+      { title: 'Uke 2 - algoritmer', sessions: [s('Koder med løkker', 'mon.lokker'), s('Koder med vilkår', 'mon.vilkar')] },
+    ],
+    goals: ['Beskrive og fortsette mønster og figurtall.', 'Finne regelen i en tallfølge.', 'Lese og lage enkle koder med løkker og vilkår.'],
+    levels: [
+      { title: 'Fortsette mønsteret', subtitle: 'Tallfølger som øker.', description: 'Finne neste tall.' },
+      { title: 'Finne regelen', subtitle: 'Figurtall og løkker.', description: 'Beskrive hvordan mønsteret vokser.' },
+      { title: 'Koder', subtitle: 'Løkker og vilkår.', description: 'Følge og forklare en algoritme.' },
+    ],
+  },
+  {
+    unitId: 'regning',
+    title: 'Regning',
+    topic: 'Regning',
+    area: 'Statistikk',
+    description: 'Elevene leser og tolker diagrammer og tabeller, bruker de fire regneartene og utforsker algebra.',
+    weeks: [
+      { title: 'Uke 1 - diagrammer og tabeller', sessions: [s('Lese og tolke diagrammer', 'reg.diagrammer'), s('Lese og tolke tabeller', 'reg.tabeller')] },
+      { title: 'Uke 2 - de fire regneartene', sessions: [s('De fire regneartene', 'reg.fire-regnearter'), s('Velge regneart i tekstoppgaver', 'reg.fire-regnearter')] },
+      { title: 'Uke 3 - algebra', sessions: [s('Utforske algebra – finne det ukjente tallet', 'reg.algebra'), s('Likninger med symboler', 'reg.algebra')] },
+    ],
+    goals: ['Lese og tolke diagrammer og tabeller.', 'Velge og bruke riktig regneart.', 'Finne ukjente tall i enkle likninger.'],
+    levels: [
+      { title: 'Lese av', subtitle: 'Diagrammer og tabeller.', description: 'Finne hvor mange.' },
+      { title: 'Sammenligne', subtitle: 'Forskjeller og summer.', description: 'Velge regneart.' },
+      { title: 'Tolke og regne', subtitle: 'Piktogram og likninger.', description: 'Forklare hvordan jeg tenker.' },
+    ],
+  },
+  {
+    unitId: 'repetisjon-var',
+    title: 'Repetisjon',
+    topic: 'Repetisjon',
+    area: 'Repetisjon',
+    description: 'Elevene repeterer skoleårets tema og viser hva de har lært. Økta avsluttes med en felles samtale om hva de mestrer.',
+    weeks: [
+      { title: 'Uke 1 - divisjon og måling', sessions: [s('Repetisjon: divisjon og ulike strategier', 'sdiv.hte', 'sdiv.malings-delings'), s('Repetisjon: måling, areal og omkrets', 'mal.areal', 'mal.areal-omkrets', 'mal.tid')] },
+      { title: 'Uke 2 - skoleåret oppsummert', sessions: [s('Repetisjon: mønstre, tabeller og diagrammer', 'mon.tallfolger', 'reg.tabeller', 'reg.diagrammer'), s('Dette mestrer jeg – skoleåret oppsummert', 'reg.fire-regnearter', 'prob.flersteg')] },
+    ],
+    goals: ['Bruke ulike strategier i divisjon.', 'Regne med måling, areal og omkrets.', 'Lese tabeller og diagrammer og løse sammensatte oppgaver.'],
+    levels: repetitionLevels,
+  },
+]
+
+/** Plan og mål for hver periode (vises på temasiden). */
+export const unitDetails: TopicDetails[] = unitSpecs.map(({ unitId, weeks, goals }) => ({
+  topicId: unitId,
+  weeks: weeks.map((w) => ({ title: w.title, sessions: w.sessions.map((x) => x.heading) })),
+  goals,
+}))

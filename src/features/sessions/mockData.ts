@@ -10,10 +10,10 @@ export const standardPlan: PlanItem[] = [
 
 /** Standardinnhold for nye økter i temaet. */
 export const sessionBase = {
-  topicId: 'addisjon-og-subtraksjon',
-  title: 'Addisjon',
-  topic: 'Addisjon & subtraksjon',
-  area: 'De fire regneartene',
+  topicId: 'tall',
+  title: 'Tall',
+  topic: 'Tall',
+  area: 'Tall og algebra',
   className: '4A',
   totalSessions: 8,
   plan: standardPlan,
@@ -26,6 +26,7 @@ export const sessions: Session[] = [
     numbers: [1, 2],
     year: 2026,
     week: 44,
+    skillIds: ['tall.addisjon-subtraksjon'],
     slots: [
       { day: 'Mandag', time: '08.30' },
       { day: 'Mandag', time: '09.30' },
@@ -52,6 +53,7 @@ export const sessions: Session[] = [
     numbers: [3],
     year: 2026,
     week: 44,
+    skillIds: ['tall.addisjon-subtraksjon'],
     slots: [{ day: 'Onsdag', time: '10.30' }],
     date: 'Onsdag 28. oktober',
     time: '10.30 - 11.30',
@@ -75,6 +77,7 @@ export const sessions: Session[] = [
     numbers: [4],
     year: 2026,
     week: 44,
+    skillIds: ['tall.addisjon-subtraksjon'],
     slots: [{ day: 'Fredag', time: '09.30' }],
     date: 'Fredag 30. oktober',
     time: '9.30 - 10.30',
@@ -96,6 +99,8 @@ export const sessions: Session[] = [
 
 /** Økter som allerede er gjennomført eller hoppet over. */
 export const initialProgress: Record<string, 'completed' | 'skipped'> = {
+  // Tall økt 1–6 (uke 41–43) og 7–8 (uke 44)
+  ...Object.fromEntries([1, 2, 3, 4, 5, 6].map((n) => [`tall-${n}`, 'completed' as const])),
   'okt-1-2': 'completed',
 }
 

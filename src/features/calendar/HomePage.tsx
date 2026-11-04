@@ -72,7 +72,6 @@ export function HomePage() {
       <div className="w-full">
         <WeekCalendar
           week={shownWeek}
-          isCurrentWeek={offset === 0}
           weekdays={weekdays}
           timeSlots={timeSlots}
           breaks={breaks}
@@ -80,7 +79,6 @@ export function HomePage() {
           now={now}
           onPreviousWeek={() => setOffset((o) => o - 1)}
           onNextWeek={() => setOffset((o) => o + 1)}
-          onThisWeek={() => setOffset(0)}
           onAdd={() => setCreating(true)}
           onEditSession={setEditingId}
           onRemoveSession={setRemovingId}

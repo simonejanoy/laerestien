@@ -30,7 +30,7 @@ function nextLesson(time: string) {
 export function SessionFormDialog({ open, session, week, onClose, onSave }: SessionFormDialogProps) {
   const { calendarEntries } = useSessions()
 
-  const [topicId, setTopicId] = useState(session?.topicId ?? 'addisjon-og-subtraksjon')
+  const [topicId, setTopicId] = useState(session?.topicId ?? 'tall')
   const [day, setDay] = useState<Weekday>(session?.slots[0].day ?? 'Mandag')
   const [time, setTime] = useState(session?.slots[0].time ?? lessonSlots[0])
   const [double, setDouble] = useState((session?.slots.length ?? 1) > 1)
@@ -86,9 +86,9 @@ export function SessionFormDialog({ open, session, week, onClose, onSave }: Sess
           >
             {terms.map((term) => (
               <optgroup key={term.id} label={term.name}>
-                {term.topics.map((topic) => (
-                  <option key={topic.id} value={topic.id}>
-                    {topic.name}
+                {term.units.map((unit) => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.name}
                   </option>
                 ))}
               </optgroup>

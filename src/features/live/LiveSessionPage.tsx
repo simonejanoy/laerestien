@@ -2,7 +2,8 @@ import { CircleCheck, Clock3, PencilLine, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { PlayIcon } from '../../components/ui/icons'
-import { endLiveSession, setLiveStatus } from '../../lib/liveSession'
+import { useAuth } from '../../hooks/useAuth'
+import { endLiveSession, liveClassId, setLiveStatus } from '../../lib/liveSession'
 import type { Level, StudentProgress } from '../../types'
 import { FullPageMessage } from '../auth/ProtectedRoute'
 import { useSessions } from '../sessions/sessionsContext'
@@ -22,6 +23,7 @@ export function LiveSessionPage() {
   const { sessionId = '' } = useParams()
   const navigate = useNavigate()
   const { sessions, getTasks, complete } = useSessions()
+  const { profile } = useAuth()
   const session = sessions.find((s) => s.id === sessionId)
   const tasks = getTasks(sessionId)
 
@@ -85,11 +87,11 @@ export function LiveSessionPage() {
   const togglePause = () => {
     const next = !paused
     setPaused(next)
-    void setLiveStatus(session.className, next ? 'paused' : 'running')
+    void setLiveStatus(liveClassId(profile?.classId, session.className), next ? 'paused' : 'running')
   }
 
   const endSession = () => {
-    void endLiveSession(session.className)
+    void endLiveSession(liveClassId(profile?.classId, session.className))
     complete(session.id)
     navigate(`/okt/${session.id}`)
   }

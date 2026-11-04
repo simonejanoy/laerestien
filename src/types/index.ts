@@ -56,6 +56,7 @@ export interface PlanItem {
 
 export interface Session {
   id: string
+  /** Perioden i årsplanen økta hører til (PlanUnit-id). */
   topicId: string
   /** Kortnavn i overskriften, f.eks. «Addisjon». */
   title: string
@@ -76,6 +77,8 @@ export interface Session {
   year: number
   week: number
   slots: CalendarSlot[]
+  /** Ferdighetene (undertemaene) økta øver på – brukes til progresjon på tvers av perioder. */
+  skillIds?: string[]
   totalSessions: number
   levels: LevelGroup[]
   goals: string[]
@@ -103,6 +106,13 @@ export interface Task {
   b: number
 }
 
+/** Figur som tegnes til en oppgave: rutefigur (areal) eller analog klokke. */
+export type TaskFigure =
+  /** «#» er en rute, «.» er tomt. */
+  | { kind: 'grid'; rows: string[] }
+  /** «HH:MM» – vises på en analog klokke. */
+  | { kind: 'clock'; time: string }
+
 /** Fritekstoppgave, f.eks. laget med AI-assistenten. Eleven skriver svaret, og læreren vurderer det. */
 export interface TextTask {
   kind: 'text'
@@ -120,14 +130,39 @@ export interface TextTask {
   aiGenerated: boolean
   /** Læreren har selv sett gjennom oppgaven. */
   reviewed: boolean
+  /** Figur som hører til oppgaven (valgfritt). */
+  figure?: TaskFigure
 }
 
 export type SessionTask = Task | TextTask
 
+/** Undertema/ferdighet, f.eks. «Firesifrede tall». Samme ferdighet kan øves i flere perioder. */
+export interface Skill {
+  id: string
+  name: string
+}
+
+/** Faglig tema med undertemaer, f.eks. «Multiplikasjon». */
 export interface Topic {
   id: string
   name: string
+  skills: Skill[]
+}
+
+/**
+ * Undervisningsperiode i årsplanen (det som vises under «Alle tema»): enten et tema,
+ * eller en repetisjonsperiode som gjenbruker ferdigheter fra tidligere tema.
+ */
+export interface PlanUnit {
+  id: string
+  name: string
+  /** Forslag til varighet i uker. */
   weeks: number
+  kind: 'topic' | 'repetition'
+  /** Temaet perioden hører til (mangler for repetisjon). */
+  topicId?: string
+  /** Ferdighetene perioden øver på. Repetisjon peker på ferdigheter fra tidligere tema. */
+  skillIds: string[]
 }
 
 export interface PlanWeek {
@@ -136,8 +171,9 @@ export interface PlanWeek {
   sessions: string[]
 }
 
-/** Utfyllende innhold for et tema (foreløpig bare Addisjon og subtraksjon). */
+/** Plan og mål for en periode i årsplanen. */
 export interface TopicDetails {
+  /** Id-en til perioden (PlanUnit). */
   topicId: string
   weeks: PlanWeek[]
   goals: string[]
@@ -147,7 +183,7 @@ export interface Term {
   id: 'host' | 'vinter' | 'var'
   name: string
   period: string
-  topics: Topic[]
+  units: PlanUnit[]
 }
 
 export interface Student {

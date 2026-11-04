@@ -18,9 +18,22 @@ const liveDoc = (classId: string) => doc(db, 'liveSessions', classId)
 const logError = (action: string) => (error: unknown) =>
   console.error(`Kunne ikke ${action} økta i Firestore:`, error)
 
+/**
+ * Klassen økta startes for. Det er lærerens egen klasse – den samme som elevene lytter på,
+ * og den eneste Firestore-reglene lar læreren skrive til.
+ */
+export const liveClassId = (teacherClassId: string | undefined, sessionClassName: string) =>
+  teacherClassId || sessionClassName
+
+/** Starter økta for elevene. Gir false hvis det ikke gikk (f.eks. feil klasse eller manglende tilgang). */
 export function startLiveSession(classId: string, sessionId: string) {
   const data: LiveSession = { sessionId, status: 'running', startedAt: Date.now() }
-  return setDoc(liveDoc(classId), data).catch(logError('starte'))
+  return setDoc(liveDoc(classId), data)
+    .then(() => true)
+    .catch((error: unknown) => {
+      logError('starte')(error)
+      return false
+    })
 }
 
 export function setLiveStatus(classId: string, status: LiveStatus) {

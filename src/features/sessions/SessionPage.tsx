@@ -2,7 +2,8 @@ import { Check, ChevronLeft, ChevronRight, PencilLine, Trash2 } from 'lucide-rea
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { PlayIcon } from '../../components/ui/icons'
-import { startLiveSession } from '../../lib/liveSession'
+import { useAuth } from '../../hooks/useAuth'
+import { liveClassId, startLiveSession } from '../../lib/liveSession'
 import { FullPageMessage } from '../auth/ProtectedRoute'
 import { DeleteSessionDialog } from './DeleteSessionDialog'
 import { LevelCard } from './LevelCard'
@@ -31,6 +32,8 @@ export function SessionPage() {
   const navigate = useNavigate()
   const { sessions, getStatus, getBlockers, skip, getTasks, updateSession, removeSession } = useSessions()
   const [modal, setModal] = useState<'start' | 'skip' | 'edit' | 'delete' | null>(null)
+  const { profile } = useAuth()
+  const [startError, setStartError] = useState<string | null>(null)
 
   const index = sessions.findIndex((s) => s.id === sessionId)
   const session = sessions[index]
@@ -43,13 +46,19 @@ export function SessionPage() {
   const canStart = status === 'available' || status === 'skipped'
   const tasks = getTasks(session.id)
 
-  const startSession = () => {
-    void startLiveSession(session.className, session.id)
+  const startSession = async () => {
+    setStartError(null)
+    const started = await startLiveSession(liveClassId(profile?.classId, session.className), session.id)
+    if (!started) {
+      setModal(null)
+      setStartError('Klarte ikke å starte økta for elevene. Sjekk at du er logget inn som lærer i klassen, og prøv igjen.')
+      return
+    }
     navigate(`/okt/${session.id}/live`)
   }
 
   const handleStartClick = () => {
-    if (readHideExplanation()) startSession()
+    if (readHideExplanation()) void startSession()
     else setModal('start')
   }
 
@@ -61,7 +70,7 @@ export function SessionPage() {
         // Ikke kritisk – forklaringen vises bare igjen neste gang.
       }
     }
-    startSession()
+    void startSession()
   }
 
   return (
@@ -108,6 +117,11 @@ export function SessionPage() {
               Start økt
             </button>
 
+            {startError && (
+              <p role="alert" className="max-w-xs text-right text-small text-error">
+                {startError}
+              </p>
+            )}
             {status === 'completed' && (
               <p className="flex items-center gap-[5px] text-body text-understanding">
                 Økt gjennomført
