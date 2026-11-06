@@ -1,6 +1,6 @@
 // Innstillinger for AI-assistenten. Brukes av API-serveren (server/), ikke i nettleseren.
-// Modellen (gemini-3.5-flash-lite) tenker ikke som standard («minimal»). Oppgaver og
-// elevvurderinger får «high», siden reglene krever at alle utregninger kontrolleres.
+// Modellen (gemini-3.8-flash) bruker «low» for oppgavegenerering.
+// Elevprofiler bruker «high», mens fri chat bruker «low».
 // Ikke legg til temperature, top_p, top_k eller candidate_count – de er utfaset for modellen.
 
 export type ThinkingLevelName = 'minimal' | 'low' | 'medium' | 'high'
@@ -9,9 +9,9 @@ export type ThinkingLevelName = 'minimal' | 'low' | 'medium' | 'high'
 export type AiUse = 'tasks' | 'profile' | 'chat'
 
 export const aiConfig = {
-  model: 'gemini-3.5-flash-lite',
+  model: 'gemini-3.8-flash',
   thinkingLevel: {
-    tasks: 'high',
+    tasks: 'low',
     profile: 'high',
     chat: 'low',
   } satisfies Record<AiUse, ThinkingLevelName>,
