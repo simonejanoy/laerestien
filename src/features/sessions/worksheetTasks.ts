@@ -351,13 +351,15 @@ const boltTasks: { level: Level; text: string; solution: string }[] = [
 /** «Divisjon – regn ut trinn for trinn» (flersifret). */
 const longDivision: [number, number][] = [[13668, 2], [32532, 6], [9032, 4], [47223, 9], [8865, 9], [12672, 6]]
 
-function sharingTasks(sessionId: string, part: number): SessionTask[] {
+/**
+ * Delestykkene fra «Oppgaver med deling» på nivå 1. Gangetabellarket (gange og dele om hverandre)
+ * bare der økta handler om sammenhengen mellom gange og dele – ikke i øktene om delingsdivisjon og målingsdivisjon.
+ */
+function sharingTasks(sessionId: string, part: number, withTimesTable: boolean): SessionTask[] {
   const id = (sheet: string, i: number) => `ark-${sessionId}-${sheet}-${i + 1}`
   return [
     ...slice(simpleDivision, part, 6).map(([a, b], i) => math(id('deling', i), 1, a, '/', b)),
-    ...slice(timesTableDrill, part, 6).map(([a, op, b], i) => math(id('gangetabell', i), 2, a, op, b)),
-    // Tekstoppgavene om bolter (Divisjon økt 7 «Bruke modeller i divisjon»)
-    ...(part === 6 ? boltTasks.map((t, i) => textTask(id('bolter', i), t.level, t.text, t.solution)) : []),
+    ...(withTimesTable ? slice(timesTableDrill, part, 6).map(([a, op, b], i) => math(id('gangetabell', i), 2, a, op, b)) : []),
   ]
 }
 
@@ -684,7 +686,8 @@ function multiplicationTasks(sessionId: string, session: number): SessionTask[] 
 /** Rader og kolonner fra «Mattekryss» (gange og deling) med bare én tom rute. */
 const timesCross = {
   easy: ['2 · ___ = 6', '___ · 3 = 27', '3 · ___ = 3', '3 · 3 = ___', '2 · 5 = ___', '6 : 3 = ___'],
-  hard: ['___ · 6 = 48', '___ · 6 = 90', '14 · ___ = 70', '16 · 18 = ___', '___ · 7 = 245'],
+  // «16 · 18 = ___» er tatt ut: et rent gangestykke med tosifrede tall viser ikke sammenhengen med deling.
+  hard: ['___ · 6 = 48', '___ · 6 = 90', '14 · ___ = 70', '___ · 7 = 245'],
 }
 
 /** Løser «a · b = c» eller «a : b = c» med én tom rute. */
@@ -803,15 +806,18 @@ function collect(entries: [string, SessionTask[]][]) {
   return all
 }
 
-/** Del av «Oppgaver med deling» og «Gangetabell 1–100» → økt i Divisjon (del 5 ligger i Repetisjon høst). */
-const sharingSessions: [number, string][] = [
-  [0, 'divisjon-1'],
-  [1, 'divisjon-2'],
-  [2, 'divisjon-3'],
-  [3, 'divisjon-4'],
-  [4, 'divisjon-8'],
-  [5, 'repetisjon-host-4'],
-  [6, 'divisjon-7'],
+/**
+ * Del av «Oppgaver med deling» og «Gangetabell 1–100» → økt i Divisjon (del 5 ligger i Repetisjon høst).
+ * Divisjon økt 3 og 4 (delingsdivisjon, målingsdivisjon) får bare delestykkene. Økt 7 «Bruke modeller i
+ * divisjon» får ingen ark: gangetabellarket og bolteoppgavene bruker ingen modell.
+ */
+const sharingSessions: [number, string, boolean][] = [
+  [0, 'divisjon-1', true],
+  [1, 'divisjon-2', true],
+  [2, 'divisjon-3', false],
+  [3, 'divisjon-4', false],
+  [4, 'divisjon-8', true],
+  [5, 'repetisjon-host-4', true],
 ]
 
 /** Gangearkene → økt nr. 1–9 i Multiplikasjon (økt 7 og 10 har ingen ark som passer). */
@@ -826,7 +832,7 @@ export const worksheetTasks: Record<string, SessionTask[]> = collect([
   // Multiplikasjon og divisjon
   ...multiplicationSessions.map((n): [string, SessionTask[]] => [`multiplikasjon-${n}`, multiplicationTasks(`multiplikasjon-${n}`, n)]),
   ['divisjon-1', timesCrossTasks('divisjon-1')],
-  ...sharingSessions.map(([part, sessionId]): [string, SessionTask[]] => [sessionId, sharingTasks(sessionId, part)]),
+  ...sharingSessions.map(([part, sessionId, withTimesTable]): [string, SessionTask[]] => [sessionId, sharingTasks(sessionId, part, withTimesTable)]),
   // Repetisjon høst
   ['repetisjon-host-1', numberReviewTasks('repetisjon-host-1', 'tallforstaelse')],
   ['repetisjon-host-2', numberReviewTasks('repetisjon-host-2', 'addisjon-subtraksjon')],

@@ -117,6 +117,7 @@ export function toAiProfile(profile: TaskProfile): AiSessionProfile {
     ...(profile.allowSwappedFactors && { allowSwappedFactors: true }),
     ...(profile.strategyFocus && { strategyFocus: true }),
     ...(profile.requiresCarry && { requiresCarry: true }),
+    ...(profile.divisionType && { divisionType: profile.divisionType }),
   }
 }
 

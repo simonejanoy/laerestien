@@ -1,7 +1,7 @@
-import { MULTIPLICATION_AREAS, PLACE_VALUE_AREAS } from '../../src/ai/contract.ts'
+import { DIVISION_AREAS, MULTIPLICATION_AREAS, PLACE_VALUE_AREAS } from '../../src/ai/contract.ts'
 import type { ReferenceBank, ReferenceTask } from './types.ts'
 
-// Kontroll av referansebankene. Kjøres når serveren starter (multiplication.ts, placeValue.ts) og i testene.
+// Kontroll av referansebankene. Kjøres når serveren starter (multiplication.ts, placeValue.ts, division.ts) og i testene.
 
 /** Hva en bank skal inneholde: tema, ID-prefiks (M1-N1-01, T1-N1-01) og fagområdene i rekkefølge. */
 export interface BankSpec {
@@ -12,6 +12,7 @@ export interface BankSpec {
 
 export const MULTIPLICATION_BANK: BankSpec = { topic: 'multiplikasjon', idPrefix: 'M', areas: MULTIPLICATION_AREAS }
 export const PLACE_VALUE_BANK: BankSpec = { topic: 'tall-og-plassverdi', idPrefix: 'T', areas: PLACE_VALUE_AREAS }
+export const DIVISION_BANK: BankSpec = { topic: 'divisjon', idPrefix: 'D', areas: DIVISION_AREAS }
 const REQUIRED_TEXT = ['id', 'topic', 'area', 'areaTitle', 'title', 'format', 'purpose', 'studentText', 'solution'] as const
 
 export interface BankCheck {
@@ -97,6 +98,8 @@ export function evaluate(expression: string): number | null {
 const ARITHMETIC_RUN = /(?:(?<![\w)])[-−])?[\d(][\d\s()x·*:/+\-−=]*[\d)]/g
 const OPERATOR = /[+\-−x·*:/]/
 const UNIT_WORD = /^\s*(tiere|tier|hundrere|hundrer|enere|ener)\b/i
+/** Rest etter en divisjon: «14 : 4 = 3 rest 2», «… = 3 med 2 til overs» eller «… = 3, og 2 til overs». */
+const REMAINDER_AFTER = /^\s*(?:rest\s+(\d+)|,?\s*(?:og|med)\s+(\d+)\s+til overs)/i
 
 /** Om teksten foran en regnerekke slutter med et regnetegn eller et tomt felt (ikke kolon etter et ord, som i «Fyll inn:»). */
 function operatorBefore(text: string) {
@@ -123,6 +126,17 @@ export function checkEquations(text: string): { checked: number; errors: string[
     if (before) sides.shift()
     const next = after.trimStart()[0] ?? ''
     if (OPERATOR.test(next) || next === '_' || UNIT_WORD.test(after)) sides.pop()
+    const remainder = REMAINDER_AFTER.exec(after)
+    if (remainder && sides.length === 2) {
+      // Divisjon med rest: venstre side er «a : b», høyre side er antall hele grupper.
+      const division = /^(\d+)\s*[:/]\s*(\d+)$/.exec(sides[0].replace(/(\d) (?=\d{3}\b)/g, '$1'))
+      const quotient = evaluate(sides[1])
+      if (!division || quotient === null) continue
+      const [a, b, r] = [Number(division[1]), Number(division[2]), Number(remainder[1] ?? remainder[2])]
+      checked++
+      if (b === 0 || Math.floor(a / b) !== quotient || a % b !== r) errors.push(`«${run.trim()} rest ${r}» stemmer ikke`)
+      continue
+    }
     const values = sides.filter(Boolean).map(evaluate)
     if (values.length < 2 || values.some((v) => v === null)) continue
     checked++

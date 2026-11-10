@@ -93,7 +93,7 @@ export function createTaskHandler({
         const secondaryAreas = request.profile?.secondaryAreas ?? []
         const referenceIds: NonNullable<AiResponseMeta['referenceIds']> = {}
         request.levels = request.levels.map((level): AiLevelContext => {
-          const chosen = selectReferences(references, { area, secondaryAreas, level: level.level, seed })
+          const chosen = selectReferences(references, { area, secondaryAreas, level: level.level, seed, divisionType: request.profile?.divisionType })
           referenceIds[String(level.level) as '1' | '2' | '3'] = chosen.map((r) => r.id)
           return { ...level, referenceTasks: chosen.map(toAiReference) }
         })

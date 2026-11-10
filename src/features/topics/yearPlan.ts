@@ -1,4 +1,4 @@
-import type { PlaceValueArea } from '../../ai/contract.ts'
+import type { DivisionArea, DivisionType, PlaceValueArea } from '../../ai/contract.ts'
 import type { Level, LevelGroup, LevelProfile, Operator, TaskProfile, TaskType, TopicDetails } from '../../types/index.ts'
 import { OPEN_STRATEGY, strategyInstruction } from './multiplicationStrategies.ts'
 import { columnTasks, fourDigitTasks, mentalStrategyTasks, negativeNumberTasks, type FourDigitVariant } from './placeValueTasks.ts'
@@ -100,6 +100,175 @@ const mentalByLevel = byLevel(
   (n) => five((i): TaskSpec => [H, vary(n, i, 2, 10), '+', vary(n + 1, i, 2, 10), 'Regn i hodet.']),
   (n) => five((i): TaskSpec => [H, vary(n, i, 23, 68), '+', 10 * vary(n + 1, i, 1, 3), 'Regn i hodet: legg til tierne.']),
   (n) => five((i): TaskSpec => [H, vary(n, i, 120, 480), i % 2 === 0 ? '+' : '-', 10 * vary(n + 2, i, 2, 9), 'Regn i hodet.']),
+)
+
+// ---------------------------------------------------------------------------------------
+// Divisjon: grunnoppgaver per divisjonstype og fagområde. Alle går opp, bortsett fra restoppgavene.
+
+/** Et delestykke som går opp: total = divisor · kvotient. */
+const evenDivision = (n: number, i: number, divisors: number[], [minQ, maxQ]: [number, number]) => {
+  const d = pick(divisors, i + n)
+  const q = vary(n, i, minQ, maxQ)
+  return { d, q, total: d * q }
+}
+
+/** Delingsdivisjon: antall grupper er kjent, eleven finner hvor mange det blir i hver. */
+const sharingDivision = byLevel(
+  (n) =>
+    five((i): TaskSpec => {
+      const { d, total } = evenDivision(n, i, [2, 3, 4, 5], [2, 8])
+      return [H, total, '/', d, `Del ${total} klistremerker likt på ${d} barn. Hvor mange får hvert barn?`]
+    }),
+  (n) =>
+    five((i): TaskSpec => {
+      const { d, total } = evenDivision(n, i, [3, 4, 6], [3, 9])
+      return i % 2 === 0
+        ? [H, total, '/', d, `${total} kort fordeles likt mellom ${d} venner. Hvor mange kort får hver venn?`]
+        : [H, total, '/', d, `${total} kroner deles likt mellom ${d} søsken. Hvor mange kroner får hver?`]
+    }),
+  (n) =>
+    five((i): TaskSpec => {
+      const { d, total } = evenDivision(n, i, [6, 7, 8, 9], [3, 9])
+      return i % 2 === 0
+        ? [H, total, '/', d, `${total} elever deles i ${d} like store lag. Hvor mange er det på hvert lag?`]
+        : [H, total, '/', d, `En bonde fordeler ${total} høner likt i ${d} hønsehus. Hvor mange høner bor i hvert hus?`]
+    }),
+)
+
+/** Målingsdivisjon: størrelsen på hver gruppe er kjent, eleven finner antall grupper. */
+const measuringDivision = byLevel(
+  (n) =>
+    five((i): TaskSpec => {
+      const { d, total } = evenDivision(n, i, [2, 3, 4, 5], [2, 8])
+      return [H, total, '/', d, `Du har ${total} pærer og legger ${d} i hver kurv. Hvor mange kurver blir det?`]
+    }),
+  (n) =>
+    five((i): TaskSpec => {
+      const { d, total } = evenDivision(n, i, [3, 4, 6], [3, 9])
+      return [H, total, '/', d, `Du har ${total} egg og legger ${d} i hver eske. Hvor mange esker trenger du?`]
+    }),
+  (n) =>
+    five((i): TaskSpec => {
+      const { d, total } = evenDivision(n, i, [6, 7, 8, 9], [3, 9])
+      return i % 2 === 0
+        ? [H, total, '/', d, `${total} elever skal sitte ${d} ved hvert bord. Hvor mange bord trengs?`]
+        : [H, total, '/', d, `Ida har ${total} perler og lager armbånd med ${d} perler på hvert. Hvor mange armbånd kan hun lage?`]
+    }),
+)
+
+/** Begge typene om hverandre (repetisjon og «Strategier i divisjon»), slik undertemaet alltid har gjort. */
+const mixedDivision = byLevel(
+  (n) =>
+    five((i): TaskSpec => {
+      const d = pick([2, 3, 4, 5], i + n)
+      const total = d * vary(n, i, 2, 8)
+      return [H, total, '/', d, `Del ${total} klistremerker likt på ${d} barn. Hvor mange får hvert barn?`]
+    }),
+  (n) =>
+    five((i): TaskSpec => {
+      const d = pick([3, 4, 6], i + n)
+      const total = d * vary(n, i, 3, 9)
+      return [H, total, '/', d, `Du har ${total} egg og legger ${d} i hver eske. Hvor mange esker trenger du?`]
+    }),
+  (n) =>
+    five((i): TaskSpec => {
+      const d = pick([6, 7, 8, 9], i + n)
+      const total = d * vary(n, i, 3, 9)
+      return i % 2 === 0
+        ? [H, total, '/', d, `${total} elever deles i ${d} like store lag. Hvor mange er det på hvert lag?`]
+        : [H, total, '/', d, `${total} elever skal sitte ${d} ved hvert bord. Hvor mange bord trengs?`]
+    }),
+)
+
+/** «1 kake», «3 kaker» */
+const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+
+/** Et delestykke med rest: total = divisor · kvotient + rest (rest fra 1 til divisor − 1). */
+const withRemainder = (n: number, i: number, divisors: number[], [minQ, maxQ]: [number, number]) => {
+  const d = pick(divisors, i + n)
+  const q = vary(n, i, minQ, maxQ)
+  const r = vary(n + 1, i, 1, d - 1)
+  return { d, q, r, total: d * q + r }
+}
+
+/**
+ * Rest i hverdagen: hele grupper og hvor mange som blir til overs, eller hvor mange grupper som
+ * faktisk trengs når alle skal være med (svaret rundes opp).
+ */
+const everydayRemainder = byLevel(
+  (n) =>
+    five((i): TextSpec => {
+      const { d, q, r, total } = withRemainder(n, i, [3, 4, 5], [2, 6])
+      return {
+        text: `${total} kaker skal pakkes i esker med plass til ${d} kaker. Hvor mange esker blir helt fulle, og hvor mange kaker er igjen?`,
+        solution: `${q} fulle esker og ${count(r, 'kake', 'kaker')} igjen  (${total} : ${d} = ${q} rest ${r})`,
+      }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      const { d, q, r, total } = withRemainder(n, i, [4, 5, 6], [3, 8])
+      return i % 2 === 0
+        ? {
+            text: `${total} barn skal padle i kanoer med plass til ${d} barn i hver. Hvor mange kanoer trengs for at alle skal være med?`,
+            solution: `${q + 1} kanoer  (${total} : ${d} = ${q} rest ${r}, så det trengs én kano til)`,
+          }
+        : {
+            text: `${total} gulrøtter bindes i bunter med ${d} i hver. Hvor mange hele bunter blir det, og hvor mange gulrøtter er igjen?`,
+            solution: `${q} hele bunter og ${count(r, 'gulrot', 'gulrøtter')} igjen  (${total} : ${d} = ${q} rest ${r})`,
+          }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      const { d, q, r, total } = withRemainder(n, i, [6, 7, 8], [3, 9])
+      return i % 2 === 0
+        ? {
+            text: `${total} bilder skal limes inn i et album med ${d} bilder på hver side. Hvor mange sider trengs, og hvor mange bilder kommer på den siste siden?`,
+            solution: `${q + 1} sider. Det kommer ${count(r, 'bilde', 'bilder')} på den siste siden.  (${total} : ${d} = ${q} rest ${r})`,
+          }
+        : {
+            text: `${total} supportere skal kjøre minibuss til kampen. Hver buss har plass til ${d}. Hvor mange busser må de bestille, og hvorfor er ikke svaret ${q}?`,
+            solution: `${q + 1} busser. ${total} : ${d} = ${q} rest ${r}, og de ${r} som blir igjen, trenger også plass.`,
+          }
+    }),
+)
+
+/** Modelloppgaver: like grupper, tallinje, rutenett og blokkmodell – beskrevet i teksten, så eleven kan tegne eller lese dem. */
+const divisionModelTasks = byLevel(
+  (n) =>
+    five((i): TextSpec => {
+      const { d, q, total } = evenDivision(n, i, [2, 3, 4, 5], [2, 6])
+      if (i % 3 === 0) {
+        return { text: `Tegn ${d} ringer og fordel ${total} kryss likt i dem. Hvor mange kryss står i hver ring?`, solution: `${q} kryss  (${total} : ${d} = ${q})` }
+      }
+      if (i % 3 === 1) {
+        return { text: `Tegn en tallinje fra 0 til ${total}. Hopp ${d} og ${d} fra 0. Hvor mange hopp trenger du for å komme til ${total}?`, solution: `${q} hopp  (${total} : ${d} = ${q})` }
+      }
+      return { text: `Tegn et rutenett med ${total} ruter fordelt på ${d} like lange rader. Hvor mange ruter er det i hver rad?`, solution: `${q} ruter  (${total} : ${d} = ${q})` }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      const { d, q, total } = evenDivision(n, i, [4, 5, 6], [3, 9])
+      if (i % 3 === 0) {
+        return { text: `Tegn en blokkmodell med totalen ${total}, delt i ${d} like store deler. Hvilket tall står i hver del? Skriv divisjonsstykket.`, solution: `${q}. ${total} : ${d} = ${q}.` }
+      }
+      if (i % 3 === 1) {
+        return { text: `Gå baklengs på tallinjen fra ${total} til 0 med hopp på ${d}. Hvor mange hopp blir det? Skriv divisjonsstykket.`, solution: `${q} hopp. ${total} : ${d} = ${q}.` }
+      }
+      return { text: `Et rutenett har ${total} ruter og ${d} kolonner. Hvor mange rader har det? Skriv divisjonsstykket.`, solution: `${q} rader. ${total} : ${d} = ${q}.` }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      const { d, q, total } = evenDivision(n, i, [6, 7, 8, 9], [3, 9])
+      return i % 2 === 0
+        ? {
+            text: `En blokkmodell har totalen ${total}, og hver del er ${d}. Tegn modellen. Hvor mange deler får den?`,
+            solution: `${q} deler. ${total} : ${d} = ${q}, fordi ${q} · ${d} = ${total}.`,
+          }
+        : {
+            text: `Vis ${total} : ${d} med et rutenett eller en tallinje. Forklar hva ${d} og svaret betyr i modellen.`,
+            solution: `${q}. Modellen viser ${total} delt i grupper på ${d}, og det blir ${q} grupper (${q} · ${d} = ${total}).`,
+          }
+    }),
 )
 
 // ---------------------------------------------------------------------------------------
@@ -211,30 +380,17 @@ const skillTasks: Record<string, Generator> = {
     (n) => divide([3, 4, 6], n, 'Regn ut. Hvilket gangestykke hjelper deg?'),
     (n) => divide([7, 8, 9], n, 'Regn ut, og sjekk svaret med gange.'),
   ),
-  'div.delings-malings': byLevel(
-    (n) =>
-      five((i): TaskSpec => {
-        const d = pick([2, 3, 4, 5], i + n)
-        const total = d * vary(n, i, 2, 8)
-        return [H, total, '/', d, `Del ${total} klistremerker likt på ${d} barn. Hvor mange får hvert barn?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const d = pick([3, 4, 6], i + n)
-        const total = d * vary(n, i, 3, 9)
-        return [H, total, '/', d, `Du har ${total} egg og legger ${d} i hver eske. Hvor mange esker trenger du?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const d = pick([6, 7, 8, 9], i + n)
-        const total = d * vary(n, i, 3, 9)
-        return i % 2 === 0
-          ? [H, total, '/', d, `${total} elever deles i ${d} like store lag. Hvor mange er det på hvert lag?`]
-          : [H, total, '/', d, `${total} elever skal sitte ${d} ved hvert bord. Hvor mange bord trengs?`]
-      }),
-  ),
-  'div.rest': (level, n) =>
-    five((i): TextSpec => {
+  // Uten divisjonstype i profilen (repetisjon, Strategier i divisjon) blandes de to typene som før.
+  'div.delings-malings': (level, n, profile) =>
+    profile?.divisionType === 'deling'
+      ? sharingDivision(level, n)
+      : profile?.divisionType === 'maling'
+        ? measuringDivision(level, n)
+        : mixedDivision(level, n),
+  'div.rest': (level, n, profile) =>
+    profile?.taskVariant === 'hverdag'
+      ? everydayRemainder(level, n)
+      : five((i): TextSpec => {
       const d = pick(level === 1 ? [2, 3, 5] : level === 2 ? [4, 6] : [6, 7, 8], i + n)
       const q = vary(n, i, 2, level === 1 ? 6 : 9)
       const r = vary(n + 1, i, 1, d - 1)
@@ -246,11 +402,8 @@ const skillTasks: Record<string, Generator> = {
             solution: `${q + 1} bord  (${a} : ${d} = ${q} med ${r} til overs, så det trengs ett bord til)`,
           }
     }),
-  'div.modeller': byLevel(
-    (n) => divide([2, 3, 4], n, 'Bruk en tallinje eller en tegning, og regn ut.'),
-    (n) => divide([4, 5, 6], n, 'Tegn en blokkmodell, og regn ut.'),
-    (n) => divide([6, 7, 8, 9], n, 'Tegn en modell, og regn ut.', 4, 12),
-  ),
+  // Modelloppgaver: eleven tegner, leser eller tolker en konkret representasjon beskrevet i teksten.
+  'div.modeller': (level, n) => divisionModelTasks(level, n),
 
   // Geometri
   'geo.2d': byLevel(
@@ -954,6 +1107,106 @@ const placeValueProfile = (
   ) as Record<Level, LevelProfile>,
 })
 
+// ---------------------------------------------------------------------------------------
+// Divisjon: fire fagområder i progresjon – multiplikasjon og divisjon, delingsdivisjon og
+// målingsdivisjon, divisjon med noe til overs og bruke modeller. Hver økt har ett hovedområde.
+
+const DIVISION_SUPPORT: Record<Level, string> = {
+  1: 'Tydelig støtte og små tall, ett faglig steg.',
+  2: 'Mindre støtte: eleven velger fremgangsmåte selv og skriver divisjonsstykket.',
+  3: 'Resonnering: forklare, begrunne, kontrollere med gange eller tolke svaret – ikke bare større tall.',
+}
+
+const DIVISION_LEVELS: Record<DivisionArea | DivisionType, [LevelText, LevelText, LevelText]> = {
+  'multiplikasjon-divisjon': [
+    { title: 'Gange og dele med støtte', subtitle: 'Bruke et oppgitt gangestykke.', description: 'Bruke et kjent gangestykke til å finne svaret på en divisjon, f.eks. 3 · 6 = 18, så 18 : 3 = 6.', numbers: 'Divisjon som går opp, med divisor og svar fra 1 til 10 (særlig 2, 3, 4, 5 og 10)' },
+    { title: 'Gange og dele', subtitle: 'Ukjent faktor og regnefamilier.', description: 'Finne tallet som mangler i et gangestykke og skrive regnefamilier med to gangestykker og to divisjonsstykker.', numbers: 'Hele gangetabellen: divisor og svar fra 2 til 10' },
+    { title: 'Gange og dele – forklare', subtitle: 'Kontrollere og forklare.', description: 'Forklare og kontrollere divisjon med gange, også når divisoren er ukjent eller et svar er feil.', numbers: 'Hele gangetabellen, særlig 6, 7, 8 og 9' },
+  ],
+  'delingsdivisjon-malingsdivisjon': [
+    { title: 'To måter å dele på med støtte', subtitle: 'Små tall.', description: 'Dele likt i et kjent antall grupper, eller finne antall grupper når det er like mange i hver.', numbers: 'Divisjon som går opp, med 2–5 grupper eller 2–5 i hver' },
+    { title: 'To måter å dele på', subtitle: 'Skille typene.', description: 'Løse delingsdivisjon og målingsdivisjon og forklare hva svaret betyr.', numbers: 'Divisjon som går opp, i hele gangetabellen' },
+    { title: 'To måter å dele på – forklare', subtitle: 'Begrunne typen.', description: 'Avgjøre og begrunne om en situasjon er delingsdivisjon eller målingsdivisjon.', numbers: 'Divisjon som går opp, i hele gangetabellen' },
+  ],
+  deling: [
+    { title: 'Dele likt med støtte', subtitle: 'Få grupper, små tall.', description: 'Fordele en mengde likt i et kjent antall grupper og finne hvor mange det blir i hver.', numbers: 'Divisjon som går opp: 2–5 grupper med opptil 8 i hver' },
+    { title: 'Dele likt', subtitle: 'Selvstendig i hverdagen.', description: 'Løse delingsdivisjon i hverdagssituasjoner: antall grupper er kjent, svaret er hvor mange i hver.', numbers: 'Divisjon som går opp: 3–6 grupper med opptil 9 i hver' },
+    { title: 'Dele likt – forklare', subtitle: 'Hva betyr svaret?', description: 'Løse og forklare delingsdivisjon, og lage egne regnefortellinger der antall grupper er kjent.', numbers: 'Divisjon som går opp: 6–9 grupper med opptil 9 i hver' },
+  ],
+  maling: [
+    { title: 'Hvor mange grupper? med støtte', subtitle: 'Små grupper, små tall.', description: 'Finne hvor mange grupper det blir når det skal være like mange i hver gruppe.', numbers: 'Divisjon som går opp: 2–5 i hver gruppe, opptil 8 grupper' },
+    { title: 'Hvor mange grupper?', subtitle: 'Selvstendig i hverdagen.', description: 'Løse målingsdivisjon i hverdagssituasjoner: størrelsen på hver gruppe er kjent, svaret er antall grupper.', numbers: 'Divisjon som går opp: 3–6 i hver gruppe, opptil 9 grupper' },
+    { title: 'Hvor mange grupper? – forklare', subtitle: 'Begrunne typen.', description: 'Løse målingsdivisjon og begrunne at størrelsen på hver gruppe er kjent – ikke antall grupper.', numbers: 'Divisjon som går opp: 6–9 i hver gruppe, opptil 9 grupper' },
+  ],
+  'divisjon-med-rest': [
+    { title: 'Noe til overs med støtte', subtitle: 'Hele grupper og rest.', description: 'Finne hvor mange hele grupper det blir og hvor mange som blir til overs.', numbers: 'Tall opptil 35 delt på 2, 3, 4 eller 5' },
+    { title: 'Noe til overs', subtitle: 'Hva betyr resten?', description: 'Finne hele grupper og rest, og avgjøre om svaret må rundes opp fordi alle skal få plass.', numbers: 'Tall opptil 60 delt på 4, 5 eller 6' },
+    { title: 'Noe til overs – forklare', subtitle: 'Resten bestemmer svaret.', description: 'Tolke resten i situasjonen, forklare når svaret må rundes opp, og løse oppgaver i flere steg.', numbers: 'Tall opptil 80 delt på 6, 7 eller 8' },
+  ],
+  modeller: [
+    { title: 'Modeller med støtte', subtitle: 'Like grupper, tallinje og rutenett.', description: 'Bruke en oppgitt modell – like grupper, hopp på tallinjen eller et rutenett – til å finne svaret.', numbers: 'Divisjon som går opp: 2–5 grupper eller hopp, svar opptil 6' },
+    { title: 'Bruke modeller', subtitle: 'Blokkmodell, tallinje og rutenett.', description: 'Tegne eller tolke en blokkmodell, en tallinje eller et rutenett og skrive divisjonsstykket modellen viser.', numbers: 'Divisjon som går opp: divisor 4–6, svar opptil 9' },
+    { title: 'Modeller – velge og forklare', subtitle: 'Velge modell selv.', description: 'Velge en modell selv og forklare hva tallene i modellen betyr.', numbers: 'Divisjon som går opp: divisor 6–9, svar opptil 9' },
+  ],
+}
+
+/** «Dette mestrer jeg» – alle fire fagområdene. */
+const DIVISION_SUMMARY_LEVELS: [LevelText, LevelText, LevelText] = [
+  { title: 'Divisjon med støtte', subtitle: 'Det vi har lært.', description: 'Dele likt, lage like grupper, finne rest og bruke et kjent gangestykke.', numbers: 'Små tall: divisor 2–5' },
+  { title: 'Divisjon', subtitle: 'Velge fremgangsmåte.', description: 'Velge mellom gangestykke, modell og divisjonstype, og finne hva som blir til overs.', numbers: 'Hele gangetabellen' },
+  { title: 'Divisjon – forklare', subtitle: 'Forklare og kontrollere.', description: 'Forklare hva svaret og resten betyr, og kontrollere med gange.', numbers: 'Hele gangetabellen' },
+]
+
+const DIVISION_FORMATS: Record<DivisionArea, string[]> = {
+  'multiplikasjon-divisjon': ['Hoderegning (regnestykke) der instruksjonen viser til et gangestykke', 'Korte tekstoppgaver med utfylling, ukjent faktor, regnefamilie eller forklaring'],
+  'delingsdivisjon-malingsdivisjon': ['Korte tekstoppgaver fra hverdagen (eller regnestykke med situasjonen i instruksjonen)'],
+  'divisjon-med-rest': ['Korte tekstoppgaver med hele grupper og rest, eller der svaret må rundes opp'],
+  modeller: ['Korte tekstoppgaver der eleven tegner, leser eller tolker en modell som er beskrevet i teksten'],
+}
+
+const DIVISION_AVOID: Record<DivisionArea | DivisionType, string> = {
+  'multiplikasjon-divisjon': 'Rene gangestykker eller delestykker uten sammenheng mellom gange og dele',
+  'delingsdivisjon-malingsdivisjon': 'Oppgaver der det er uklart om antall grupper eller størrelsen på hver gruppe er kjent',
+  deling: 'Målingsdivisjon (like mange i hver gruppe, finne antall grupper)',
+  maling: 'Delingsdivisjon (dele likt i et kjent antall grupper)',
+  'divisjon-med-rest': 'Oppgaver der delingen går opp',
+  modeller: 'Oppgaver som bare nevner ordet «modell» uten at eleven tegner, leser eller tolker en representasjon',
+}
+
+/** Øktprofil i Divisjon. Uten `summary` følger nivåene fagområdet (og divisjonstypen). */
+const divisionProfile = (
+  area: DivisionArea,
+  focus: string,
+  { divisionType, secondaryAreas, taskVariant, summary }: { divisionType?: DivisionType; secondaryAreas?: DivisionArea[]; taskVariant?: 'hverdag'; summary?: boolean } = {},
+): TaskProfile => {
+  const allowsRemainder = area === 'divisjon-med-rest' || secondaryAreas?.includes('divisjon-med-rest')
+  const texts = summary ? DIVISION_SUMMARY_LEVELS : DIVISION_LEVELS[divisionType ?? area]
+  return {
+    focus,
+    area,
+    ...(secondaryAreas && { secondaryAreas }),
+    ...(divisionType && { divisionType }),
+    ...(taskVariant && { taskVariant }),
+    operations: area === 'multiplikasjon-divisjon' ? ['*', '/'] : ['/'],
+    formats: summary ? [...new Set([area, ...(secondaryAreas ?? [])].flatMap((a) => DIVISION_FORMATS[a]))] : DIVISION_FORMATS[area],
+    steps: 'Ett faglig steg på nivå 1. Nivå 2 kan ha to steg, og nivå 3 kan be om forklaring eller begrunnelse.',
+    avoid: [
+      ...(summary ? [] : [DIVISION_AVOID[divisionType ?? area]]),
+      ...(allowsRemainder ? [] : ['Divisjon med rest (alle delestykkene i økta går opp)']),
+      'Divisjon med 0',
+      'Desimaltall og negative tall',
+      'Tall utenfor gangetabellen (divisor og svar høyst 10)',
+    ],
+    figures: false,
+    levels: Object.fromEntries(
+      texts.map((text, i) => {
+        const level = (i + 1) as Level
+        return [level, { ...text, support: DIVISION_SUPPORT[level] }]
+      }),
+    ) as Record<Level, LevelProfile>,
+  }
+}
+
 /** Måleøkt. */
 const measureProfile = (
   focus: string,
@@ -1262,10 +1515,74 @@ export const unitSpecs: UnitSpec[] = [
     description:
       'Elevene ser sammenhengen mellom gange og dele, skiller mellom delingsdivisjon og målingsdivisjon, regner med rest og bruker modeller.',
     weeks: [
-      { title: 'Uke 1 - gange og dele', sessions: [s('Multiplikasjon og divisjon henger sammen', 'div.mult-og-div'), s('Dele med gangetabellen', 'div.mult-og-div')] },
-      { title: 'Uke 2 - to måter å dele på', sessions: [s('Delingsdivisjon – dele likt', 'div.delings-malings'), s('Målingsdivisjon – hvor mange grupper?', 'div.delings-malings')] },
-      { title: 'Uke 3 - noe til overs', sessions: [s('Divisjon med noe til overs', 'div.rest'), s('Rest i hverdagen', 'div.rest')] },
-      { title: 'Uke 4 - modeller', sessions: [s('Bruke modeller i divisjon', 'div.modeller'), s('Dette mestrer jeg – divisjon', 'div.mult-og-div', 'div.delings-malings', 'div.modeller')] },
+      {
+        title: 'Uke 1 - gange og dele',
+        sessions: [
+          p(
+            'Multiplikasjon og divisjon henger sammen',
+            ['div.mult-og-div'],
+            divisionProfile('multiplikasjon-divisjon', 'Sammenhengen mellom multiplikasjon og divisjon: motsatte regneoperasjoner og regnefamilier, f.eks. 6 · 4 = 24, 24 : 6 = 4 og 24 : 4 = 6.'),
+          ),
+          p(
+            'Dele med gangetabellen',
+            ['div.mult-og-div'],
+            divisionProfile('multiplikasjon-divisjon', 'Dele ved å bruke gangetabellen baklengs: finne den ukjente faktoren og kontrollere svaret med gange.'),
+          ),
+        ],
+      },
+      {
+        title: 'Uke 2 - to måter å dele på',
+        sessions: [
+          p(
+            'Delingsdivisjon – dele likt',
+            ['div.delings-malings'],
+            divisionProfile('delingsdivisjon-malingsdivisjon', 'Delingsdivisjon: antall grupper er kjent, og eleven finner hvor mange det blir i hver gruppe.', { divisionType: 'deling' }),
+          ),
+          p(
+            'Målingsdivisjon – hvor mange grupper?',
+            ['div.delings-malings'],
+            divisionProfile('delingsdivisjon-malingsdivisjon', 'Målingsdivisjon: størrelsen på hver gruppe er kjent, og eleven finner antall grupper.', { divisionType: 'maling' }),
+          ),
+        ],
+      },
+      {
+        title: 'Uke 3 - noe til overs',
+        sessions: [
+          p(
+            'Divisjon med noe til overs',
+            ['div.rest'],
+            divisionProfile('divisjon-med-rest', 'Divisjon med rest: finne hvor mange hele grupper det blir og hvor mange som blir til overs.'),
+          ),
+          p(
+            'Rest i hverdagen',
+            ['div.rest'],
+            divisionProfile(
+              'divisjon-med-rest',
+              'Hva resten betyr i hverdagen: hele grupper og hva som blir til overs, eller hvor mange grupper som faktisk trengs når alle skal være med (svaret rundes opp).',
+              { taskVariant: 'hverdag' },
+            ),
+          ),
+        ],
+      },
+      {
+        title: 'Uke 4 - modeller',
+        sessions: [
+          p(
+            'Bruke modeller i divisjon',
+            ['div.modeller'],
+            divisionProfile('modeller', 'Bruke og tolke modeller i divisjon: like grupper, tallinje, rutenett og blokkmodell, beskrevet i tekst eller tegnet av eleven.'),
+          ),
+          // Oppsummering av alle fire fagområdene: hovedområdet er sammenhengen med gange, de andre er tilgrensende.
+          p(
+            'Dette mestrer jeg – divisjon',
+            ['div.mult-og-div', 'div.delings-malings', 'div.rest', 'div.modeller'],
+            divisionProfile('multiplikasjon-divisjon', 'Oppsummering av divisjon: sammenhengen med gange, delingsdivisjon og målingsdivisjon, rest og modeller.', {
+              secondaryAreas: ['delingsdivisjon-malingsdivisjon', 'divisjon-med-rest', 'modeller'],
+              summary: true,
+            }),
+          ),
+        ],
+      },
     ],
     goals: [
       'Bruke gangetabellen til å dele.',

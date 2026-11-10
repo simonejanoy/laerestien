@@ -8,8 +8,9 @@ import {
   type TaskRequest,
   type TaskResult,
 } from '../src/ai/contract.ts'
-import { topicOfArea, type ReferenceArea } from '../src/ai/contract.ts'
+import { isReferenceArea, topicOfArea, type DivisionArea, type ReferenceArea } from '../src/ai/contract.ts'
 import { strategyProblem } from '../src/features/topics/multiplicationStrategies.ts'
+import { divisionProblem, wishRequiresRoundUp } from './divisionChecks.ts'
 import { checkEquations, checkReferenceMath } from './references/validate.ts'
 
 // Kontroller av generelle oppgaver etter at AI-en har svart. Stiltreff styres av
@@ -27,6 +28,12 @@ export const TEXT_SIMILARITY_THRESHOLD = 0.75
  * Med to eller flere like tall er regnestykket det samme uansett ordlyd.
  */
 export const NEAR_DUPLICATE_THRESHOLD = 0.75
+
+/**
+ * Divisjon: en tekstoppgave med nøyaktig de samme tallene som en referanse, og minst så lik formulering,
+ * er en nesten ordrett kopi av referansen. Lavere enn TEXT_SIMILARITY_THRESHOLD fordi tallene også er like.
+ */
+export const SAME_NUMBERS_SIMILARITY = 0.3
 
 /** Tallene i en tekst, sortert («1 004» er ett tall). */
 const numbersIn = (text: string) =>
@@ -59,6 +66,11 @@ export type RemovalReason =
   | 'internalText'
   | 'wrongConclusion'
   | 'unclearSolution'
+  | 'divisionByZero'
+  | 'wrongDivisionType'
+  | 'wrongRemainder'
+  | 'missingModel'
+  | 'missingRelation'
 
 export interface GeneralCheck {
   result: TaskResult
@@ -187,6 +199,11 @@ const REMOVAL_TEXT: Record<RemovalReason, string> = {
   wrongConclusion: 'hadde feil konklusjon eller utregning i en oppgave der eleven skal vurdere en påstand',
   unclearSolution: 'hadde et uklart eller selvmotsigende løsningsforslag',
   copiedReference: 'kopierte formuleringen i en referanseoppgave',
+  divisionByZero: 'delte på 0',
+  wrongDivisionType: 'viste en annen divisjonstype enn økta, eller der tekst og fasit ikke var enige om typen',
+  wrongRemainder: 'brukte rest feil for økta eller situasjonen',
+  missingModel: 'ikke ba eleven bruke eller tolke en modell',
+  missingRelation: 'ikke viste sammenhengen mellom multiplikasjon og divisjon',
 }
 
 const emptyRemoved = (): Record<RemovalReason, number> => ({
@@ -206,6 +223,11 @@ const emptyRemoved = (): Record<RemovalReason, number> => ({
   internalText: 0,
   wrongConclusion: 0,
   unclearSolution: 0,
+  divisionByZero: 0,
+  wrongDivisionType: 0,
+  wrongRemainder: 0,
+  missingModel: 0,
+  missingRelation: 0,
 })
 
 /** «Tatt bort: 2 som var like …, 1 som …» – eller tom streng. */
@@ -325,9 +347,9 @@ export function requiresCarry(task: AiTaskDraft): boolean {
 // Intern systemtekst: hører hjemme i serverloggen, aldri i synlige felt.
 
 const INTERNAL_TEXT =
-  /reserve\s?(kandidat|oppgave)\w*|utfyllings?(forsøk|runde)\w*|\brefill\w*|\bfallback\w*|reservemodell\w*|\bprompt\w*|referanse[- ]?(id|oppgave)\w*|\b[MT]\d-N\d-\d{2}\b|\bkandidat(en|er|ene|nummer|nr)?\b/i
+  /reserve\s?(kandidat|oppgave)\w*|utfyllings?(forsøk|runde)\w*|\brefill\w*|\bfallback\w*|reservemodell\w*|\bprompt\w*|referanse[- ]?(id|oppgave)\w*|\b[MTD]\d-N\d-\d{2}\b|\bkandidat(en|er|ene|nummer|nr)?\b/i
 
-/** Om teksten inneholder interne ord eller ID-er (reservekandidat, utfyllingsforsøk, prompt, M4-N2-01 …). */
+/** Om teksten inneholder interne ord eller ID-er (reservekandidat, utfyllingsforsøk, prompt, M4-N2-01, D3-N2-01 …). */
 export const containsInternalText = (text: string) => INTERNAL_TEXT.test(text)
 
 /** Teksten uten setningene som inneholder interne ord. */
@@ -403,14 +425,16 @@ export interface CandidateCheck {
  * - kompetansemål tømmes når læreren ikke oppga offisiell måltekst
  * - på nivåer med korte regnestykker tas lange tekstoppgaver og oppgaver med flere delspørsmål
  *   bort – med mindre læreren har skrevet egne ønsker (da kan læreren ha bedt om dem)
- * - med fagområde (multiplikasjon) i tillegg:
+ * - med fagområde (multiplikasjon, Tall og plassverdi, Divisjon) i tillegg:
  *   - like oppgaver i svaret, blant tidligere godkjente kandidater (`accepted`) og i oppgavesettet
  *     tas bort; byttede faktorer regnes som like, med mindre øktprofilen tillater dem
  *   - gangestykker utenfor øktas gangetabeller tas bort når læreren ikke har skrevet egne ønsker
  *   - regneart, deltema (avrunding), fagområde og nivå kontrolleres alltid – også med «Andre ønsker»
  *   - «Andre ønsker» kan bare gjøre formatkontrollen (lange tekstoppgaver) fleksibel
  *   - regnestykker med en strategi som ikke passer stykket (f.eks. «10-gangen minus én gruppe» til 8 · 7) tas bort
- *   - tekstoppgaver som er svært like en referanses formulering tas bort
+ *   - tekstoppgaver som er svært like en referanses formulering tas bort (i Divisjon også med samme tall)
+ *   - Divisjon: divisjon på 0, tallområdet, fasit og rest (også når svaret må rundes opp), divisjonstype,
+ *     sammenheng med gange og modeller (se divisionChecks.ts)
  * - uten fagområde logges gangestykker utenfor øktas tabeller (som før)
  * Kontrollene er de samme for første generering og for utfylling.
  */
@@ -473,7 +497,19 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
       inResponse.add(keys.exact)
       inResponse.add(keys.swapped)
     }
-    const multiplication = topicOfArea(area) === 'multiplikasjon'
+    const topic = topicOfArea(area)
+    const multiplication = topic === 'multiplikasjon'
+    const placeValue = topic === 'tall-og-plassverdi'
+    const division = topic === 'divisjon'
+    const divisionContext = division
+      ? {
+          area: area as DivisionArea,
+          secondaryAreas: (profile?.secondaryAreas ?? []).filter((a): a is DivisionArea => isReferenceArea(a) && topicOfArea(a) === 'divisjon'),
+          divisionType: profile?.divisionType,
+          // «Andre ønsker» kan skjerpe kravet til situasjonen (alle skal få plass), men aldri slippe opp en kontroll.
+          roundUpRequired: wishRequiresRoundUp(wishes),
+        }
+      : null
     const operators = sessionOperators(profile?.operations)
     // Tekstene som finnes på nivået (oppgavesettet og godkjente kandidater), til kontrollen av nesten like oppgaver.
     const textsOn = new Map<AiLevel, string[]>()
@@ -493,8 +529,13 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
       // endre kontekst, formulering, svarform og format, men ikke målet, området eller nivået i økta.
       // Målet for økta: regnearter i profilen, og ikke avrunding i Tall og plassverdi (ikke med i temaet).
       if (isMathDraft(task) && operators.size > 0 && !operators.has(task.operator)) return remove(task, 'offTopic')
-      if (!multiplication && ROUNDING.test(studentTextOf(task))) return remove(task, 'offTopic')
-      if (!multiplication && areaProblem(area, task)) return remove(task, 'wrongArea')
+      if (placeValue && ROUNDING.test(studentTextOf(task))) return remove(task, 'offTopic')
+      if (placeValue && areaProblem(area, task)) return remove(task, 'wrongArea')
+      // Divisjon: divisjon på 0, tallområdet, fasit og rest, divisjonstype, sammenheng med gange og modeller.
+      if (divisionContext) {
+        const problem = divisionProblem(task, divisionContext)
+        if (problem) return remove(task, problem)
+      }
       // Økter der tierovergang er det uttrykkelige målet: minst én addisjon med veksling.
       if (profile?.requiresCarry && !requiresCarry(task)) return remove(task, 'missingCarry')
       if (!hasWishes && outsideTables(task, factorsOf(task.level))) return remove(task, 'outsideTables')
@@ -507,14 +548,19 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
         if (references.some((r) => hasWording(r.studentText) && textSimilarity(task.studentText, r.studentText) >= TEXT_SIMILARITY_THRESHOLD)) {
           return remove(task, 'copiedReference')
         }
-      } else if (!multiplication) {
+        // Divisjon: de samme tallene som en referanse og lignende formulering er samme oppgave (samme gangefakta
+        // i et annet format, f.eks. «__ · 8 = 56» og «Regn ut 56 : 8», er lov).
+        if (division && references.some((r) => numbersIn(task.studentText) === numbersIn(r.studentText) && textSimilarity(task.studentText, r.studentText) >= SAME_NUMBERS_SIMILARITY)) {
+          return remove(task, 'copiedReference')
+        }
+      } else if (placeValue) {
         // Store tall: et regnestykke med nøyaktig de samme tallene som en referanse er en kopi.
         // (I multiplikasjon kan enkle gangestykker gå igjen.)
         const fact = `${task.a}${task.operator}${task.b}`
         if (references.some((r) => referenceFacts(r.studentText).has(fact))) return remove(task, 'copiedReference')
       }
-      // Nivå 1 i Tall og plassverdi: hovedsakelig ett faglig steg – ikke flerstegs- eller feilanalyseoppgaver
-      // (gjelder også med «Andre ønsker»).
+      // Nivå 1 i Tall og plassverdi og Divisjon: hovedsakelig ett faglig steg – ikke flerstegs- eller
+      // feilanalyseoppgaver (gjelder også med «Andre ønsker»).
       if (!multiplication && task.level === 1 && !isMathDraft(task)) {
         if (isLongOrMultiPart(task.studentText) || ERROR_ANALYSIS.test(task.studentText)) return remove(task, 'levelMismatch')
       }

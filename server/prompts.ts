@@ -196,13 +196,27 @@ const AREA_GUIDANCE: Partial<Record<ReferenceArea, string[]>> = {
   'firesifrede-tall': ['Arbeid med plassverdi: sifferets verdi, bygge og dele opp tall, sammenligne og ordne tall.'],
   hoderegning: ['Oppgavene skal kunne løses i hodet med en strategi som tiervenner, hele tiere, kompensasjon eller oppdeling.'],
   'addisjon-subtraksjon': ['Bruk addisjon og subtraksjon. Tierovergang og veksling hører hjemme på nivå 2 og 3.'],
+  'multiplikasjon-divisjon': [
+    'Hver oppgave skal vise sammenhengen mellom gange og dele: et kjent gangestykke som hjelp, ukjent faktor, regnefamilie (f.eks. 6 · 4 = 24, 24 : 6 = 4 og 24 : 4 = 6) eller kontroll med gange. Et regnestykke (format «regnestykke») må ha en instruksjon som viser til gangestykket.',
+  ],
+  'delingsdivisjon-malingsdivisjon': [
+    'Delingsdivisjon: antall grupper er kjent, og svaret er hvor mange det blir i hver gruppe. Målingsdivisjon: størrelsen på hver gruppe er kjent, og svaret er antall grupper. Oppgavetekst, fasit og tilpasning må være enige om typen.',
+  ],
+  'divisjon-med-rest': [
+    'Alle oppgavene skal ha rest. Skill mellom hvor mange hele grupper det blir og hvor mange som blir til overs, og hvor mange grupper som faktisk trengs når alle skal være med – da rundes svaret opp (22 personer i biler med plass til 5: det trengs 5 biler). Restoppgaver lages som tekst, fordi regnestykkene i appen må gå opp.',
+  ],
+  modeller: [
+    'Eleven skal faktisk bruke eller tolke en modell: like grupper, tallinje, rutenett eller blokkmodell. Appen kan ikke vise figurer, så beskriv modellen i teksten (f.eks. «En blokk med totalen 35 er delt i 5 like store deler») eller be eleven tegne en bestemt modell. Å bare nevne ordet «modell» er ikke nok.',
+  ],
 }
 
 /** Hovedtema, fagområde, øktfokus, nivåer med referanser og oppgavesettet – og hvordan nye oppgaver skal lages. */
 function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, levels: AiLevelContext[]) {
   const topic = topicOfArea(area)
   const multiplication = topic === 'multiplikasjon'
+  const division = topic === 'divisjon'
   const secondary = profile.secondaryAreas ?? []
+  const allowsRemainder = area === 'divisjon-med-rest' || secondary.includes('divisjon-med-rest')
   return lines(
     `Hovedtema: ${TOPIC_TITLES[topic]}`,
     `Fagområde: ${AREA_TITLES[area]}`,
@@ -221,23 +235,34 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
     ...(AREA_GUIDANCE[area] ?? []).map((g) => `- ${g}`),
     profile.requiresCarry &&
       '- Alle oppgavene skal kreve addisjon med tierovergang: minst én nødvendig addisjon må ha veksling i en plassverdi (f.eks. 28 + 7 på nivå 1 og 48 + 37 på nivå 2). Nivå 1 blir lettere gjennom enkle tall og støtte som «Fyll først opp til nærmeste tier.», ikke ved å fjerne tierovergangen. På nivå 3 kan andre regnearter inngå i flere steg, men addisjonen med veksling skal være en sentral del av løsningen.',
+    profile.divisionType === 'deling' &&
+      '- Alle oppgavene skal være delingsdivisjon: antall grupper er kjent, og eleven finner hvor mange det blir i hver gruppe. Ikke lag målingsdivisjon.',
+    profile.divisionType === 'maling' &&
+      '- Alle oppgavene skal være målingsdivisjon: størrelsen på hver gruppe er kjent, og eleven finner antall grupper. Ikke lag delingsdivisjon.',
+    division && !allowsRemainder && '- Alle delestykkene skal gå opp. Ikke lag oppgaver med rest.',
     '- Ikke lag en oppgave som er lik en oppgave som allerede finnes på nivået.',
-    multiplication
+    multiplication || division
       ? profile.allowSwappedFactors
         ? '- Byttede faktorer (f.eks. 3 · 7 og 7 · 3) er ulike oppgaver i denne økta, fordi den handler om at faktorene kan bytte plass.'
         : '- Byttede faktorer (f.eks. 3 · 7 og 7 · 3) regnes som samme oppgave.'
       : '- Byttede ledd i et plusstykke (f.eks. 243 + 126 og 126 + 243) regnes som samme oppgave.',
     multiplication
       ? '- Bruk bare gangetabellene og tallområdet på nivået.'
-      : '- Hold deg til tallområdet og regneartene i økta, og ikke ta inn et nytt deltema (f.eks. avrunding) som læreren ikke har bedt om.',
-    multiplication
+      : division
+        ? '- Hold deg til gangetabellen og tallområdet på nivået: divisor og antall hele grupper høyst 10. Bruk hele tall – ikke desimaltall, negative tall eller deling med 0.'
+        : '- Hold deg til tallområdet og regneartene i økta, og ikke ta inn et nytt deltema (f.eks. avrunding) som læreren ikke har bedt om.',
+    division
+      ? '- Nivå 1: tydelig støtte, små tall og ett faglig steg. Nivå 2: mindre støtte, eleven skriver divisjonsstykket selv. Nivå 3: forklare, begrunne, kontrollere med gange eller tolke svaret – ikke bare større tall. Alle nivåene har samme faglige fokus.'
+      : multiplication
       ? '- Nivå 1 gir mest støtte og tydeligst struktur, nivå 2 er standard, og nivå 3 krever mer selvstendig resonnering. Alle nivåene har samme faglige fokus.'
       : '- Nivå 1: tydelig støtte, oversiktlig oppsett og hovedsakelig ett faglig steg. Nivå 2: mindre støtte, mer selvstendig strategivalg, tierovergang eller veksling der det passer. Nivå 3: resonnering, flere steg, feilanalyse, ukjent tall eller forklaring der det passer. Nivåforskjellen skal ikke bare være større tall. Alle nivåene har samme faglige fokus.',
     profile.strategyFocus &&
       '- Strategier er læringsfokus i økta. De nye oppgavene er ekstra mengdetrening: de trenger ikke introdusere ny strategi, men instruksjonen skal følge støttestrukturen på nivået – konkret hjelp på nivå 1, en gyldig strategi i ord på nivå 2 og en åpen formulering som «Velg en smart strategi» på nivå 3.',
     profile.strategyFocus &&
       '- En strategi i instruksjonen må være matematisk gyldig for akkurat det regnestykket du lager. Ikke kopier en instruksjon fra oppgavesettet uten å kontrollere den: 8 · 7 er 10 · 7 minus to grupper, ikke minus én gruppe.',
-    '- Du kan ikke lage figurer, så oppgavene må kunne løses uten figur.',
+    area === 'modeller'
+      ? '- Du kan ikke lage figurer. Modellen må derfor beskrives i teksten eller tegnes av eleven.'
+      : '- Du kan ikke lage figurer, så oppgavene må kunne løses uten figur.',
     '- Regn ut og kontroller alle regnestykker og fasiter selv. Ikke viderefør feil fra referansene – noen referanser er feilanalyser med en bevisst feil.',
     '- Lærerens ekstra ønsker går foran referansene og oppgavesettet når ønskene er faglig korrekte, trygge og passer med timens tema og mål.',
     '- Ønskene kan endre kontekst, formulering, svarform og format (f.eks. tekstoppgaver i stedet for hoderegning), men ikke fagområdet, deltemaet, nivået eller målet for økta. Fasiten må alltid være riktig.',

@@ -156,18 +156,27 @@ export type MultiplicationArea = (typeof MULTIPLICATION_AREAS)[number]
 export const PLACE_VALUE_AREAS = ['hoderegning', 'firesifrede-tall', 'addisjon-subtraksjon', 'oppstilling-over-1000', 'negative-tall'] as const
 export type PlaceValueArea = (typeof PLACE_VALUE_AREAS)[number]
 
+/** Fagområdene i Divisjon, i progresjonsrekkefølge. */
+export const DIVISION_AREAS = ['multiplikasjon-divisjon', 'delingsdivisjon-malingsdivisjon', 'divisjon-med-rest', 'modeller'] as const
+export type DivisionArea = (typeof DIVISION_AREAS)[number]
+
+/** Delingsdivisjon (antall grupper er kjent) eller målingsdivisjon (størrelsen på hver gruppe er kjent). */
+export type DivisionType = 'deling' | 'maling'
+
 /** Temaene som har en referansebank på serveren, med fagområdene sine. */
 export const REFERENCE_TOPICS = {
   multiplikasjon: MULTIPLICATION_AREAS,
   'tall-og-plassverdi': PLACE_VALUE_AREAS,
+  divisjon: DIVISION_AREAS,
 } as const
 export type ReferenceTopic = keyof typeof REFERENCE_TOPICS
 /** Et fagområde i en av referansebankene. Områdene har unike ID-er på tvers av temaene. */
-export type ReferenceArea = MultiplicationArea | PlaceValueArea
+export type ReferenceArea = MultiplicationArea | PlaceValueArea | DivisionArea
 
 export const TOPIC_TITLES: Record<ReferenceTopic, string> = {
   multiplikasjon: 'Multiplikasjon',
   'tall-og-plassverdi': 'Tall og plassverdi',
+  divisjon: 'Divisjon',
 }
 
 export const AREA_TITLES: Record<ReferenceArea, string> = {
@@ -182,6 +191,10 @@ export const AREA_TITLES: Record<ReferenceArea, string> = {
   'addisjon-subtraksjon': 'Addisjon og subtraksjon',
   'oppstilling-over-1000': 'Oppstilling med tall over 1000',
   'negative-tall': 'Negative tall',
+  'multiplikasjon-divisjon': 'Multiplikasjon og divisjon',
+  'delingsdivisjon-malingsdivisjon': 'Delingsdivisjon og målingsdivisjon',
+  'divisjon-med-rest': 'Divisjon med noe til overs',
+  modeller: 'Bruke modeller',
 }
 
 export const isMultiplicationArea = (value: unknown): value is MultiplicationArea =>
@@ -269,6 +282,8 @@ export interface AiSessionProfile {
   strategyFocus?: boolean
   /** Tierovergang er målet: alle oppgaver må kreve minst én addisjon med veksling (kontrolleres på serveren). */
   requiresCarry?: boolean
+  /** Divisjon: økta handler bare om delingsdivisjon eller bare om målingsdivisjon (kontrolleres på serveren). */
+  divisionType?: DivisionType
 }
 
 export type TaskRequest =
@@ -434,6 +449,7 @@ export function readSessionProfile(raw: unknown): AiSessionProfile | undefined {
     ...(p.allowSwappedFactors === true && { allowSwappedFactors: true }),
     ...(p.strategyFocus === true && { strategyFocus: true }),
     ...(p.requiresCarry === true && { requiresCarry: true }),
+    ...((p.divisionType === 'deling' || p.divisionType === 'maling') && { divisionType: p.divisionType }),
   }
 }
 

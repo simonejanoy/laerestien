@@ -1,0 +1,656 @@
+{
+  "schemaVersion": 1,
+  "topic": "divisjon",
+  "description": "Originale referanseoppgaver for temaet Divisjon på 4. trinn.",
+  "referenceCount": 36,
+  "references": [
+    {
+      "id": "D1-N1-01",
+      "topic": "divisjon",
+      "area": "multiplikasjon-divisjon",
+      "areaTitle": "Multiplikasjon og divisjon",
+      "level": 1,
+      "title": "Bruk gangestykket",
+      "format": "Utfylling",
+      "purpose": "Koble divisjon til et kjent gangestykke.",
+      "studentText": "3 · 6 = 18. Derfor er 18 : 3 = __.",
+      "solution": "6",
+      "representationHint": null,
+      "teacherNote": "Siden 3 · 6 = 18, er 18 : 3 = 6.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_multiplikasjon_og_divisjon.pdf"
+      }
+    },
+    {
+      "id": "D1-N1-02",
+      "topic": "divisjon",
+      "area": "multiplikasjon-divisjon",
+      "areaTitle": "Multiplikasjon og divisjon",
+      "level": 1,
+      "title": "Finn den andre faktoren",
+      "format": "Utfylling",
+      "purpose": "Bruke multiplikasjon til å finne svaret på en divisjon.",
+      "studentText": "4 · 7 = 28. Fyll inn: 28 : 7 = __.",
+      "solution": "4",
+      "representationHint": null,
+      "teacherNote": "7 · 4 = 28.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_multiplikasjon_og_divisjon.pdf"
+      }
+    },
+    {
+      "id": "D1-N1-03",
+      "topic": "divisjon",
+      "area": "multiplikasjon-divisjon",
+      "areaTitle": "Multiplikasjon og divisjon",
+      "level": 1,
+      "title": "Regnefamilie",
+      "format": "To regnestykker",
+      "purpose": "Se sammenhengen mellom faktorene og divisjon.",
+      "studentText": "Bruk tallene 5, 8 og 40. Skriv de to divisjonsstykkene som hører til.",
+      "solution": "40 : 5 = 8 og 40 : 8 = 5",
+      "representationHint": null,
+      "teacherNote": "De to divisjonsstykkene bruker produktet 40 som tallet som deles.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_multiplikasjon_og_divisjon.pdf"
+      }
+    },
+    {
+      "id": "D1-N2-01",
+      "topic": "divisjon",
+      "area": "multiplikasjon-divisjon",
+      "areaTitle": "Multiplikasjon og divisjon",
+      "level": 2,
+      "title": "Ukjent faktor",
+      "format": "Ukjent tall",
+      "purpose": "Bruke divisjon til å finne en ukjent faktor.",
+      "studentText": "Finn tallet som mangler: __ · 6 = 42.",
+      "solution": "7",
+      "representationHint": null,
+      "teacherNote": "42 : 6 = 7.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_multiplikasjon_og_divisjon.pdf"
+      }
+    },
+    {
+      "id": "D1-N2-02",
+      "topic": "divisjon",
+      "area": "multiplikasjon-divisjon",
+      "areaTitle": "Multiplikasjon og divisjon",
+      "level": 2,
+      "title": "Velg et gangestykke",
+      "format": "Kort svar med strategi",
+      "purpose": "Velge et passende gangestykke som støtte.",
+      "studentText": "Regn ut 56 : 8. Skriv gangestykket du bruker som hjelp.",
+      "solution": "7. Gangestykket er 8 · 7 = 56.",
+      "representationHint": null,
+      "teacherNote": "Godta også 7 · 8 = 56.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_multiplikasjon_og_divisjon.pdf"
+      }
+    },
+    {
+      "id": "D1-N2-03",
+      "topic": "divisjon",
+      "area": "multiplikasjon-divisjon",
+      "areaTitle": "Multiplikasjon og divisjon",
+      "level": 2,
+      "title": "Fire regnestykker",
+      "format": "Regnefamilie",
+      "purpose": "Lage en hel regnefamilie med multiplikasjon og divisjon.",
+      "studentText": "Bruk tallene 6, 9 og 54. Skriv to gangestykker og to divisjonsstykker som hører sammen.",
+      "solution": "6 · 9 = 54, 9 · 6 = 54, 54 : 6 = 9 og 54 : 9 = 6",
+      "representationHint": null,
+      "teacherNote": "Rekkefølgen kan variere.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_multiplikasjon_og_divisjon.pdf"
+      }
+    },
+    {
+      "id": "D1-N3-01",
+      "topic": "divisjon",
+      "area": "multiplikasjon-divisjon",
+      "areaTitle": "Multiplikasjon og divisjon",
+      "level": 3,
+      "title": "Forklar sammenhengen",
+      "format": "Forklaring",
+      "purpose": "Forklare divisjon ved hjelp av multiplikasjon.",
+      "studentText": "Forklar hvorfor 63 : 7 = 9 ved å bruke et gangestykke.",
+      "solution": "Fordi 7 · 9 = 63, er 63 : 7 = 9.",
+      "representationHint": null,
+      "teacherNote": "Forklaringen skal vise den inverse sammenhengen.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_multiplikasjon_og_divisjon.pdf"
+      }
+    },
+    {
+      "id": "D1-N3-02",
+      "topic": "divisjon",
+      "area": "multiplikasjon-divisjon",
+      "areaTitle": "Multiplikasjon og divisjon",
+      "level": 3,
+      "title": "Finn og rett feilen",
+      "format": "Feilanalyse",
+      "purpose": "Kontrollere en divisjon med multiplikasjon.",
+      "studentText": "En elev sier at 48 : 6 = 7. Har eleven rett? Begrunn svaret med et gangestykke.",
+      "solution": "Nei. 6 · 8 = 48, så 48 : 6 = 8.",
+      "representationHint": null,
+      "teacherNote": "6 · 7 = 42 og kan brukes til å vise hvorfor 7 er feil.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_multiplikasjon_og_divisjon.pdf"
+      }
+    },
+    {
+      "id": "D1-N3-03",
+      "topic": "divisjon",
+      "area": "multiplikasjon-divisjon",
+      "areaTitle": "Multiplikasjon og divisjon",
+      "level": 3,
+      "title": "Finn divisoren",
+      "format": "Ukjent tall",
+      "purpose": "Bruke motsatt regneart når divisoren er ukjent.",
+      "studentText": "Finn tallet som mangler: 72 : __ = 8. Forklar hvordan du vet det.",
+      "solution": "9, fordi 8 · 9 = 72.",
+      "representationHint": null,
+      "teacherNote": "Eleven kan også tenke 72 : 8 = 9.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_multiplikasjon_og_divisjon.pdf"
+      }
+    },
+    {
+      "id": "D2-N1-01",
+      "topic": "divisjon",
+      "area": "delingsdivisjon-malingsdivisjon",
+      "areaTitle": "Delingsdivisjon og målingsdivisjon",
+      "level": 1,
+      "title": "Dele likt",
+      "format": "Tekstoppgave",
+      "purpose": "Bruke delingsdivisjon i en konkret situasjon.",
+      "studentText": "24 blyanter skal deles likt mellom 6 elever. Hvor mange blyanter får hver elev?",
+      "solution": "4 blyanter",
+      "representationHint": null,
+      "teacherNote": "24 : 6 = 4. Antall grupper er kjent, og størrelsen på hver gruppe skal finnes.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_delingsdivisjon_og_malingsdivisjon.pdf"
+      }
+    },
+    {
+      "id": "D2-N1-02",
+      "topic": "divisjon",
+      "area": "delingsdivisjon-malingsdivisjon",
+      "areaTitle": "Delingsdivisjon og målingsdivisjon",
+      "level": 1,
+      "title": "Fylle poser",
+      "format": "Tekstoppgave",
+      "purpose": "Bruke målingsdivisjon i en konkret situasjon.",
+      "studentText": "Det er 20 epler. Det skal være 5 epler i hver pose. Hvor mange poser trengs?",
+      "solution": "4 poser",
+      "representationHint": null,
+      "teacherNote": "20 : 5 = 4. Gruppestørrelsen er kjent, og antall grupper skal finnes.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_delingsdivisjon_og_malingsdivisjon.pdf"
+      }
+    },
+    {
+      "id": "D2-N1-03",
+      "topic": "divisjon",
+      "area": "delingsdivisjon-malingsdivisjon",
+      "areaTitle": "Delingsdivisjon og målingsdivisjon",
+      "level": 1,
+      "title": "Like grupper",
+      "format": "Kort svar",
+      "purpose": "Fordele en mengde i et kjent antall like grupper.",
+      "studentText": "18 klosser deles i 3 like store grupper. Hvor mange klosser er det i hver gruppe?",
+      "solution": "6 klosser",
+      "representationHint": "Tegn tre ringer og fordel klossene likt.",
+      "teacherNote": "18 : 3 = 6.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_delingsdivisjon_og_malingsdivisjon.pdf"
+      }
+    },
+    {
+      "id": "D2-N2-01",
+      "topic": "divisjon",
+      "area": "delingsdivisjon-malingsdivisjon",
+      "areaTitle": "Delingsdivisjon og målingsdivisjon",
+      "level": 2,
+      "title": "Fordele klistremerker",
+      "format": "Tekstoppgave",
+      "purpose": "Løse delingsdivisjon mer selvstendig.",
+      "studentText": "32 klistremerker fordeles likt mellom 4 venner. Hvor mange får hver venn?",
+      "solution": "8 klistremerker",
+      "representationHint": null,
+      "teacherNote": "32 : 4 = 8.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_delingsdivisjon_og_malingsdivisjon.pdf"
+      }
+    },
+    {
+      "id": "D2-N2-02",
+      "topic": "divisjon",
+      "area": "delingsdivisjon-malingsdivisjon",
+      "areaTitle": "Delingsdivisjon og målingsdivisjon",
+      "level": 2,
+      "title": "Hvor mange poser?",
+      "format": "Tekstoppgave",
+      "purpose": "Løse målingsdivisjon mer selvstendig.",
+      "studentText": "En baker har 35 boller og legger 5 boller i hver pose. Hvor mange poser fyller bakeren?",
+      "solution": "7 poser",
+      "representationHint": null,
+      "teacherNote": "35 : 5 = 7.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_delingsdivisjon_og_malingsdivisjon.pdf"
+      }
+    },
+    {
+      "id": "D2-N2-03",
+      "topic": "divisjon",
+      "area": "delingsdivisjon-malingsdivisjon",
+      "areaTitle": "Delingsdivisjon og målingsdivisjon",
+      "level": 2,
+      "title": "Samme regnestykke, ulik betydning",
+      "format": "Sammenligning",
+      "purpose": "Skille mellom hva svaret betyr i de to divisjonstypene.",
+      "studentText": "A: 24 kort deles likt mellom 6 barn. B: 24 kort legges i bunker med 6 kort i hver. Løs begge og skriv hva tallet 4 betyr i hver situasjon.",
+      "solution": "A: 4 kort til hvert barn. B: 4 bunker.",
+      "representationHint": null,
+      "teacherNote": "Begge bruker 24 : 6 = 4, men svaret har ulik betydning.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_delingsdivisjon_og_malingsdivisjon.pdf"
+      }
+    },
+    {
+      "id": "D2-N3-01",
+      "topic": "divisjon",
+      "area": "delingsdivisjon-malingsdivisjon",
+      "areaTitle": "Delingsdivisjon og målingsdivisjon",
+      "level": 3,
+      "title": "Lag to regnefortellinger",
+      "format": "Forklaring",
+      "purpose": "Formulere både delingsdivisjon og målingsdivisjon.",
+      "studentText": "Lag to korte regnefortellinger som passer til 36 : 6. Den ene skal handle om å dele i 6 like grupper. Den andre skal handle om grupper med 6 i hver.",
+      "solution": "Begge regnefortellingene skal gi svaret 6.",
+      "representationHint": null,
+      "teacherNote": "Den første skal spørre hvor mange i hver gruppe; den andre hvor mange grupper.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_delingsdivisjon_og_malingsdivisjon.pdf"
+      }
+    },
+    {
+      "id": "D2-N3-02",
+      "topic": "divisjon",
+      "area": "delingsdivisjon-malingsdivisjon",
+      "areaTitle": "Delingsdivisjon og målingsdivisjon",
+      "level": 3,
+      "title": "Bestem divisjonstype",
+      "format": "Forklaring",
+      "purpose": "Gjenkjenne målingsdivisjon og begrunne valget.",
+      "studentText": "42 perler brukes til armbånd med 7 perler på hvert. Hvor mange armbånd kan lages? Er dette delingsdivisjon eller målingsdivisjon?",
+      "solution": "6 armbånd. Dette er målingsdivisjon.",
+      "representationHint": null,
+      "teacherNote": "Gruppestørrelsen 7 er kjent, og antall grupper skal finnes.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_delingsdivisjon_og_malingsdivisjon.pdf"
+      }
+    },
+    {
+      "id": "D2-N3-03",
+      "topic": "divisjon",
+      "area": "delingsdivisjon-malingsdivisjon",
+      "areaTitle": "Delingsdivisjon og målingsdivisjon",
+      "level": 3,
+      "title": "To betydninger av svaret",
+      "format": "Forklaring",
+      "purpose": "Forklare hvordan samme regnestykke kan beskrive to situasjoner.",
+      "studentText": "48 kort fordeles likt mellom 8 spillere. Deretter tenker du deg at 48 kort legges i bunker med 8 kort i hver. Hva blir svaret i begge situasjonene, og hva betyr svaret?",
+      "solution": "Svaret er 6 i begge. Først er det 6 kort per spiller; deretter er det 6 bunker.",
+      "representationHint": null,
+      "teacherNote": "Oppgaven undersøker begrepsforståelse, ikke bare utregning.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_delingsdivisjon_og_malingsdivisjon.pdf"
+      }
+    },
+    {
+      "id": "D3-N1-01",
+      "topic": "divisjon",
+      "area": "divisjon-med-rest",
+      "areaTitle": "Divisjon med noe til overs",
+      "level": 1,
+      "title": "Epler i poser",
+      "format": "Tekstoppgave",
+      "purpose": "Finne hele grupper og rest.",
+      "studentText": "14 epler legges i poser med 4 epler i hver. Hvor mange fulle poser blir det, og hvor mange epler blir til overs?",
+      "solution": "3 fulle poser og 2 epler til overs",
+      "representationHint": null,
+      "teacherNote": "14 : 4 = 3 rest 2.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_divisjon_med_noe_til_overs.pdf"
+      }
+    },
+    {
+      "id": "D3-N1-02",
+      "topic": "divisjon",
+      "area": "divisjon-med-rest",
+      "areaTitle": "Divisjon med noe til overs",
+      "level": 1,
+      "title": "Lag med elever",
+      "format": "Tekstoppgave",
+      "purpose": "Tolke rest i en enkel gruppesituasjon.",
+      "studentText": "17 elever lager lag med 5 elever på hvert lag. Hvor mange fulle lag blir det, og hvor mange elever blir til overs?",
+      "solution": "3 fulle lag og 2 elever til overs",
+      "representationHint": null,
+      "teacherNote": "17 : 5 = 3 rest 2.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_divisjon_med_noe_til_overs.pdf"
+      }
+    },
+    {
+      "id": "D3-N1-03",
+      "topic": "divisjon",
+      "area": "divisjon-med-rest",
+      "areaTitle": "Divisjon med noe til overs",
+      "level": 1,
+      "title": "Skriv resten",
+      "format": "Kort svar",
+      "purpose": "Skrive et divisjonssvar med rest.",
+      "studentText": "Regn ut: 11 : 3. Skriv både antall hele grupper og resten.",
+      "solution": "3 rest 2",
+      "representationHint": "Tegn 11 prikker og ring rundt tre og tre.",
+      "teacherNote": "3 · 3 = 9, og 11 - 9 = 2.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_divisjon_med_noe_til_overs.pdf"
+      }
+    },
+    {
+      "id": "D3-N2-01",
+      "topic": "divisjon",
+      "area": "divisjon-med-rest",
+      "areaTitle": "Divisjon med noe til overs",
+      "level": 2,
+      "title": "Muffins i esker",
+      "format": "Tekstoppgave",
+      "purpose": "Finne rest i en praktisk situasjon.",
+      "studentText": "26 muffins legges i esker med 6 muffins i hver. Hvor mange fulle esker blir det, og hvor mange muffins blir til overs?",
+      "solution": "4 fulle esker og 2 muffins til overs",
+      "representationHint": null,
+      "teacherNote": "26 : 6 = 4 rest 2.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_divisjon_med_noe_til_overs.pdf"
+      }
+    },
+    {
+      "id": "D3-N2-02",
+      "topic": "divisjon",
+      "area": "divisjon-med-rest",
+      "areaTitle": "Divisjon med noe til overs",
+      "level": 2,
+      "title": "Dele perler",
+      "format": "Tekstoppgave",
+      "purpose": "Tolke rest ved lik fordeling.",
+      "studentText": "29 perler deles likt mellom 4 barn. Hvor mange perler får hvert barn, og hvor mange blir til overs?",
+      "solution": "7 perler til hvert barn og 1 perle til overs",
+      "representationHint": null,
+      "teacherNote": "29 : 4 = 7 rest 1.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_divisjon_med_noe_til_overs.pdf"
+      }
+    },
+    {
+      "id": "D3-N2-03",
+      "topic": "divisjon",
+      "area": "divisjon-med-rest",
+      "areaTitle": "Divisjon med noe til overs",
+      "level": 2,
+      "title": "Hvor mange biler?",
+      "format": "Tekstoppgave",
+      "purpose": "Forstå når en rest krever at svaret rundes opp.",
+      "studentText": "22 personer skal kjøre i biler med plass til 5 personer i hver. Hvor mange biler trengs for at alle skal få plass?",
+      "solution": "5 biler",
+      "representationHint": null,
+      "teacherNote": "22 : 5 = 4 rest 2. Fire biler er ikke nok, så en femte bil trengs.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_divisjon_med_noe_til_overs.pdf"
+      }
+    },
+    {
+      "id": "D3-N3-01",
+      "topic": "divisjon",
+      "area": "divisjon-med-rest",
+      "areaTitle": "Divisjon med noe til overs",
+      "level": 3,
+      "title": "Bøker i hyller",
+      "format": "Flerstegsoppgave",
+      "purpose": "Tolke rest og finne totalt antall nødvendige grupper.",
+      "studentText": "43 bøker settes i hyller med plass til 8 bøker i hver. Hvor mange hyller trengs, og hvor mange bøker står på den siste hyllen?",
+      "solution": "6 hyller. Det står 3 bøker på den siste hyllen.",
+      "representationHint": null,
+      "teacherNote": "43 : 8 = 5 rest 3, så det trengs fem fulle hyller og én ekstra.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_divisjon_med_noe_til_overs.pdf"
+      }
+    },
+    {
+      "id": "D3-N3-02",
+      "topic": "divisjon",
+      "area": "divisjon-med-rest",
+      "areaTitle": "Divisjon med noe til overs",
+      "level": 3,
+      "title": "Resten bestemmer svaret",
+      "format": "Forklaring",
+      "purpose": "Forklare hvorfor samme divisjon kan gi ulike praktiske svar.",
+      "studentText": "31 elever deles i lag med 6 på hvert lag. Sammenlign med 31 boller som legges i fulle poser med 6 i hver. Hva betyr resten i de to situasjonene?",
+      "solution": "Begge gir 5 rest 1. Én elev blir utenfor de fem fulle lagene og må organiseres på en annen måte. Én bolle blir liggende utenfor de fem fulle posene.",
+      "representationHint": null,
+      "teacherNote": "Godta ulike forsvarlige organiseringer av elevsituasjonen.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_divisjon_med_noe_til_overs.pdf"
+      }
+    },
+    {
+      "id": "D3-N3-03",
+      "topic": "divisjon",
+      "area": "divisjon-med-rest",
+      "areaTitle": "Divisjon med noe til overs",
+      "level": 3,
+      "title": "Lag en situasjon",
+      "format": "Forklaring",
+      "purpose": "Knytte et divisjonsuttrykk med rest til en praktisk betydning.",
+      "studentText": "Lag en kort regnefortelling som passer til 38 : 7 = 5 rest 3. Forklar hva resten 3 betyr.",
+      "solution": "En gyldig fortelling med 5 hele grupper og 3 til overs.",
+      "representationHint": null,
+      "teacherNote": "Kontroller at både gruppestørrelse, antall grupper og rest stemmer.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_divisjon_med_noe_til_overs.pdf"
+      }
+    },
+    {
+      "id": "D4-N1-01",
+      "topic": "divisjon",
+      "area": "modeller",
+      "areaTitle": "Bruke modeller",
+      "level": 1,
+      "title": "Prikker i grupper",
+      "format": "Tegning",
+      "purpose": "Vise delingsdivisjon med en enkel gruppemodell.",
+      "studentText": "Tegn 20 prikker fordelt likt i 4 ringer. Hvor mange prikker blir det i hver ring?",
+      "solution": "5 prikker i hver ring",
+      "representationHint": "Fire ringer med fem prikker i hver.",
+      "teacherNote": "20 : 4 = 5.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_bruke_modeller.pdf"
+      }
+    },
+    {
+      "id": "D4-N1-02",
+      "topic": "divisjon",
+      "area": "modeller",
+      "areaTitle": "Bruke modeller",
+      "level": 1,
+      "title": "Rutenett",
+      "format": "Modell og regnestykker",
+      "purpose": "Se multiplikasjon og divisjon i et rutenett.",
+      "studentText": "Et rutenett har 3 rader med 6 ruter i hver rad. Hvor mange ruter er det? Skriv ett gangestykke og de to divisjonsstykkene som hører til.",
+      "solution": "18 ruter. 3 · 6 = 18, 18 : 3 = 6 og 18 : 6 = 3.",
+      "representationHint": "Tegn et rutenett med 3 rader og 6 kolonner.",
+      "teacherNote": "Godta også 6 · 3 = 18 som gangestykke.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_bruke_modeller.pdf"
+      }
+    },
+    {
+      "id": "D4-N1-03",
+      "topic": "divisjon",
+      "area": "modeller",
+      "areaTitle": "Bruke modeller",
+      "level": 1,
+      "title": "Hopp på tallinjen",
+      "format": "Tallinje",
+      "purpose": "Vise målingsdivisjon med like hopp.",
+      "studentText": "Start på 0 og hopp 4 om gangen til 24 på en tallinje. Hvor mange hopp blir det?",
+      "solution": "6 hopp",
+      "representationHint": "0 - 4 - 8 - 12 - 16 - 20 - 24.",
+      "teacherNote": "24 : 4 = 6.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_bruke_modeller.pdf"
+      }
+    },
+    {
+      "id": "D4-N2-01",
+      "topic": "divisjon",
+      "area": "modeller",
+      "areaTitle": "Bruke modeller",
+      "level": 2,
+      "title": "Blokkmodell",
+      "format": "Blokkmodell",
+      "purpose": "Finne størrelsen på hver del i en blokkmodell.",
+      "studentText": "En blokk med totalen 35 er delt i 5 like store deler. Hvilket tall skal stå i hver del?",
+      "solution": "7",
+      "representationHint": "[ ? ][ ? ][ ? ][ ? ][ ? ] = 35",
+      "teacherNote": "35 : 5 = 7.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_bruke_modeller.pdf"
+      }
+    },
+    {
+      "id": "D4-N2-02",
+      "topic": "divisjon",
+      "area": "modeller",
+      "areaTitle": "Bruke modeller",
+      "level": 2,
+      "title": "Finn antall kolonner",
+      "format": "Rutenett",
+      "purpose": "Bruke arealmodell til divisjon.",
+      "studentText": "Et rutenett har 24 ruter og 4 rader. Hvor mange kolonner har rutenettet? Skriv divisjonsstykket.",
+      "solution": "6 kolonner. 24 : 4 = 6.",
+      "representationHint": "Tegn fire rader og fordel 24 ruter likt.",
+      "teacherNote": "Modellen kan også knyttes til 4 · 6 = 24.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_bruke_modeller.pdf"
+      }
+    },
+    {
+      "id": "D4-N2-03",
+      "topic": "divisjon",
+      "area": "modeller",
+      "areaTitle": "Bruke modeller",
+      "level": 2,
+      "title": "Gjentatt subtraksjon",
+      "format": "Tallinje",
+      "purpose": "Vise divisjon som gjentatt subtraksjon.",
+      "studentText": "På en tallinje går du fra 30 til 0 med hopp på 5: 30, 25, 20, 15, 10, 5, 0. Hvor mange hopp er det, og hvilket divisjonsstykke viser modellen?",
+      "solution": "6 hopp. 30 : 5 = 6.",
+      "representationHint": null,
+      "teacherNote": "Hvert hopp trekker fra én gruppe på 5.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_bruke_modeller.pdf"
+      }
+    },
+    {
+      "id": "D4-N3-01",
+      "topic": "divisjon",
+      "area": "modeller",
+      "areaTitle": "Bruke modeller",
+      "level": 3,
+      "title": "Velg en modell",
+      "format": "Forklaring",
+      "purpose": "Velge og begrunne en egnet representasjon.",
+      "studentText": "Vis 42 : 6 med en modell du velger, for eksempel rutenett, blokkmodell eller tallinje. Forklar hvordan modellen viser svaret.",
+      "solution": "7. Modellen må vise seks like grupper med sju i hver, eller sju grupper med seks i hver.",
+      "representationHint": null,
+      "teacherNote": "Vurder om modellen og forklaringen samsvarer med divisjonsstykket.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_bruke_modeller.pdf"
+      }
+    },
+    {
+      "id": "D4-N3-02",
+      "topic": "divisjon",
+      "area": "modeller",
+      "areaTitle": "Bruke modeller",
+      "level": 3,
+      "title": "Ukjent antall deler",
+      "format": "Blokkmodell",
+      "purpose": "Finne antall deler når total og delstørrelse er kjent.",
+      "studentText": "En blokkmodell har totalen 56. Hver like del har verdien 8. Hvor mange deler må modellen ha?",
+      "solution": "7 deler",
+      "representationHint": "[ 8 ][ 8 ][ 8 ] ... = 56",
+      "teacherNote": "56 : 8 = 7.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_bruke_modeller.pdf"
+      }
+    },
+    {
+      "id": "D4-N3-03",
+      "topic": "divisjon",
+      "area": "modeller",
+      "areaTitle": "Bruke modeller",
+      "level": 3,
+      "title": "To modeller",
+      "format": "Forklaring",
+      "purpose": "Sammenligne to representasjoner av samme divisjon.",
+      "studentText": "Vis 32 : 4 = 8 med to ulike modeller. Forklar hva tallet 4 og tallet 8 betyr i hver modell.",
+      "solution": "To korrekte modeller som viser 32 delt i 4 grupper med 8 i hver, eller 32 målt i grupper på 4 som gir 8 grupper.",
+      "representationHint": null,
+      "teacherNote": "Et rutenett, en blokkmodell, grupper eller en tallinje kan brukes.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_bruke_modeller.pdf"
+      }
+    }
+  ]
+}

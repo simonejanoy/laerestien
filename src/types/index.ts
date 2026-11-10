@@ -1,4 +1,4 @@
-import type { AiTaskMeta, ReferenceArea } from '../ai/contract.ts'
+import type { AiTaskMeta, DivisionType, ReferenceArea } from '../ai/contract.ts'
 
 export type Role = 'teacher' | 'student'
 
@@ -154,6 +154,8 @@ export interface TaskProfile {
   taskVariant?: string
   /** Tierovergang er det uttrykkelige målet: alle oppgaver må kreve minst én addisjon med veksling. */
   requiresCarry?: boolean
+  /** Divisjon: økta handler bare om delingsdivisjon («deling») eller bare om målingsdivisjon («maling»). */
+  divisionType?: DivisionType
   levels: Record<Level, LevelProfile>
 }
 
