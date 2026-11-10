@@ -1,5 +1,7 @@
+import type { PlaceValueArea } from '../../ai/contract.ts'
 import type { Level, LevelGroup, LevelProfile, Operator, TaskProfile, TaskType, TopicDetails } from '../../types/index.ts'
 import { OPEN_STRATEGY, strategyInstruction } from './multiplicationStrategies.ts'
+import { columnTasks, fourDigitTasks, mentalStrategyTasks, negativeNumberTasks, type FourDigitVariant } from './placeValueTasks.ts'
 
 // Innholdet i periodene i årsplanen (se curriculum.ts): økttitler med undertema, mål,
 // nivåer og regler for oppgaver. Oppgavereglene hører til undertemaene (ferdighetene),
@@ -93,33 +95,24 @@ const byLevel =
   (level, n) =>
     (level === 1 ? one : level === 2 ? two : three)(n)
 
+/** Hoderegning med tiere og hundrere (tallmønstre og repetisjon). */
+const mentalByLevel = byLevel(
+  (n) => five((i): TaskSpec => [H, vary(n, i, 2, 10), '+', vary(n + 1, i, 2, 10), 'Regn i hodet.']),
+  (n) => five((i): TaskSpec => [H, vary(n, i, 23, 68), '+', 10 * vary(n + 1, i, 1, 3), 'Regn i hodet: legg til tierne.']),
+  (n) => five((i): TaskSpec => [H, vary(n, i, 120, 480), i % 2 === 0 ? '+' : '-', 10 * vary(n + 2, i, 2, 9), 'Regn i hodet.']),
+)
+
 // ---------------------------------------------------------------------------------------
 // Regler per undertema
 
 const skillTasks: Record<string, Generator> = {
   // Tall – nivåene er tall 1–20, 1–100 og 1–1000.
-  'tall.firesifrede': byLevel(
-    (n) =>
-      five((i): TaskSpec => {
-        const e = vary(n, i, 1, 9)
-        return [H, 10, '+', e, `Sett sammen tallet: 1 tier og ${e} enere. Hvilket tall blir det?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const [t, e] = [vary(n, i, 2, 9), vary(n + 1, i, 1, 9)]
-        return [H, t * 10, '+', e, `Sett sammen tallet: ${t} tiere og ${e} enere. Hvilket tall blir det?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const [h, rest] = [vary(n, i, 1, 9), vary(n + 1, i, 11, 99)]
-        return [H, h * 100, '+', rest, `Sett sammen tallet: ${h} hundrere og ${rest}. Hvilket tall blir det?`]
-      }),
-  ),
-  'tall.hoderegning': byLevel(
-    (n) => five((i): TaskSpec => [H, vary(n, i, 2, 10), '+', vary(n + 1, i, 2, 10), 'Regn i hodet.']),
-    (n) => five((i): TaskSpec => [H, vary(n, i, 23, 68), '+', 10 * vary(n + 1, i, 1, 3), 'Regn i hodet: legg til tierne.']),
-    (n) => five((i): TaskSpec => [H, vary(n, i, 120, 480), i % 2 === 0 ? '+' : '-', 10 * vary(n + 2, i, 2, 9), 'Regn i hodet.']),
-  ),
+  // Firesifrede tall: sifferverdi og bygge tall → dele opp, sammenligne og sortere → vilkår og endring
+  // av én plassverdi. Varianten (økta) avgjør oppgavene på nivå 2 (se placeValueTasks.ts).
+  'tall.firesifrede': (level, n, profile) => fourDigitTasks(level, n, (profile?.taskVariant as FourDigitVariant | undefined) ?? 'plassverdi'),
+  // Hoderegning. Varianten «strategier» (økta «Hoderegning med smarte strategier»): oppgitt strategi →
+  // oppdeling/kompensasjon → velge og forklare. Ellers tiere og hundrere i hodet (tallmønstre).
+  'tall.hoderegning': (level, n, profile) => (profile?.taskVariant === 'strategier' ? mentalStrategyTasks(level, n) : mentalByLevel(level, n)),
   'tall.addisjon-subtraksjon': byLevel(
     (n) =>
       five((i): TaskSpec =>
@@ -136,30 +129,12 @@ const skillTasks: Record<string, Generator> = {
           : [O, a, '-', vary(n, i, 105, 199), 'Still opp og regn ut. Husk å veksle.']
       }),
   ),
-  'tall.oppstilling': byLevel(
-    (n) => five((i): TaskSpec => [O, vary(n, i, 21, 68), '+', vary(n + 1, i, 15, 29), 'Still opp og regn ut.']),
-    (n) => five((i): TaskSpec => [O, vary(n, i, 210, 680), '+', vary(n + 1, i, 105, 299), 'Still opp og regn ut.']),
-    (n) => five((i): TaskSpec => [O, vary(n, i, 5205, 9890), '-', vary(n + 1, i, 1105, 4999), 'Still opp og regn ut. Husk å veksle.']),
-  ),
-  'tall.negative': byLevel(
-    (n) =>
-      five((i): TextSpec => {
-        const t = vary(n, i, 1, 5)
-        const d = t + vary(n + 1, i, 1, 4)
-        return { text: `Temperaturen er ${t} grader. Den synker ${d} grader. Hva blir temperaturen?`, solution: `${signed(t - d)} grader  (${t} − ${d} = ${signed(t - d)})` }
-      }),
-    (n) =>
-      five((i): TextSpec => {
-        const a = vary(n, i, 2, 9)
-        const b = a + vary(n + 2, i, 2, 8)
-        return { text: `Regn ut. Bruk tallinjen.\n${a} − ${b} = ___`, solution: `${signed(a - b)}  (fra ${a} går du ${b} steg ned)` }
-      }),
-    (n) =>
-      five((i): TextSpec => {
-        const [a, b] = [vary(n, i, 2, 9), vary(n + 1, i, 3, 12)]
-        return { text: `Om morgenen var det −${a} grader. Om ettermiddagen var det ${b} grader. Hvor mange grader steg temperaturen?`, solution: `${a + b} grader  (${a} opp til 0, og ${b} til)` }
-      }),
-  ),
+  // Oppstilling med tall over 1000 på alle nivåer: uten veksling → veksling → veksling gjennom nuller,
+  // kontroll med motsatt regneart og feilanalyse.
+  'tall.oppstilling': (level, n) => columnTasks(level, n),
+  // Negative tall på alle nivåer: lese og sammenligne → endringer forbi null → flere endringer,
+  // ukjent startverdi og forklaring på tallinjen.
+  'tall.negative': (level, n) => negativeNumberTasks(level, n),
 
   // Multiplikasjon
   // Like grupper: gjentatt addisjon som skal skrives som gange.
@@ -898,6 +873,87 @@ const tableLevels = (
   },
 ]
 
+// ---------------------------------------------------------------------------------------
+// Tall og plassverdi: hver økt har ett hovedområde i referansebanken (og eventuelt tilgrensende områder).
+// Nivåene følger samme støttestruktur i alle områdene – forskjellen er ikke bare større tall.
+
+const PLACE_VALUE_SUPPORT: Record<Level, string> = {
+  1: 'Tydelig støtte og oversiktlig oppsett, hovedsakelig ett faglig steg.',
+  2: 'Mindre støtte og mer selvstendig strategivalg, med tierovergang eller veksling der det passer.',
+  3: 'Resonnering: flere steg, feilanalyse, ukjent tall eller forklaring der det passer – ikke bare større tall.',
+}
+
+type LevelText = Pick<LevelProfile, 'title' | 'subtitle' | 'description' | 'numbers'>
+
+const PLACE_VALUE_LEVELS: Record<PlaceValueArea, [LevelText, LevelText, LevelText]> = {
+  hoderegning: [
+    { title: 'Hoderegning med støtte', subtitle: 'Oppgitt strategi, ett steg.', description: 'Bruke en oppgitt strategi, f.eks. tiervenner, hundrervenner eller hele tiere og hundrere, i hovedsakelig ett steg.', numbers: 'Tall opptil 1000: tiervenner, hundrervenner, hele tiere og hundrere' },
+    { title: 'Hoderegning – velg strategi', subtitle: 'Oppdeling og kompensasjon.', description: 'Bruke oppdeling eller kompensasjon selvstendig, f.eks. 198 + 36 som 200 + 36 − 2.', numbers: 'Tall opptil 1000' },
+    { title: 'Hoderegning – forklare', subtitle: 'Velge, bruke og forklare.', description: 'Velge, bruke og kort forklare en effektiv strategi, også med ukjent tall og flere mentale steg.', numbers: 'Tall opptil 1000' },
+  ],
+  'firesifrede-tall': [
+    { title: 'Plassverdi med støtte', subtitle: 'Sifferverdi og bygge tall.', description: 'Finne verdien til et siffer og bygge firesifrede tall med tydelig støtte.', numbers: 'Firesifrede tall' },
+    { title: 'Plassverdi', subtitle: 'Dele opp, sammenligne og sortere.', description: 'Dele opp firesifrede tall i utvidet form, sammenligne og sortere dem.', numbers: 'Firesifrede tall' },
+    { title: 'Plassverdi – resonnere', subtitle: 'Vilkår og endringer.', description: 'Konstruere tall fra vilkår og forklare hvordan en endring i én plassverdi endrer tallet.', numbers: 'Firesifrede tall' },
+  ],
+  'addisjon-subtraksjon': [
+    { title: 'Uten tierovergang', subtitle: 'Ett steg med støtte.', description: 'Legge sammen og trekke fra uten tierovergang eller veksling.', numbers: 'Tall opptil 1000 uten tierovergang eller veksling' },
+    { title: 'Med tierovergang og veksling', subtitle: 'Mindre støtte.', description: 'Legge sammen med tierovergang og trekke fra med veksling.', numbers: 'Tall opptil 1000 med tierovergang eller veksling' },
+    { title: 'Flere steg', subtitle: 'Resonnere og kontrollere.', description: 'Løse oppgaver i flere steg, finne ukjent tall og kontrollere med motsatt regneart.', numbers: 'Tall opptil 10 000' },
+  ],
+  'oppstilling-over-1000': [
+    { title: 'Oppstilling med støtte', subtitle: 'Uten veksling.', description: 'Stille opp firesifrede tall med enere under enere, uten veksling.', numbers: 'Firesifrede tall uten veksling' },
+    { title: 'Oppstilling med veksling', subtitle: 'Veksling i flere kolonner.', description: 'Stille opp og veksle i addisjon og subtraksjon.', numbers: 'Firesifrede tall med veksling' },
+    { title: 'Oppstilling – resonnere', subtitle: 'Veksling gjennom nuller og flere steg.', description: 'Veksle gjennom nuller, finne feil i en oppstilling og løse oppgaver i flere steg.', numbers: 'Tall over 1000, også veksling gjennom nuller' },
+  ],
+  'negative-tall': [
+    { title: 'Negative tall med støtte', subtitle: 'Temperatur og tallinje.', description: 'Lese og sammenligne negative tall i kjente situasjoner.', numbers: 'Hele tall fra −10 til 10' },
+    { title: 'Regne med negative tall', subtitle: 'Endringer over og under null.', description: 'Finne ny verdi når et tall stiger eller synker forbi null.', numbers: 'Hele tall fra −20 til 20' },
+    { title: 'Negative tall – resonnere', subtitle: 'Flere endringer og ukjent start.', description: 'Følge flere endringer, regne baklengs og forklare avstander på tallinjen.', numbers: 'Hele tall fra −20 til 20' },
+  ],
+}
+
+const PLACE_VALUE_FORMATS: Record<PlaceValueArea, string[]> = {
+  hoderegning: ['Hoderegning (regnestykke)', 'Korte tekstoppgaver der det passer'],
+  'firesifrede-tall': ['Hoderegning (regnestykke) og korte tekstoppgaver om plassverdi'],
+  'addisjon-subtraksjon': ['Hoderegning eller oppstilling (regnestykke)', 'Korte tekstoppgaver på nivå 2 og 3'],
+  'oppstilling-over-1000': ['Oppstilling (regnestykke)'],
+  'negative-tall': ['Korte tekstoppgaver med negative tall'],
+}
+
+/**
+ * Øktprofil i Tall og plassverdi. `ownLevelTexts: false` for økter med egne nivåtekster fra før
+ * (sessions/mockData.ts): da får profilen bare tallområde og støttestruktur, så AI-en og læreren ser de samme nivåene.
+ */
+const placeValueProfile = (
+  area: PlaceValueArea,
+  focus: string,
+  {
+    secondaryAreas,
+    ownLevelTexts = true,
+    taskVariant,
+    requiresCarry,
+  }: { secondaryAreas?: PlaceValueArea[]; ownLevelTexts?: boolean; taskVariant?: FourDigitVariant | 'strategier'; requiresCarry?: boolean } = {},
+): TaskProfile => ({
+  focus,
+  area,
+  ...(secondaryAreas && { secondaryAreas }),
+  ...(taskVariant && { taskVariant }),
+  ...(requiresCarry && { requiresCarry }),
+  operations: ['+', '-'],
+  formats: PLACE_VALUE_FORMATS[area],
+  steps: 'Ett faglig steg på nivå 1. Nivå 2 kan ha strategivalg, og nivå 3 kan ha flere steg.',
+  avoid: ['Avrunding', 'Deltema fra andre fagområder enn økta', 'Lange tekstoppgaver med flere delspørsmål på nivå 1'],
+  figures: false,
+  levels: Object.fromEntries(
+    PLACE_VALUE_LEVELS[area].map((text, i) => {
+      const level = (i + 1) as Level
+      const levelProfile: LevelProfile = ownLevelTexts ? { ...text, support: PLACE_VALUE_SUPPORT[level] } : { numbers: text.numbers, support: PLACE_VALUE_SUPPORT[level] }
+      return [level, levelProfile]
+    }),
+  ) as Record<Level, LevelProfile>,
+})
+
 /** Måleøkt. */
 const measureProfile = (
   focus: string,
@@ -924,47 +980,108 @@ export const unitSpecs: UnitSpec[] = [
     topic: 'Tall og plassverdi',
     area: 'Tall og algebra',
     description:
-      'Elevene utforsker plassverdi, regner i hodet og runder av, legger sammen og trekker fra med og uten veksling, stiller opp tall over 1000 og møter negative tall på tallinjen.',
+      'Elevene utforsker plassverdi i firesifrede tall, regner i hodet med smarte strategier, legger sammen og trekker fra med og uten veksling, stiller opp tall over 1000 og møter negative tall på tallinjen.',
     // Økt 1–6 ligger i uke 41–43 og økt 7–14 i uke 44–45 (uke 44 står i sessions/mockData.ts).
     weeks: [
       {
         title: 'Uke 1 - plassverdi',
         sessions: [
-          s('Enere, tiere, hundrere og tusenere', 'tall.firesifrede'),
-          s('Tall på tallinjen', 'tall.firesifrede'),
-          s('Større enn og mindre enn', 'tall.firesifrede'),
+          p(
+            'Enere, tiere, hundrere og tusenere',
+            ['tall.firesifrede'],
+            placeValueProfile('firesifrede-tall', 'Plassverdi: sifferets verdi, og å bygge og dele opp tall i tusenere, hundrere, tiere og enere.', { taskVariant: 'plassverdi' }),
+          ),
+          p(
+            'Tall på tallinjen',
+            ['tall.firesifrede'],
+            placeValueProfile('firesifrede-tall', 'Plassere og lese firesifrede tall på tallinjen ved hjelp av plassverdi.', { taskVariant: 'tallinje' }),
+          ),
+          p(
+            'Større enn og mindre enn',
+            ['tall.firesifrede'],
+            placeValueProfile('firesifrede-tall', 'Sammenligne og ordne firesifrede tall ved hjelp av plassverdi.', { taskVariant: 'sammenligne' }),
+          ),
         ],
       },
       {
-        title: 'Uke 2 - hoderegning og avrunding',
+        title: 'Uke 2 - plassverdi og hoderegning',
         sessions: [
-          s('10 mer og 100 mer – tallmønstre', 'tall.hoderegning'),
-          s('Runde av til nærmeste tier', 'tall.hoderegning'),
-          s('Runde av til nærmeste hundrer', 'tall.hoderegning'),
+          p(
+            '10 mer og 100 mer – tallmønstre',
+            ['tall.hoderegning'],
+            placeValueProfile('hoderegning', 'Hoderegning med 10 mer, 100 mer, 10 mindre og 100 mindre, og tallmønstre som bygger på plassverdi.', { secondaryAreas: ['firesifrede-tall'] }),
+          ),
+          // Økt 5 og 6 (tidligere avrunding, som ikke er med i temaet): samme ID-er og plass i timeplanen.
+          p(
+            'Bygge og dele opp firesifrede tall',
+            ['tall.firesifrede'],
+            placeValueProfile(
+              'firesifrede-tall',
+              'Sifferets verdi, utvidet form, bygge firesifrede tall, sammenligne og sortere dem, og endre én bestemt plassverdi.',
+              { taskVariant: 'bygge-dele-opp' },
+            ),
+          ),
+          p(
+            'Hoderegning med smarte strategier',
+            ['tall.hoderegning'],
+            placeValueProfile(
+              'hoderegning',
+              'Hoderegning med hele tiere og hundrere, tiervenner og hundrervenner, oppdeling, kompensasjon (f.eks. 198 + 36 som 200 + 36 − 2), ukjent tall og enkle regneuttrykk med flere mentale steg.',
+              { secondaryAreas: ['addisjon-subtraksjon'], taskVariant: 'strategier' },
+            ),
+          ),
         ],
       },
       {
         title: 'Uke 3 - addisjon og subtraksjon',
         sessions: [
-          s('Tiere, enere og smarte regnestrategier', 'tall.addisjon-subtraksjon'),
-          s('Addisjon med tierovergang – forstå og utforske', 'tall.addisjon-subtraksjon'),
-          s('Addisjon med tierovergang – øve og bruke', 'tall.addisjon-subtraksjon'),
-          s('Subtraksjon – ta bort og finne forskjellen', 'tall.addisjon-subtraksjon'),
+          // Økt 7–10 vises fra sessions/mockData.ts med egne nivåtekster – profilene har derfor bare tallområde og støtte.
+          p(
+            'Tiere, enere og smarte regnestrategier',
+            ['tall.addisjon-subtraksjon'],
+            placeValueProfile('hoderegning', 'Smarte hoderegningsstrategier med tiere og enere: tiervenner, fylle opp en tier og dele opp tall.', {
+              secondaryAreas: ['addisjon-subtraksjon'],
+              ownLevelTexts: false,
+            }),
+          ),
+          p(
+            'Addisjon med tierovergang – forstå og utforske',
+            ['tall.addisjon-subtraksjon'],
+            placeValueProfile('addisjon-subtraksjon', 'Forstå addisjon med tierovergang: fylle opp en tier og dele opp tall.', {
+              secondaryAreas: ['hoderegning'],
+              ownLevelTexts: false,
+              requiresCarry: true,
+            }),
+          ),
+          p(
+            'Addisjon med tierovergang – øve og bruke',
+            ['tall.addisjon-subtraksjon'],
+            placeValueProfile('addisjon-subtraksjon', 'Øve på addisjon med tierovergang og forklare hvordan man tenker. Alle oppgavene krever veksling i minst én plassverdi.', {
+              secondaryAreas: ['hoderegning'],
+              ownLevelTexts: false,
+              requiresCarry: true,
+            }),
+          ),
+          p(
+            'Subtraksjon – ta bort og finne forskjellen',
+            ['tall.addisjon-subtraksjon'],
+            placeValueProfile('addisjon-subtraksjon', 'Subtraksjon som å ta bort og som å finne forskjellen mellom to tall.', { secondaryAreas: ['hoderegning'], ownLevelTexts: false }),
+          ),
         ],
       },
       {
         title: 'Uke 4 - veksling, oppstilling og negative tall',
         sessions: [
-          s('Veksle en tier – forstå og utforske', 'tall.addisjon-subtraksjon'),
-          s('Subtraksjon med veksling – øve og bruke', 'tall.addisjon-subtraksjon'),
-          s('Oppstilling med tall over 1000', 'tall.oppstilling'),
-          s('Negative tall og tallinjen', 'tall.negative'),
+          p('Veksle en tier – forstå og utforske', ['tall.addisjon-subtraksjon'], placeValueProfile('addisjon-subtraksjon', 'Forstå veksling: én tier blir ti enere i addisjon og subtraksjon.')),
+          p('Subtraksjon med veksling – øve og bruke', ['tall.addisjon-subtraksjon'], placeValueProfile('addisjon-subtraksjon', 'Øve på subtraksjon med veksling og kontrollere med addisjon.')),
+          p('Oppstilling med tall over 1000', ['tall.oppstilling'], placeValueProfile('oppstilling-over-1000', 'Stille opp og regne ut addisjon og subtraksjon med tall over 1000, med enere under enere og veksling.')),
+          p('Negative tall og tallinjen', ['tall.negative'], placeValueProfile('negative-tall', 'Negative tall på tallinjen: lese, sammenligne og regne med endringer over og under null.')),
         ],
       },
     ],
     goals: [
       'Forklare plassverdi i tall opptil 10 000.',
-      'Regne i hodet med tiere og hundrere, og runde av.',
+      'Regne i hodet med tiere og hundrere og bruke smarte strategier.',
       'Legge sammen og trekke fra, med og uten veksling.',
       'Stille opp og regne med tall over 1000.',
       'Plassere negative tall på tallinjen.',
@@ -1425,3 +1542,8 @@ export const unitDetails: TopicDetails[] = unitSpecs.map(({ unitId, weeks, goals
   weeks: weeks.map((w) => ({ title: w.title, sessions: w.sessions.map((x) => x.heading) })),
   goals,
 }))
+
+/** Øktprofilen til økta med overskriften `heading` i temaet `unitId` (for økter som er laget utenfor årsplanen). */
+export function sessionProfile(unitId: string, heading: string): TaskProfile | undefined {
+  return unitSpecs.find((u) => u.unitId === unitId)?.weeks.flatMap((w) => w.sessions).find((x) => x.heading === heading)?.profile
+}

@@ -1,5 +1,5 @@
 import { randomInt } from 'node:crypto'
-import { MAX_REFERENCE_TASKS, type AiLevel, type AiReferenceTask, type MultiplicationArea } from '../../src/ai/contract.ts'
+import { MAX_REFERENCE_TASKS, type AiLevel, type AiReferenceTask, type ReferenceArea } from '../../src/ai/contract.ts'
 import type { ReferenceTask } from './types.ts'
 
 // Velger referanser fra referansebanken for ett fagområde og ett nivå.
@@ -34,7 +34,10 @@ function shuffle<T>(items: T[], seed: number): T[] {
 const norm = (text: string) => text.trim().toLowerCase()
 
 export interface SelectOptions {
-  area: MultiplicationArea
+  /** Hovedområdet i økta. */
+  area: ReferenceArea
+  /** Tilgrensende områder: høyst én av plassene går til dem, resten til hovedområdet. */
+  secondaryAreas?: readonly ReferenceArea[]
   level: AiLevel
   seed: number
   max?: number
@@ -45,7 +48,16 @@ export interface SelectOptions {
  * referanser med en hensikt og et format som ikke er valgt fra før går foran, så utvalget
  * sprer seg over ulike formål og formater der banken har det.
  */
-export function selectReferences(bank: readonly ReferenceTask[], { area, level, seed, max = MAX_REFERENCE_TASKS }: SelectOptions): ReferenceTask[] {
+export function selectReferences(bank: readonly ReferenceTask[], { area, secondaryAreas = [], level, seed, max = MAX_REFERENCE_TASKS }: SelectOptions): ReferenceTask[] {
+  if (secondaryAreas.length > 0 && max > 1) {
+    // Hovedfokus: alle plassene unntatt én går til hovedområdet; én støttereferanse fra et tilgrensende område.
+    const main = selectReferences(bank, { area, level, seed, max: max - 1 })
+    const support = shuffle(
+      bank.filter((r) => r.level === level && secondaryAreas.includes(r.area) && r.area !== area),
+      seed + level * 7919 + 1,
+    ).slice(0, 1)
+    return [...main, ...support]
+  }
   const pool = shuffle(
     bank.filter((r) => r.area === area && r.level === level),
     seed + level * 7919,

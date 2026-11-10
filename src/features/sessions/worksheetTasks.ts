@@ -250,62 +250,6 @@ const sequenceSessionTasks = (sessionId: string): SessionTask[] => [
   ...numberSequences.map((seq, i) => sequenceTask(`ark-${sessionId}-tallrekke-${i + 1}`, i < 5 ? 2 : 3, seq)),
 ]
 
-/** «Tallslange: negative tall» – de to veiene gjennom slangen, fra 1 til −100 og til −50. */
-const snakePaths: [string, number][][] = [
-  [['+', -9], [':', 2], ['+', -8], ['−', 1], ['+', 19], ['+', -24], ['+', 5], ['·', -4], [':', -2], ['+', -74]],
-  [['+', -9], ['+', -52], [':', 5], ['−', 1], ['+', 19], ['+', -24], ['·', -15], [':', -3], ['+', 190], ['+', -50], ['+', -100]],
-]
-
-const signedNumber = (x: number) => (x < 0 ? `(−${-x})` : String(x))
-const plain = (x: number) => (x < 0 ? `−${-x}` : String(x))
-
-export function walkSnake(path: [string, number][]) {
-  const values = [1]
-  for (const [op, x] of path) {
-    const v = values[values.length - 1]
-    values.push(op === '+' ? v + x : op === '−' ? v - x : op === '·' ? v * x : v / x)
-  }
-  return values
-}
-
-const negativeTasks = (sessionId: string): SessionTask[] =>
-  snakePaths.map((path, i) => {
-    const values = walkSnake(path)
-    const steps = path.map(([op, x]) => `${op} ${signedNumber(x)}`).join(' → ')
-    return textTask(
-      `ark-${sessionId}-tallslange-${i + 1}`,
-      3,
-      `Tallslange med negative tall. Start på 1, og gjør stegene etter tur:\n${steps}\nHvilket tall ender du på?`,
-      `${plain(values[values.length - 1])}  (${values.map(plain).join(' → ')})`,
-    )
-  })
-
-// ---------------------------------------------------------------------------------------
-// Avrunding (Tall økt 5 «Runde av til nærmeste tier» og økt 6 «… hundrer»)
-
-/** «Avrundingsoppgaver» – uten eksemplene som er løst på arket (955 og 346). */
-const rounding = {
-  tens: [105, 671, 378, 800, 618, 80, 704, 239, 515, 407, 163, 465, 672, 462, 471, 501, 549, 551, 646, 685, 51],
-  hundreds: [636, 762, 887, 223, 234, 573, 212, 128, 773, 942, 360, 849, 258, 450, 646, 115, 718, 999, 836, 684, 237],
-}
-
-/** Avrunding til nærmeste tier/hundrer. Midt mellom (f.eks. 465 eller 450) rundes opp. */
-export const roundTo = (n: number, step: number) => Math.floor(n / step + 0.5) * step
-
-function roundingTasks(sessionId: string, step: 10 | 100, numbers: number[]): SessionTask[] {
-  const unit = step === 10 ? 'tier' : 'hundrer'
-  return ([1, 2, 3] as const).flatMap((level) =>
-    slice(numbers, level - 1, 6).map((n, i) =>
-      textTask(
-        `ark-${sessionId}-avrunding-${level}-${i + 1}`,
-        level,
-        `Rund av til nærmeste hele ${unit}.\n${n}`,
-        `${roundTo(n, step)}  (${n} ≈ ${roundTo(n, step)})`,
-      ),
-    ),
-  )
-}
-
 // ---------------------------------------------------------------------------------------
 // Regnerekkefølge (Repetisjon høst: «Problemløsing med flere regnearter» og «Dette mestrer jeg»)
 
@@ -874,16 +818,11 @@ const sharingSessions: [number, string][] = [
 const multiplicationSessions = [1, 2, 3, 4, 5, 6, 8, 9]
 
 export const worksheetTasks: Record<string, SessionTask[]> = collect([
-  // Tall
-  ['tall-5', roundingTasks('tall-5', 10, rounding.tens)],
-  ['tall-6', roundingTasks('tall-6', 100, rounding.hundreds)],
-  // okt-7 er «Oppstilling med tall over 1000»: der får nivå 2 og 3 oppstillingsarkene i stedet.
-  ...sessionIds.map((sessionId, part): [string, SessionTask[]] => [
-    sessionId,
-    sessionId === 'okt-7' ? additionTasks(part).filter((t) => t.level === 1) : additionTasks(part),
-  ]),
+  // Tall. Økt 5 og 6 (tall-5, tall-6) har ingen ark: grunnoppgavene kommer fra undertemaene i årsplanen.
+  // okt-7 «Oppstilling med tall over 1000» og okt-8 «Negative tall og tallinjen» får ikke de generelle
+  // pluss- og minusarkene: okt-7 får oppstillingsarkene på nivå 2 og 3, okt-8 bare oppgavene fra årsplanen.
+  ...sessionIds.slice(0, 2).map((sessionId, part): [string, SessionTask[]] => [sessionId, additionTasks(part)]),
   ['okt-7', columnTasks('okt-7')],
-  ['okt-8', negativeTasks('okt-8')],
   // Multiplikasjon og divisjon
   ...multiplicationSessions.map((n): [string, SessionTask[]] => [`multiplikasjon-${n}`, multiplicationTasks(`multiplikasjon-${n}`, n)]),
   ['divisjon-1', timesCrossTasks('divisjon-1')],

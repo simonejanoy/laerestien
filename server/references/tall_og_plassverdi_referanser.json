@@ -1,0 +1,818 @@
+{
+  "schemaVersion": 1,
+  "topic": "tall-og-plassverdi",
+  "description": "Originale referanseoppgaver for temaet Tall og plassverdi på 4. trinn.",
+  "referenceCount": 45,
+  "references": [
+    {
+      "id": "T1-N1-01",
+      "topic": "tall-og-plassverdi",
+      "area": "hoderegning",
+      "areaTitle": "Hoderegning",
+      "level": 1,
+      "title": "Fyll opp til nærmeste tier",
+      "format": "Kort svar",
+      "purpose": "Bruke tiervenner i hoderegning.",
+      "studentText": "Regn i hodet: 38 + 2 = __.",
+      "solution": "40",
+      "representationHint": null,
+      "teacherNote": "Eleven kan tenke at 38 trenger 2 for å bli 40.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_hoderegning.pdf"
+      }
+    },
+    {
+      "id": "T1-N1-02",
+      "topic": "tall-og-plassverdi",
+      "area": "hoderegning",
+      "areaTitle": "Hoderegning",
+      "level": 1,
+      "title": "Hele tiere",
+      "format": "Kort svar",
+      "purpose": "Addere hele tiere mentalt.",
+      "studentText": "Regn i hodet: 46 + 30 = __.",
+      "solution": "76",
+      "representationHint": null,
+      "teacherNote": "Tre tiere legges til 46.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_hoderegning.pdf"
+      }
+    },
+    {
+      "id": "T1-N1-03",
+      "topic": "tall-og-plassverdi",
+      "area": "hoderegning",
+      "areaTitle": "Hoderegning",
+      "level": 1,
+      "title": "Trekk fra en hel tier",
+      "format": "Kort svar",
+      "purpose": "Subtrahere hele tiere mentalt.",
+      "studentText": "Regn i hodet: 83 - 40 = __.",
+      "solution": "43",
+      "representationHint": null,
+      "teacherNote": "Fire tiere trekkes fra 83.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_hoderegning.pdf"
+      }
+    },
+    {
+      "id": "T1-N2-01",
+      "topic": "tall-og-plassverdi",
+      "area": "hoderegning",
+      "areaTitle": "Hoderegning",
+      "level": 2,
+      "title": "Nesten hundre",
+      "format": "Kort svar med strategi",
+      "purpose": "Bruke kompensasjon ved addisjon.",
+      "studentText": "Regn i hodet: 198 + 36 = __. Tenk 200 + 36 og juster.",
+      "solution": "234",
+      "representationHint": null,
+      "teacherNote": "200 + 36 = 236, og 236 - 2 = 234.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_hoderegning.pdf"
+      }
+    },
+    {
+      "id": "T1-N2-02",
+      "topic": "tall-og-plassverdi",
+      "area": "hoderegning",
+      "areaTitle": "Hoderegning",
+      "level": 2,
+      "title": "Del opp tallet",
+      "format": "Kort svar med strategi",
+      "purpose": "Dele et tall i hundrere, tiere og enere.",
+      "studentText": "Regn i hodet: 320 + 75 = __.",
+      "solution": "395",
+      "representationHint": null,
+      "teacherNote": "320 + 70 + 5 = 395.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_hoderegning.pdf"
+      }
+    },
+    {
+      "id": "T1-N2-03",
+      "topic": "tall-og-plassverdi",
+      "area": "hoderegning",
+      "areaTitle": "Hoderegning",
+      "level": 2,
+      "title": "To steg",
+      "format": "Kort svar",
+      "purpose": "Holde oversikt over to mentale regneoperasjoner.",
+      "studentText": "Start på 250. Legg til 150 og trekk fra 80. Hvilket tall får du?",
+      "solution": "320",
+      "representationHint": null,
+      "teacherNote": "250 + 150 = 400, deretter 400 - 80 = 320.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_hoderegning.pdf"
+      }
+    },
+    {
+      "id": "T1-N3-01",
+      "topic": "tall-og-plassverdi",
+      "area": "hoderegning",
+      "areaTitle": "Hoderegning",
+      "level": 3,
+      "title": "Velg smart strategi",
+      "format": "Forklaring",
+      "purpose": "Velge og forklare en effektiv hoderegningsstrategi.",
+      "studentText": "Regn ut 499 + 207 i hodet. Forklar kort hvilken strategi du brukte.",
+      "solution": "706",
+      "representationHint": null,
+      "teacherNote": "For eksempel 500 + 207 - 1 = 706.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_hoderegning.pdf"
+      }
+    },
+    {
+      "id": "T1-N3-02",
+      "topic": "tall-og-plassverdi",
+      "area": "hoderegning",
+      "areaTitle": "Hoderegning",
+      "level": 3,
+      "title": "Finn differansen",
+      "format": "Kort svar med strategi",
+      "purpose": "Bruke avstand mellom tall som subtraksjonsstrategi.",
+      "studentText": "Hvor mye mangler fra 675 til 1000? Regn i hodet.",
+      "solution": "325",
+      "representationHint": null,
+      "teacherNote": "675 + 300 = 975 og 975 + 25 = 1000.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_hoderegning.pdf"
+      }
+    },
+    {
+      "id": "T1-N3-03",
+      "topic": "tall-og-plassverdi",
+      "area": "hoderegning",
+      "areaTitle": "Hoderegning",
+      "level": 3,
+      "title": "Ukjent tall",
+      "format": "Ukjent tall",
+      "purpose": "Bruke motsatt regneart i hodet.",
+      "studentText": "Finn tallet som mangler: __ + 275 = 800.",
+      "solution": "525",
+      "representationHint": null,
+      "teacherNote": "800 - 275 = 525.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_hoderegning.pdf"
+      }
+    },
+    {
+      "id": "T2-N1-01",
+      "topic": "tall-og-plassverdi",
+      "area": "firesifrede-tall",
+      "areaTitle": "Firesifrede tall",
+      "level": 1,
+      "title": "Sifferets verdi",
+      "format": "Kort svar",
+      "purpose": "Forstå plassverdien til et siffer.",
+      "studentText": "I tallet 4 682: Hvilken verdi har sifferet 6?",
+      "solution": "600",
+      "representationHint": null,
+      "teacherNote": "6 står på hundrerplassen.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_firesifrede_tall.pdf"
+      }
+    },
+    {
+      "id": "T2-N1-02",
+      "topic": "tall-og-plassverdi",
+      "area": "firesifrede-tall",
+      "areaTitle": "Firesifrede tall",
+      "level": 1,
+      "title": "Utvidet form",
+      "format": "Utfylling",
+      "purpose": "Dele et firesifret tall i plassverdier.",
+      "studentText": "Fyll inn: 3 745 = 3 000 + __ + 40 + 5.",
+      "solution": "700",
+      "representationHint": null,
+      "teacherNote": "Sju hundrere er 700.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_firesifrede_tall.pdf"
+      }
+    },
+    {
+      "id": "T2-N1-03",
+      "topic": "tall-og-plassverdi",
+      "area": "firesifrede-tall",
+      "areaTitle": "Firesifrede tall",
+      "level": 1,
+      "title": "Bygg tallet",
+      "format": "Kort svar",
+      "purpose": "Sette sammen et tall fra tusenere, hundrere, tiere og enere.",
+      "studentText": "Hvilket tall har 5 tusenere, 2 hundrere, 8 tiere og 1 ener?",
+      "solution": "5 281",
+      "representationHint": null,
+      "teacherNote": "5 000 + 200 + 80 + 1 = 5 281.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_firesifrede_tall.pdf"
+      }
+    },
+    {
+      "id": "T2-N2-01",
+      "topic": "tall-og-plassverdi",
+      "area": "firesifrede-tall",
+      "areaTitle": "Firesifrede tall",
+      "level": 2,
+      "title": "Sammenlign tall",
+      "format": "Sammenligning",
+      "purpose": "Sammenligne firesifrede tall ved hjelp av plassverdi.",
+      "studentText": "Sett inn <, > eller =: 4 092 __ 4 209.",
+      "solution": "<",
+      "representationHint": null,
+      "teacherNote": "Begge har 4 tusenere, men 0 hundrere er mindre enn 2 hundrere.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_firesifrede_tall.pdf"
+      }
+    },
+    {
+      "id": "T2-N2-02",
+      "topic": "tall-og-plassverdi",
+      "area": "firesifrede-tall",
+      "areaTitle": "Firesifrede tall",
+      "level": 2,
+      "title": "Sorter tall",
+      "format": "Rekkefølge",
+      "purpose": "Ordne firesifrede tall i stigende rekkefølge.",
+      "studentText": "Skriv tallene fra minst til størst: 3 508, 3 085, 3 850, 3 580.",
+      "solution": "3 085, 3 508, 3 580, 3 850",
+      "representationHint": null,
+      "teacherNote": "Sammenlign først hundrerplassen, deretter tierplassen.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_firesifrede_tall.pdf"
+      }
+    },
+    {
+      "id": "T2-N2-03",
+      "topic": "tall-og-plassverdi",
+      "area": "firesifrede-tall",
+      "areaTitle": "Firesifrede tall",
+      "level": 2,
+      "title": "Nabotall",
+      "format": "Utfylling",
+      "purpose": "Finne tallet rett før og rett etter et firesifret tall.",
+      "studentText": "Fyll inn nabotallene: __, 6 000, __.",
+      "solution": "5 999 og 6 001",
+      "representationHint": null,
+      "teacherNote": "Tallet før 6 000 er 5 999, og tallet etter er 6 001.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_firesifrede_tall.pdf"
+      }
+    },
+    {
+      "id": "T2-N3-01",
+      "topic": "tall-og-plassverdi",
+      "area": "firesifrede-tall",
+      "areaTitle": "Firesifrede tall",
+      "level": 3,
+      "title": "Størst mulig tall",
+      "format": "Problemløsing",
+      "purpose": "Bruke plassverdi til å konstruere størst mulig tall.",
+      "studentText": "Bruk sifrene 2, 5, 7 og 9 én gang hver. Lag det største firesifrede tallet.",
+      "solution": "9 752",
+      "representationHint": null,
+      "teacherNote": "Det største sifferet plasseres først: 9, 7, 5, 2.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_firesifrede_tall.pdf"
+      }
+    },
+    {
+      "id": "T2-N3-02",
+      "topic": "tall-og-plassverdi",
+      "area": "firesifrede-tall",
+      "areaTitle": "Firesifrede tall",
+      "level": 3,
+      "title": "Finn tallet",
+      "format": "Logisk resonnering",
+      "purpose": "Kombinere flere opplysninger om plassverdi.",
+      "studentText": "Jeg er et firesifret tall. Jeg har 4 tusenere. Hundrerplassen er dobbelt så stor som enerplassen. Tierplassen er 0, og enerplassen er 3. Hvilket tall er jeg?",
+      "solution": "4 603",
+      "representationHint": null,
+      "teacherNote": "Enerplassen er 3, derfor er hundrerplassen 6.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_firesifrede_tall.pdf"
+      }
+    },
+    {
+      "id": "T2-N3-03",
+      "topic": "tall-og-plassverdi",
+      "area": "firesifrede-tall",
+      "areaTitle": "Firesifrede tall",
+      "level": 3,
+      "title": "Endre én plassverdi",
+      "format": "Forklaring",
+      "purpose": "Forstå hvordan en endring i ett siffer påvirker tallet.",
+      "studentText": "Tallet 7 462 får 3 flere hundrere, mens de andre sifrene er uendret. Hva blir det nye tallet?",
+      "solution": "7 762",
+      "representationHint": null,
+      "teacherNote": "462 + 300 = 762, altså 7 762.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_firesifrede_tall.pdf"
+      }
+    },
+    {
+      "id": "T3-N1-01",
+      "topic": "tall-og-plassverdi",
+      "area": "addisjon-subtraksjon",
+      "areaTitle": "Addisjon og subtraksjon",
+      "level": 1,
+      "title": "Addisjon uten tierovergang",
+      "format": "Kort svar",
+      "purpose": "Addere hundrere, tiere og enere.",
+      "studentText": "Regn ut: 243 + 126 = __.",
+      "solution": "369",
+      "representationHint": null,
+      "teacherNote": "243 + 100 + 20 + 6 = 369.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_addisjon_og_subtraksjon.pdf"
+      }
+    },
+    {
+      "id": "T3-N1-02",
+      "topic": "tall-og-plassverdi",
+      "area": "addisjon-subtraksjon",
+      "areaTitle": "Addisjon og subtraksjon",
+      "level": 1,
+      "title": "Subtraksjon uten veksling",
+      "format": "Kort svar",
+      "purpose": "Subtrahere uten veksling.",
+      "studentText": "Regn ut: 875 - 342 = __.",
+      "solution": "533",
+      "representationHint": null,
+      "teacherNote": "Trekk fra hundrere, tiere og enere hver for seg.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_addisjon_og_subtraksjon.pdf"
+      }
+    },
+    {
+      "id": "T3-N1-03",
+      "topic": "tall-og-plassverdi",
+      "area": "addisjon-subtraksjon",
+      "areaTitle": "Addisjon og subtraksjon",
+      "level": 1,
+      "title": "Ukjent ledd",
+      "format": "Ukjent tall",
+      "purpose": "Se sammenhengen mellom addisjon og subtraksjon.",
+      "studentText": "Finn tallet som mangler: 425 + __ = 700.",
+      "solution": "275",
+      "representationHint": null,
+      "teacherNote": "700 - 425 = 275.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_addisjon_og_subtraksjon.pdf"
+      }
+    },
+    {
+      "id": "T3-N2-01",
+      "topic": "tall-og-plassverdi",
+      "area": "addisjon-subtraksjon",
+      "areaTitle": "Addisjon og subtraksjon",
+      "level": 2,
+      "title": "Addisjon med tierovergang",
+      "format": "Kort svar",
+      "purpose": "Addere med overgang mellom plassverdier.",
+      "studentText": "Regn ut: 586 + 278 = __.",
+      "solution": "864",
+      "representationHint": null,
+      "teacherNote": "586 + 200 + 70 + 8 = 864.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_addisjon_og_subtraksjon.pdf"
+      }
+    },
+    {
+      "id": "T3-N2-02",
+      "topic": "tall-og-plassverdi",
+      "area": "addisjon-subtraksjon",
+      "areaTitle": "Addisjon og subtraksjon",
+      "level": 2,
+      "title": "Subtraksjon med veksling",
+      "format": "Kort svar",
+      "purpose": "Subtrahere med veksling.",
+      "studentText": "Regn ut: 902 - 467 = __.",
+      "solution": "435",
+      "representationHint": null,
+      "teacherNote": "Kontroll: 435 + 467 = 902.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_addisjon_og_subtraksjon.pdf"
+      }
+    },
+    {
+      "id": "T3-N2-03",
+      "topic": "tall-og-plassverdi",
+      "area": "addisjon-subtraksjon",
+      "areaTitle": "Addisjon og subtraksjon",
+      "level": 2,
+      "title": "To kjøp",
+      "format": "Tekstoppgave",
+      "purpose": "Velge addisjon og subtraksjon i en praktisk situasjon.",
+      "studentText": "En klasse har 950 kroner. De kjøper bøker for 275 kroner og spill for 189 kroner. Hvor mye har de igjen?",
+      "solution": "486 kroner",
+      "representationHint": null,
+      "teacherNote": "275 + 189 = 464, og 950 - 464 = 486.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_addisjon_og_subtraksjon.pdf"
+      }
+    },
+    {
+      "id": "T3-N3-01",
+      "topic": "tall-og-plassverdi",
+      "area": "addisjon-subtraksjon",
+      "areaTitle": "Addisjon og subtraksjon",
+      "level": 3,
+      "title": "Flere steg",
+      "format": "Tekstoppgave",
+      "purpose": "Løse en flerstegsoppgave med addisjon og subtraksjon.",
+      "studentText": "Et bibliotek hadde 1 275 bøker. Det fikk 348 nye bøker og ga bort 196. Hvor mange bøker har biblioteket nå?",
+      "solution": "1 427 bøker",
+      "representationHint": null,
+      "teacherNote": "1 275 + 348 = 1 623, og 1 623 - 196 = 1 427.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_addisjon_og_subtraksjon.pdf"
+      }
+    },
+    {
+      "id": "T3-N3-02",
+      "topic": "tall-og-plassverdi",
+      "area": "addisjon-subtraksjon",
+      "areaTitle": "Addisjon og subtraksjon",
+      "level": 3,
+      "title": "Kontroller et svar",
+      "format": "Feilanalyse",
+      "purpose": "Vurdere et svar ved å bruke motsatt regneart.",
+      "studentText": "Mina sier at 1 004 - 587 = 527. Har Mina rett? Vis med regning.",
+      "solution": "Nei. Riktig svar er 417.",
+      "representationHint": null,
+      "teacherNote": "587 + 417 = 1 004, mens 587 + 527 = 1 114.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_addisjon_og_subtraksjon.pdf"
+      }
+    },
+    {
+      "id": "T3-N3-03",
+      "topic": "tall-og-plassverdi",
+      "area": "addisjon-subtraksjon",
+      "areaTitle": "Addisjon og subtraksjon",
+      "level": 3,
+      "title": "Finn starttallet",
+      "format": "Ukjent tall",
+      "purpose": "Arbeide baklengs gjennom to regneoperasjoner.",
+      "studentText": "Jeg tenker på et tall. Jeg legger til 275 og trekker fra 90. Da får jeg 640. Hvilket tall tenkte jeg på?",
+      "solution": "455",
+      "representationHint": null,
+      "teacherNote": "640 + 90 - 275 = 455.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_addisjon_og_subtraksjon.pdf"
+      }
+    },
+    {
+      "id": "T4-N1-01",
+      "topic": "tall-og-plassverdi",
+      "area": "oppstilling-over-1000",
+      "areaTitle": "Oppstilling med tall over 1000",
+      "level": 1,
+      "title": "Oppstilt addisjon",
+      "format": "Oppstilling",
+      "purpose": "Stille opp tall med samme plassverdi under hverandre.",
+      "studentText": "Still opp og regn ut: 2 314 + 1 562.",
+      "solution": "3 876",
+      "representationHint": "Bruk ruter eller plassverditabell.",
+      "teacherNote": "Ingen veksling er nødvendig.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_oppstilling_med_tall_over_1000.pdf"
+      }
+    },
+    {
+      "id": "T4-N1-02",
+      "topic": "tall-og-plassverdi",
+      "area": "oppstilling-over-1000",
+      "areaTitle": "Oppstilling med tall over 1000",
+      "level": 1,
+      "title": "Oppstilt subtraksjon",
+      "format": "Oppstilling",
+      "purpose": "Stille opp en subtraksjon riktig.",
+      "studentText": "Still opp og regn ut: 7 865 - 2 341.",
+      "solution": "5 524",
+      "representationHint": "Bruk ruter eller plassverditabell.",
+      "teacherNote": "Ingen veksling er nødvendig.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_oppstilling_med_tall_over_1000.pdf"
+      }
+    },
+    {
+      "id": "T4-N1-03",
+      "topic": "tall-og-plassverdi",
+      "area": "oppstilling-over-1000",
+      "areaTitle": "Oppstilling med tall over 1000",
+      "level": 1,
+      "title": "Ulikt antall sifre",
+      "format": "Oppstilling",
+      "purpose": "Plassere enere under enere når tallene har ulik lengde.",
+      "studentText": "Still opp og regn ut: 4 206 + 573.",
+      "solution": "4 779",
+      "representationHint": "Pass på at 3 står under enerplassen.",
+      "teacherNote": "573 må høyrestilles under 4 206.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_oppstilling_med_tall_over_1000.pdf"
+      }
+    },
+    {
+      "id": "T4-N2-01",
+      "topic": "tall-og-plassverdi",
+      "area": "oppstilling-over-1000",
+      "areaTitle": "Oppstilling med tall over 1000",
+      "level": 2,
+      "title": "Addisjon med veksling",
+      "format": "Oppstilling",
+      "purpose": "Gjennomføre veksling i flere kolonner.",
+      "studentText": "Still opp og regn ut: 3 786 + 2 459.",
+      "solution": "6 245",
+      "representationHint": "Vis vekslingen over kolonnene.",
+      "teacherNote": "6 + 9 og 8 + 5 krever veksling.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_oppstilling_med_tall_over_1000.pdf"
+      }
+    },
+    {
+      "id": "T4-N2-02",
+      "topic": "tall-og-plassverdi",
+      "area": "oppstilling-over-1000",
+      "areaTitle": "Oppstilling med tall over 1000",
+      "level": 2,
+      "title": "Subtraksjon med veksling",
+      "format": "Oppstilling",
+      "purpose": "Veksle mellom plassverdier i subtraksjon.",
+      "studentText": "Still opp og regn ut: 6 402 - 2 758.",
+      "solution": "3 644",
+      "representationHint": "Vis vekslingen tydelig.",
+      "teacherNote": "Det må veksles gjennom tier- og hundrerplassen.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_oppstilling_med_tall_over_1000.pdf"
+      }
+    },
+    {
+      "id": "T4-N2-03",
+      "topic": "tall-og-plassverdi",
+      "area": "oppstilling-over-1000",
+      "areaTitle": "Oppstilling med tall over 1000",
+      "level": 2,
+      "title": "Kontroller med motsatt regneart",
+      "format": "Oppstilling og kontroll",
+      "purpose": "Kontrollere subtraksjon ved hjelp av addisjon.",
+      "studentText": "Still opp og regn ut: 8 130 - 3 684. Kontroller svaret med addisjon.",
+      "solution": "4 446",
+      "representationHint": null,
+      "teacherNote": "Kontroll: 4 446 + 3 684 = 8 130.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_oppstilling_med_tall_over_1000.pdf"
+      }
+    },
+    {
+      "id": "T4-N3-01",
+      "topic": "tall-og-plassverdi",
+      "area": "oppstilling-over-1000",
+      "areaTitle": "Oppstilling med tall over 1000",
+      "level": 3,
+      "title": "Veksling gjennom nuller",
+      "format": "Oppstilling",
+      "purpose": "Subtrahere når vekslingen må gå gjennom flere nuller.",
+      "studentText": "Still opp og regn ut: 7 000 - 2 846.",
+      "solution": "4 154",
+      "representationHint": "Vis hvordan tuseneren veksles videre.",
+      "teacherNote": "Vekslingen går fra tusenere via hundrere og tiere til enere.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_oppstilling_med_tall_over_1000.pdf"
+      }
+    },
+    {
+      "id": "T4-N3-02",
+      "topic": "tall-og-plassverdi",
+      "area": "oppstilling-over-1000",
+      "areaTitle": "Oppstilling med tall over 1000",
+      "level": 3,
+      "title": "Finn feilen",
+      "format": "Feilanalyse",
+      "purpose": "Oppdage feil plassering i en oppstilling.",
+      "studentText": "En elev skrev 3 482 + 759 = 11 072. Forklar hva som kan ha gått galt, og finn riktig svar.",
+      "solution": "4 241",
+      "representationHint": null,
+      "teacherNote": "759 kan ha blitt plassert feil. Riktig oppstilling gir 3 482 + 759 = 4 241.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_oppstilling_med_tall_over_1000.pdf"
+      }
+    },
+    {
+      "id": "T4-N3-03",
+      "topic": "tall-og-plassverdi",
+      "area": "oppstilling-over-1000",
+      "areaTitle": "Oppstilling med tall over 1000",
+      "level": 3,
+      "title": "To oppstillinger",
+      "format": "Flerstegsoppgave",
+      "purpose": "Bruke to skriftlige regneoperasjoner i riktig rekkefølge.",
+      "studentText": "En skole har 4 875 elever fordelt på to områder. Det ene området har 2 196 elever. Neste år begynner 348 nye elever i det andre området. Hvor mange elever vil det andre området ha da?",
+      "solution": "3 027 elever",
+      "representationHint": null,
+      "teacherNote": "4 875 - 2 196 = 2 679, og 2 679 + 348 = 3 027.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_oppstilling_med_tall_over_1000.pdf"
+      }
+    },
+    {
+      "id": "T5-N1-01",
+      "topic": "tall-og-plassverdi",
+      "area": "negative-tall",
+      "areaTitle": "Negative tall",
+      "level": 1,
+      "title": "Temperatur under null",
+      "format": "Kort svar",
+      "purpose": "Lese et negativt tall i en kjent kontekst.",
+      "studentText": "Termometeret viser 3 kuldegrader. Skriv temperaturen som et tall med fortegn.",
+      "solution": "-3 grader",
+      "representationHint": "Kan vises på en loddrett tallinje.",
+      "teacherNote": "Tre kuldegrader skrives -3 grader.",
+      "source": {
+        "kind": "gruppen",
+        "document": "05_negative_tall.pdf"
+      }
+    },
+    {
+      "id": "T5-N1-02",
+      "topic": "tall-og-plassverdi",
+      "area": "negative-tall",
+      "areaTitle": "Negative tall",
+      "level": 1,
+      "title": "Sammenlign temperaturer",
+      "format": "Sammenligning",
+      "purpose": "Sammenligne to negative tall.",
+      "studentText": "Hva er varmest: -2 grader eller -7 grader?",
+      "solution": "-2 grader",
+      "representationHint": null,
+      "teacherNote": "-2 ligger nærmere 0 enn -7.",
+      "source": {
+        "kind": "gruppen",
+        "document": "05_negative_tall.pdf"
+      }
+    },
+    {
+      "id": "T5-N1-03",
+      "topic": "tall-og-plassverdi",
+      "area": "negative-tall",
+      "areaTitle": "Negative tall",
+      "level": 1,
+      "title": "Plasser på tallinjen",
+      "format": "Tallinje",
+      "purpose": "Plassere positive og negative tall i rekkefølge.",
+      "studentText": "Skriv tallene fra minst til størst: 2, -3, 0, -1.",
+      "solution": "-3, -1, 0, 2",
+      "representationHint": "Tallinje fra -4 til 3.",
+      "teacherNote": "Tallene lengst til venstre er minst.",
+      "source": {
+        "kind": "gruppen",
+        "document": "05_negative_tall.pdf"
+      }
+    },
+    {
+      "id": "T5-N2-01",
+      "topic": "tall-og-plassverdi",
+      "area": "negative-tall",
+      "areaTitle": "Negative tall",
+      "level": 2,
+      "title": "Temperaturen stiger",
+      "format": "Kort svar",
+      "purpose": "Addere en positiv endring til et negativt tall.",
+      "studentText": "Om morgenen er det -6 grader. Temperaturen stiger 9 grader. Hva blir temperaturen?",
+      "solution": "3 grader",
+      "representationHint": null,
+      "teacherNote": "-6 + 9 = 3.",
+      "source": {
+        "kind": "gruppen",
+        "document": "05_negative_tall.pdf"
+      }
+    },
+    {
+      "id": "T5-N2-02",
+      "topic": "tall-og-plassverdi",
+      "area": "negative-tall",
+      "areaTitle": "Negative tall",
+      "level": 2,
+      "title": "Temperaturen synker",
+      "format": "Kort svar",
+      "purpose": "Subtrahere en positiv endring fra et tall nær null.",
+      "studentText": "Det er 4 grader. Temperaturen synker 7 grader. Hva blir temperaturen?",
+      "solution": "-3 grader",
+      "representationHint": null,
+      "teacherNote": "4 - 7 = -3.",
+      "source": {
+        "kind": "gruppen",
+        "document": "05_negative_tall.pdf"
+      }
+    },
+    {
+      "id": "T5-N2-03",
+      "topic": "tall-og-plassverdi",
+      "area": "negative-tall",
+      "areaTitle": "Negative tall",
+      "level": 2,
+      "title": "Forskjell mellom etasjer",
+      "format": "Tekstoppgave",
+      "purpose": "Finne avstanden mellom et negativt og et positivt tall.",
+      "studentText": "En heis står i etasje -2 og skal til etasje 5. Hvor mange etasjer beveger den seg?",
+      "solution": "7 etasjer",
+      "representationHint": null,
+      "teacherNote": "Fra -2 til 0 er det 2 etasjer, og fra 0 til 5 er det 5.",
+      "source": {
+        "kind": "gruppen",
+        "document": "05_negative_tall.pdf"
+      }
+    },
+    {
+      "id": "T5-N3-01",
+      "topic": "tall-og-plassverdi",
+      "area": "negative-tall",
+      "areaTitle": "Negative tall",
+      "level": 3,
+      "title": "Flere temperaturendringer",
+      "format": "Flerstegsoppgave",
+      "purpose": "Følge flere endringer på en tallinje.",
+      "studentText": "Temperaturen er -4 grader. Den stiger 6 grader, synker 5 grader og stiger 2 grader. Hva er temperaturen til slutt?",
+      "solution": "-1 grad",
+      "representationHint": null,
+      "teacherNote": "-4 + 6 - 5 + 2 = -1.",
+      "source": {
+        "kind": "gruppen",
+        "document": "05_negative_tall.pdf"
+      }
+    },
+    {
+      "id": "T5-N3-02",
+      "topic": "tall-og-plassverdi",
+      "area": "negative-tall",
+      "areaTitle": "Negative tall",
+      "level": 3,
+      "title": "Finn starttemperaturen",
+      "format": "Ukjent tall",
+      "purpose": "Arbeide baklengs med negative tall.",
+      "studentText": "Temperaturen steg 8 grader og endte på 3 grader. Hva var temperaturen før den steg?",
+      "solution": "-5 grader",
+      "representationHint": null,
+      "teacherNote": "3 - 8 = -5.",
+      "source": {
+        "kind": "gruppen",
+        "document": "05_negative_tall.pdf"
+      }
+    },
+    {
+      "id": "T5-N3-03",
+      "topic": "tall-og-plassverdi",
+      "area": "negative-tall",
+      "areaTitle": "Negative tall",
+      "level": 3,
+      "title": "Avstand på tallinjen",
+      "format": "Forklaring",
+      "purpose": "Resonnere om avstand mellom negative tall.",
+      "studentText": "To punkter ligger på -8 og -2 på tallinjen. Hvor stor er avstanden mellom punktene? Forklar.",
+      "solution": "6",
+      "representationHint": null,
+      "teacherNote": "Fra -8 til -2 er det seks steg: -7, -6, -5, -4, -3, -2.",
+      "source": {
+        "kind": "gruppen",
+        "document": "05_negative_tall.pdf"
+      }
+    }
+  ]
+}

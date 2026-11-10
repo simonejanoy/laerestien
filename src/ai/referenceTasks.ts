@@ -113,8 +113,10 @@ export function toAiProfile(profile: TaskProfile): AiSessionProfile {
     steps: profile.steps,
     avoid: profile.avoid,
     ...(profile.area && { area: profile.area }),
+    ...(profile.area && profile.secondaryAreas?.length && { secondaryAreas: profile.secondaryAreas }),
     ...(profile.allowSwappedFactors && { allowSwappedFactors: true }),
     ...(profile.strategyFocus && { strategyFocus: true }),
+    ...(profile.requiresCarry && { requiresCarry: true }),
   }
 }
 
@@ -157,7 +159,9 @@ export function buildLevelContexts(levels: LevelGroup[], tasks: SessionTask[], p
         ...(own?.units && { units: own.units }),
         referenceTasks: [],
         existing: summarizeExisting(levelTasks),
-        ...(profile.strategyFocus && { support: strategySupport(level, own?.factors ?? profile.factors ?? []) }),
+        ...(profile.strategyFocus
+          ? { support: strategySupport(level, own?.factors ?? profile.factors ?? []) }
+          : own?.support && { support: own.support }),
       }
     }
     return {

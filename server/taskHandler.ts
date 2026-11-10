@@ -9,6 +9,7 @@ import {
   type AiLevelContext,
   type AiResponseMeta,
   type AiTaskDraft,
+  topicOfArea,
   type TaskRequest,
   type TaskResult,
 } from '../src/ai/contract.ts'
@@ -17,10 +18,10 @@ import { requireOwnClass, type Teacher } from './auth.ts'
 import { HttpError } from './errors.ts'
 import type { AiLog, AiLogEntry, CallOptions, GenerateResult, createGenerate } from './gemini.ts'
 import { taskPrompt, type GenerationPlan } from './prompts.ts'
-import { multiplicationReferences } from './references/multiplication.ts'
+import { referenceBanks } from './references/banks.ts'
 import { newReferenceSeed, selectReferences, toAiReference } from './references/selectReferences.ts'
 import type { ReferenceTask } from './references/types.ts'
-import { checkCandidates, signatureOf, type RemovalReason } from './taskChecks.ts'
+import { checkCandidates, signatureOf, stripInternalText, type RemovalReason } from './taskChecks.ts'
 import { taskSchema } from './taskSchema.ts'
 
 // Oppgavebestillinger fra appen: generelle oppgaver, elevforslag og justering.
@@ -67,7 +68,7 @@ const readSeed = (value: unknown) => (Number.isInteger(value) && (value as numbe
 export function createTaskHandler({
   generate,
   log,
-  references = multiplicationReferences,
+  references = referenceBanks,
   newRequestId = randomUUID,
   newSeed = newReferenceSeed,
   now = () => new Date(),
@@ -87,15 +88,16 @@ export function createTaskHandler({
       request.profile = readSessionProfile(request.profile)
       const area = request.profile?.area
       if (area) {
-        // Multiplikasjon: referansene velges fra referansebanken, aldri fra elevoppgavene i økta.
+        // Tema med referansebank: referansene velges fra banken for øktas område(r), aldri fra elevoppgavene i økta.
         const seed = readSeed(request.referenceSeed) ?? newSeed()
+        const secondaryAreas = request.profile?.secondaryAreas ?? []
         const referenceIds: NonNullable<AiResponseMeta['referenceIds']> = {}
         request.levels = request.levels.map((level): AiLevelContext => {
-          const chosen = selectReferences(references, { area, level: level.level, seed })
+          const chosen = selectReferences(references, { area, secondaryAreas, level: level.level, seed })
           referenceIds[String(level.level) as '1' | '2' | '3'] = chosen.map((r) => r.id)
           return { ...level, referenceTasks: chosen.map(toAiReference) }
         })
-        Object.assign(trace, { area, referenceSeed: seed, referenceIds })
+        Object.assign(trace, { area, topic: topicOfArea(area), referenceSeed: seed, referenceIds })
       }
     }
     if (request.kind === 'individual' || (request.kind === 'revise' && request.student)) {
@@ -110,9 +112,15 @@ export function createTaskHandler({
     if (result.tasks.length === 0 && !result.message) {
       throw new HttpError(502, 'AI-en laget ingen brukbare oppgaver. Prøv igjen.')
     }
-    // Elevforslag og justering viser bare tekstoppgaver.
+    // Elevforslag og justering viser bare tekstoppgaver. Interne ord fjernes fra alle synlige felt.
+    const visible = result.tasks.map(asTextDraft).flatMap((t) => {
+      const studentText = stripInternalText(t.studentText)
+      const solution = stripInternalText(t.solution)
+      if (!studentText || !solution) return []
+      return [{ ...t, studentText, solution, adaptation: stripInternalText(t.adaptation), competenceGoal: stripInternalText(t.competenceGoal) }]
+    })
     log({ requestId, event: `${request.kind}_tasks`, rulesVersion: aiConfig.rulesVersion, model: answer.model, fallbackUsed: answer.fallbackUsed, returned: result.tasks.length })
-    return { ...result, tasks: result.tasks.map(asTextDraft), meta }
+    return { ...result, message: stripInternalText(result.message), tasks: visible, meta }
   }
 
   /** Gemini-svaret som oppgaver. Ugyldig JSON eller feil form gir 502 (logget uten oppgavetekst). */
@@ -195,7 +203,7 @@ export function createTaskHandler({
       try {
         const result = parseAnswer(answer, requestId)
         if (attempt === 0) {
-          message = result.message
+          message = stripInternalText(result.message)
           // Bare et oppfølgingsspørsmål (ingen oppgaver): ingen utfylling.
           if (result.tasks.length === 0) {
             if (message) return { tasks: [], message, meta: { ...trace, model: answer.model, fallbackUsed: answer.fallbackUsed } }
@@ -219,6 +227,8 @@ export function createTaskHandler({
         requestId,
         event: 'general_tasks_attempt',
         attempt,
+        topic: trace.topic ?? 'ingen',
+        area: trace.area ?? 'ingen',
         model: answer.model,
         fallbackUsed: answer.fallbackUsed,
         requested: perLevelText(counts),
@@ -241,7 +251,9 @@ export function createTaskHandler({
       rulesVersion: aiConfig.rulesVersion,
       model: answer.model,
       fallbackUsed: answer.fallbackUsed,
+      topic: meta.topic ?? 'ingen',
       area: meta.area ?? 'ingen',
+      ...(request.profile?.secondaryAreas?.length && { secondaryAreas: request.profile.secondaryAreas.join(',') }),
       ...(meta.referenceSeed !== undefined && { referenceSeed: meta.referenceSeed }),
       referenceIds: Object.values(meta.referenceIds ?? {}).flat().join(','),
       orderedPerLevel: perLevel,

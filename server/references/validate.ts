@@ -1,9 +1,17 @@
-import { MULTIPLICATION_AREAS, isMultiplicationArea } from '../../src/ai/contract.ts'
+import { MULTIPLICATION_AREAS, PLACE_VALUE_AREAS } from '../../src/ai/contract.ts'
 import type { ReferenceBank, ReferenceTask } from './types.ts'
 
-// Kontroll av referansebanken. Kjøres når serveren starter (multiplication.ts) og i testene.
+// Kontroll av referansebankene. Kjøres når serveren starter (multiplication.ts, placeValue.ts) og i testene.
 
-const ID_PATTERN = /^M([1-6])-N([1-3])-(\d{2})$/
+/** Hva en bank skal inneholde: tema, ID-prefiks (M1-N1-01, T1-N1-01) og fagområdene i rekkefølge. */
+export interface BankSpec {
+  topic: string
+  idPrefix: string
+  areas: readonly string[]
+}
+
+export const MULTIPLICATION_BANK: BankSpec = { topic: 'multiplikasjon', idPrefix: 'M', areas: MULTIPLICATION_AREAS }
+export const PLACE_VALUE_BANK: BankSpec = { topic: 'tall-og-plassverdi', idPrefix: 'T', areas: PLACE_VALUE_AREAS }
 const REQUIRED_TEXT = ['id', 'topic', 'area', 'areaTitle', 'title', 'format', 'purpose', 'studentText', 'solution'] as const
 
 export interface BankCheck {
@@ -48,6 +56,10 @@ export function evaluate(expression: string): number | null {
   const primary = (): number | null => {
     const token = tokens[pos++]
     if (typeof token === 'number') return token
+    if (token === '-') {
+      const value = primary()
+      return value === null ? null : -value
+    }
     if (token === '(') {
       const value = sum()
       return tokens[pos++] === ')' ? value : null
@@ -78,8 +90,11 @@ export function evaluate(expression: string): number | null {
   return value !== null && pos === tokens.length && Number.isFinite(value) ? value : null
 }
 
-/** Regnerekker med «=»: starter og slutter med et tall eller en parentes. */
-const ARITHMETIC_RUN = /[\d(][\d\s()x·*:/+\-−=]*[\d)]/g
+/**
+ * Regnerekker med «=»: starter og slutter med et tall eller en parentes. Et minustegn rett foran
+ * det første tallet hører med (−6 + 9 = 3). Mellomrom i tall (1 004) slås sammen ved utregningen.
+ */
+const ARITHMETIC_RUN = /(?:(?<![\w)])[-−])?[\d(][\d\s()x·*:/+\-−=]*[\d)]/g
 const OPERATOR = /[+\-−x·*:/]/
 const UNIT_WORD = /^\s*(tiere|tier|hundrere|hundrer|enere|ener)\b/i
 
@@ -116,9 +131,9 @@ export function checkEquations(text: string): { checked: number; errors: string[
   return { checked, errors }
 }
 
-/** Fasiten som en liste med hele tall («12, 30, 70» eller «4; 7»), ellers null. */
+/** Fasiten som en liste med hele tall («12, 30, 70», «4; 7» eller «5 999 og 6 001»), ellers null. */
 function numberList(solution: string): number[] | null {
-  const parts = solution.split(/,|;|\bog\b/).map((p) => p.trim())
+  const parts = solution.split(/,|;|\bog\b/).map((p) => p.trim().replace(/(\d) (?=\d{3}\b)/g, '$1'))
   return parts.length > 0 && parts.every((p) => /^\d+$/.test(p)) ? parts.map(Number) : null
 }
 
@@ -126,11 +141,15 @@ function numberList(solution: string): number[] | null {
  * Kontrollerer det som kan kontrolleres maskinelt i én referanse:
  * - regnerekker i fasiten
  * - tomme felt («__») fylt med fasiten, når fasiten er én verdi per felt
- * - «Regn ut …: a x b, c x d …» mot en fasit med like mange tall
+ * - «Regn ut …: a x b, c x d …» og «Still opp og regn ut: a + b» mot en fasit med like mange tall
  * - regnerekker i oppgaveteksten – ikke i feilanalyser, der feilen er meningen
  */
-export function checkReferenceMath(ref: Pick<ReferenceTask, 'studentText' | 'solution' | 'format'>): { checked: number; errors: string[] } {
+export function checkReferenceMath(
+  ref: Pick<ReferenceTask, 'studentText' | 'solution' | 'format'> & { teacherNote?: string | null },
+): { checked: number; errors: string[] } {
   const results = [checkEquations(ref.solution)]
+  // Lærernotatet viser ofte utregningen – den skal også stemme.
+  if (ref.teacherNote) results.push(checkEquations(ref.teacherNote))
   const answers = numberList(ref.solution)
   const blanks = ref.studentText.match(/__+/g)?.length ?? 0
 
@@ -141,8 +160,12 @@ export function checkReferenceMath(ref: Pick<ReferenceTask, 'studentText' | 'sol
     results.push(checkEquations(ref.studentText))
   }
 
-  if (blanks === 0 && answers && /^Regn ut/i.test(ref.studentText)) {
-    const products = [...ref.studentText.matchAll(/(\d+)\s*[x·]\s*(\d+)/g)].map((m) => Number(m[1]) * Number(m[2]))
+  if (blanks === 0 && answers && /^(Still opp og )?regn ut/i.test(ref.studentText)) {
+    // «Regn ut: 3 x 4, 5 x 6 …» eller «Still opp og regn ut: 2 314 + 1 562» (mellomrom i tall slås sammen).
+    const text = ref.studentText.replace(/(\d) (?=\d{3}\b)/g, '$1')
+    const products = [...text.matchAll(/(\d+)\s*([x·+\-−])\s*(\d+)/g)].map(([, a, op, b]) =>
+      'x·'.includes(op) ? Number(a) * Number(b) : op === '+' ? Number(a) + Number(b) : Number(a) - Number(b),
+    )
     if (products.length === answers.length) {
       const wrong = products.flatMap((p, i) => (p === answers[i] ? [] : [`svar ${i + 1} skal være ${p}, ikke ${answers[i]}`]))
       results.push({ checked: products.length, errors: wrong })
@@ -157,7 +180,8 @@ const isObject = (value: unknown): value is Record<string, unknown> => typeof va
  * Kontrollerer referansebanken: antall, unike ID-er, ID-mønster, fagområder og nivåer, påkrevde felt
  * og fasiter som kan regnes ut. `expectedCount` er antallet banken skal ha.
  */
-export function validateReferenceBank(raw: unknown, expectedCount: number): BankCheck {
+export function validateReferenceBank(raw: unknown, expectedCount: number, spec: BankSpec = MULTIPLICATION_BANK): BankCheck {
+  const idPattern = new RegExp(`^${spec.idPrefix}([1-${spec.areas.length}])-N([1-3])-(\\d{2})$`)
   const errors: string[] = []
   let checkedEquations = 0
   if (!isObject(raw) || !Array.isArray(raw.references)) return { errors: ['Referansebanken mangler lista «references».'], checkedEquations }
@@ -177,9 +201,9 @@ export function validateReferenceBank(raw: unknown, expectedCount: number): Bank
     for (const field of REQUIRED_TEXT) {
       if (typeof ref[field] !== 'string' || !(ref[field] as string).trim()) errors.push(`${where}: mangler «${field}».`)
     }
-    if (ref.topic !== 'multiplikasjon') errors.push(`${where}: hovedtema er «${ref.topic}», ikke «multiplikasjon».`)
+    if (ref.topic !== spec.topic) errors.push(`${where}: hovedtema er «${ref.topic}», ikke «${spec.topic}».`)
     if (![1, 2, 3].includes(ref.level)) errors.push(`${where}: ugyldig nivå ${ref.level}.`)
-    if (!isMultiplicationArea(ref.area)) errors.push(`${where}: ukjent fagområde «${ref.area}».`)
+    if (!spec.areas.includes(ref.area)) errors.push(`${where}: ukjent fagområde «${ref.area}».`)
     if (ref.representationHint !== null && typeof ref.representationHint !== 'string') errors.push(`${where}: ugyldig representasjon.`)
     if (!isObject(ref.source) || typeof ref.source.kind !== 'string' || typeof ref.source.document !== 'string' || !ref.source.document) {
       errors.push(`${where}: mangler kilde.`)
@@ -188,10 +212,10 @@ export function validateReferenceBank(raw: unknown, expectedCount: number): Bank
     if (ids.has(ref.id)) errors.push(`${where}: ID-en er brukt før.`)
     ids.add(ref.id)
 
-    const id = ID_PATTERN.exec(ref.id)
-    if (!id) errors.push(`${where}: ID-en følger ikke mønsteret M1-N1-01.`)
+    const id = idPattern.exec(ref.id)
+    if (!id) errors.push(`${where}: ID-en følger ikke mønsteret ${spec.idPrefix}1-N1-01.`)
     else {
-      if (MULTIPLICATION_AREAS[Number(id[1]) - 1] !== ref.area) errors.push(`${where}: ID-en passer ikke med fagområdet «${ref.area}».`)
+      if (spec.areas[Number(id[1]) - 1] !== ref.area) errors.push(`${where}: ID-en passer ikke med fagområdet «${ref.area}».`)
       if (Number(id[2]) !== ref.level) errors.push(`${where}: ID-en passer ikke med nivå ${ref.level}.`)
     }
 
@@ -210,8 +234,8 @@ export function validateReferenceBank(raw: unknown, expectedCount: number): Bank
     }
   })
 
-  const perAreaCount = expectedCount / MULTIPLICATION_AREAS.length
-  for (const area of MULTIPLICATION_AREAS) {
+  const perAreaCount = expectedCount / spec.areas.length
+  for (const area of spec.areas) {
     const levels = perArea.get(area)
     const count = levels ? [...levels.values()].reduce((a, b) => a + b, 0) : 0
     if (count !== perAreaCount) errors.push(`Fagområdet ${area} har ${count} referanser, ikke ${perAreaCount}.`)

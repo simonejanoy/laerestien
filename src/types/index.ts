@@ -1,4 +1,4 @@
-import type { AiTaskMeta, MultiplicationArea } from '../ai/contract.ts'
+import type { AiTaskMeta, ReferenceArea } from '../ai/contract.ts'
 
 export type Role = 'teacher' | 'student'
 
@@ -116,6 +116,8 @@ export interface LevelProfile {
   groups?: [number, number]
   /** Instruksjonen over regnestykkene, f.eks. «Regn ut. Doble 2-gangen.». */
   instruction?: string
+  /** Hvordan oppgavene på nivået støtter eleven (sendes til AI-en som støttestruktur). */
+  support?: string
 }
 
 /** Oppgaveprofil for én økt: det faglige innholdet oppgavene skal holde seg til. */
@@ -134,8 +136,10 @@ export interface TaskProfile {
   avoid: string[]
   /** Om økta bruker figurer appen kan vise (rutefigur eller klokke). AI-en kan ikke lage figurer. */
   figures: boolean
-  /** Fagområdet i multiplikasjon. Da velger serveren AI-referansene fra referansebanken for fagområdet. */
-  area?: MultiplicationArea
+  /** Hovedområdet i økta. Da velger serveren AI-referansene fra referansebanken for området. */
+  area?: ReferenceArea
+  /** Tilgrensende områder økta også dekker (gir høyst én støttereferanse). Hovedfokus er `area`. */
+  secondaryAreas?: ReferenceArea[]
   /** Byttede faktorer (3 · 7 og 7 · 3) regnes som ulike oppgaver, fordi økta handler om å bytte rekkefølge. */
   allowSwappedFactors?: boolean
   /**
@@ -143,6 +147,13 @@ export interface TaskProfile {
    * instruksjon som passer akkurat det stykket og nivået (se multiplicationStrategies.ts).
    */
   strategyFocus?: boolean
+  /**
+   * Hvilken variant av grunnoppgavene undertemaet lager for økta, når flere økter deler undertema
+   * (f.eks. «strategier» for hoderegning eller «sammenligne» for firesifrede tall).
+   */
+  taskVariant?: string
+  /** Tierovergang er det uttrykkelige målet: alle oppgaver må kreve minst én addisjon med veksling. */
+  requiresCarry?: boolean
   levels: Record<Level, LevelProfile>
 }
 

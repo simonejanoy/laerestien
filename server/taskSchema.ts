@@ -39,7 +39,10 @@ export const taskSchema: Schema = {
             type: Type.STRING,
             description: 'Kompetansemålet oppgaven støtter, bare hvis læreren har oppgitt det. Ellers tom streng.',
           },
-          tilpasning: { type: Type.STRING, description: 'Kort forklaring på tilpasningen til trinn og utfordring.' },
+          tilpasning: {
+            type: Type.STRING,
+            description: 'Kort pedagogisk forklaring av nivået og det faglige innholdet (vises for læreren). Ingen ord om hvordan oppgaven ble laget.',
+          },
         },
         required: ['nivaa', 'format', 'oppgavetekst', 'fasit', 'kompetansemaal', 'tilpasning'],
         propertyOrdering: [

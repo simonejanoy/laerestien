@@ -1,4 +1,4 @@
-import type { AiLevel, MultiplicationArea } from '../../src/ai/contract.ts'
+import type { AiLevel, ReferenceArea, ReferenceTopic } from '../../src/ai/contract.ts'
 
 // Referansebanken: originale referanseoppgaver som bare brukes som kontekst for Gemini.
 // De legges aldri inn som elevoppgaver, og de returneres aldri direkte til læreren.
@@ -14,10 +14,10 @@ export interface ReferenceSource {
 export interface ReferenceTask {
   /** Stabil ID, f.eks. «M1-N1-01» (fagområde 1, nivå 1, nr. 01). */
   id: string
-  /** Hovedtema. */
-  topic: 'multiplikasjon'
+  /** Hovedtema, f.eks. «multiplikasjon» eller «tall-og-plassverdi». */
+  topic: ReferenceTopic
   /** Fagområde. */
-  area: MultiplicationArea
+  area: ReferenceArea
   areaTitle: string
   level: AiLevel
   title: string

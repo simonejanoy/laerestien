@@ -78,8 +78,9 @@ export interface AiResponseMeta {
   requestId?: string
   rulesVersion?: string
   createdAt?: string
-  /** Fagområdet referansene ble valgt fra (multiplikasjon). */
+  /** Hovedområdet referansene ble valgt fra, og temaet det hører til. */
   area?: string
+  topic?: string
   /** Frøet utvalget av referanser ble gjort med – samme frø gir samme utvalg. */
   referenceSeed?: number
   /** Referanse-ID-ene AI-en fikk, per nivå («1», «2», «3»). */
@@ -151,17 +152,47 @@ export const MAX_REFERENCE_TASKS = 3
 export const MULTIPLICATION_AREAS = ['tabell-2-3-4-5-10', 'tabell-6-7-8-9', 'tiere-hundrere', 'dele-opp', 'blokkmodell', 'kombinasjoner'] as const
 export type MultiplicationArea = (typeof MULTIPLICATION_AREAS)[number]
 
-export const AREA_TITLES: Record<MultiplicationArea, string> = {
+/** Fagområdene i Tall og plassverdi (avrunding er ikke med i temaet nå). */
+export const PLACE_VALUE_AREAS = ['hoderegning', 'firesifrede-tall', 'addisjon-subtraksjon', 'oppstilling-over-1000', 'negative-tall'] as const
+export type PlaceValueArea = (typeof PLACE_VALUE_AREAS)[number]
+
+/** Temaene som har en referansebank på serveren, med fagområdene sine. */
+export const REFERENCE_TOPICS = {
+  multiplikasjon: MULTIPLICATION_AREAS,
+  'tall-og-plassverdi': PLACE_VALUE_AREAS,
+} as const
+export type ReferenceTopic = keyof typeof REFERENCE_TOPICS
+/** Et fagområde i en av referansebankene. Områdene har unike ID-er på tvers av temaene. */
+export type ReferenceArea = MultiplicationArea | PlaceValueArea
+
+export const TOPIC_TITLES: Record<ReferenceTopic, string> = {
+  multiplikasjon: 'Multiplikasjon',
+  'tall-og-plassverdi': 'Tall og plassverdi',
+}
+
+export const AREA_TITLES: Record<ReferenceArea, string> = {
   'tabell-2-3-4-5-10': '2-, 3-, 4-, 5- og 10-gangen',
   'tabell-6-7-8-9': '6-, 7-, 8- og 9-gangen',
   'tiere-hundrere': 'Multiplisere med tiere og hundrere',
   'dele-opp': 'Dele opp og multiplisere',
   blokkmodell: 'Bruke blokkmodeller',
   kombinasjoner: 'Antall ulike kombinasjoner',
+  hoderegning: 'Hoderegning',
+  'firesifrede-tall': 'Firesifrede tall',
+  'addisjon-subtraksjon': 'Addisjon og subtraksjon',
+  'oppstilling-over-1000': 'Oppstilling med tall over 1000',
+  'negative-tall': 'Negative tall',
 }
 
 export const isMultiplicationArea = (value: unknown): value is MultiplicationArea =>
   typeof value === 'string' && (MULTIPLICATION_AREAS as readonly string[]).includes(value)
+
+export const isReferenceArea = (value: unknown): value is ReferenceArea =>
+  typeof value === 'string' && value in AREA_TITLES
+
+/** Temaet fagområdet hører til. */
+export const topicOfArea = (area: ReferenceArea): ReferenceTopic =>
+  (Object.keys(REFERENCE_TOPICS) as ReferenceTopic[]).find((topic) => (REFERENCE_TOPICS[topic] as readonly string[]).includes(area))!
 
 /**
  * Én referanseoppgave for AI-en – bare som faglig og strukturelt grunnlag. Enten en eksisterende oppgave
@@ -228,12 +259,16 @@ export interface AiSessionProfile {
   formats: string[]
   steps: string
   avoid: string[]
-  /** Fagområdet i multiplikasjon. Da velger serveren referansene fra referansebanken. */
-  area?: MultiplicationArea
+  /** Hovedområdet i økta. Da velger serveren referansene fra referansebanken for området. */
+  area?: ReferenceArea
+  /** Tilgrensende områder økta også dekker. Gir høyst én støttereferanse; hovedfokus er `area`. */
+  secondaryAreas?: ReferenceArea[]
   /** Byttede faktorer (3 · 7 og 7 · 3) er ulike oppgaver i økta, f.eks. når den handler om å bytte rekkefølge. */
   allowSwappedFactors?: boolean
   /** Strategier er læringsfokus: oppgavene følger nivåets strategistøtte, og strategiene kontrolleres. */
   strategyFocus?: boolean
+  /** Tierovergang er målet: alle oppgaver må kreve minst én addisjon med veksling (kontrolleres på serveren). */
+  requiresCarry?: boolean
 }
 
 export type TaskRequest =
@@ -391,9 +426,14 @@ export function readSessionProfile(raw: unknown): AiSessionProfile | undefined {
     formats: readTexts(p.formats, 160) ?? [],
     steps: clip(p.steps, MAX_LEVEL_TEXT),
     avoid: readTexts(p.avoid, 160) ?? [],
-    ...(isMultiplicationArea(p.area) && { area: p.area }),
+    ...(isReferenceArea(p.area) && { area: p.area }),
+    ...(isReferenceArea(p.area) &&
+      Array.isArray(p.secondaryAreas) && {
+        secondaryAreas: p.secondaryAreas.filter((a): a is ReferenceArea => isReferenceArea(a) && a !== p.area).slice(0, 3),
+      }),
     ...(p.allowSwappedFactors === true && { allowSwappedFactors: true }),
     ...(p.strategyFocus === true && { strategyFocus: true }),
+    ...(p.requiresCarry === true && { requiresCarry: true }),
   }
 }
 
@@ -480,6 +520,7 @@ export function readMeta(value: unknown): AiResponseMeta | undefined {
     ...(typeof rulesVersion === 'string' && { rulesVersion }),
     ...(typeof createdAt === 'string' && { createdAt }),
     ...(typeof area === 'string' && { area }),
+    ...(typeof (meta as { topic?: unknown }).topic === 'string' && { topic: (meta as { topic: string }).topic }),
     ...(Number.isInteger(referenceSeed) && { referenceSeed: referenceSeed as number }),
     ...(Object.keys(ids).length > 0 && { referenceIds: ids }),
   }
