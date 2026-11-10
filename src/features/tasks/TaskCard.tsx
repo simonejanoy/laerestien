@@ -1,5 +1,6 @@
-import { Check } from 'lucide-react'
+import { Check, CircleCheck } from 'lucide-react'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { AiBadge } from '../../components/ui/AiBadge'
 import { Button } from '../../components/ui/Button'
 import { Tag } from '../../components/ui/Tag'
 import { CircleCheckIcon, EditIcon, TrashIcon } from '../../components/ui/icons'
@@ -70,6 +71,7 @@ export function TaskCard({ task, number, topic, selected, changed, onSelect, onC
           <Tag className={levelTag}>Nivå {task.level}</Tag>
           <Tag>{task.type}</Tag>
           {needsWorksheet(task) && <Tag className={levelTag}>Trenger regneark</Tag>}
+          {task.aiGenerated && <AiBadge status={task.reviewed ? 'reviewed' : 'unreviewed'} />}
         </div>
         <button
           type="button"
@@ -115,6 +117,16 @@ export function TaskCard({ task, number, topic, selected, changed, onSelect, onC
             <CircleCheckIcon />
             Fasit: {expressionOf(task)} = {answerOf(task)}
           </p>
+          {task.aiGenerated && !task.reviewed && (
+            <button
+              type="button"
+              onClick={() => onChange({ ...task, reviewed: true })}
+              className="flex cursor-pointer items-center gap-1.5 self-start rounded-md border border-surface bg-background px-3 py-[7px] text-[13px] text-primary hover:bg-surface-light"
+            >
+              <CircleCheck className="size-4" aria-hidden />
+              Merk som gjennomgått
+            </button>
+          )}
         </>
       )}
 

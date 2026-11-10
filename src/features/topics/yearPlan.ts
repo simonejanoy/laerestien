@@ -1,9 +1,12 @@
-import type { Level, LevelGroup, Operator, TaskType, TopicDetails } from '../../types'
+import type { Level, LevelGroup, LevelProfile, Operator, TaskProfile, TaskType, TopicDetails } from '../../types/index.ts'
+import { OPEN_STRATEGY, strategyInstruction } from './multiplicationStrategies.ts'
 
 // Innholdet i periodene i årsplanen (se curriculum.ts): økttitler med undertema, mål,
 // nivåer og regler for oppgaver. Oppgavereglene hører til undertemaene (ferdighetene),
 // så repetisjon bruker de samme reglene som temaet den repeterer.
 // Oppgavene lages av enkle regler, så hver økt får nye tall. Testdata frem til Firestore er på plass.
+// Økter med en oppgaveprofil (TaskProfile) får tallene sine fra profilen – f.eks. hvilke
+// gangetabeller som hører til økta – så oppgavene følger overskriften. Samme profil sendes til AI-en.
 
 /** [type, tall 1, regneart, tall 2, instruksjon] – appen retter svaret selv. */
 export type TaskSpec = [TaskType, number, Operator, number, string]
@@ -16,12 +19,14 @@ export interface TextSpec {
 
 export type GeneratedTask = TaskSpec | TextSpec
 
-type Generator = (level: Level, n: number) => GeneratedTask[]
+type Generator = (level: Level, n: number, profile?: TaskProfile) => GeneratedTask[]
 
 export interface SessionPlan {
   heading: string
   /** Undertemaene (ferdighetene) økta øver på. */
   skills: string[]
+  /** Hva oppgavene i akkurat denne økta skal øve på. */
+  profile?: TaskProfile
 }
 
 export interface UnitSpec {
@@ -59,8 +64,21 @@ const signed = (x: number) => (x < 0 ? `−${-x}` : String(x))
 const dec = (x: number) => String(Math.round(x * 100) / 100).replace('.', ',')
 
 /** Gangestykker: grupper · faktor. */
-const times = (factors: number[], n: number, instruction: string, maxGroups = 10) =>
-  five((i): TaskSpec => [H, vary(n, i, 2, maxGroups), '*', pick(factors, i + n), instruction])
+const times = (factors: number[], n: number, instruction: string, [minGroups, maxGroups]: [number, number] = [2, 10]) =>
+  five((i): TaskSpec => [H, vary(n, i, minGroups, maxGroups), '*', pick(factors, i + n), instruction])
+
+/**
+ * Gangestykker etter øktprofilen. Uten profil brukes `fallback` (f.eks. i repetisjon på tvers av tema).
+ * Når strategier er læringsfokus, får hvert stykke en strategi som passer akkurat det stykket og nivået.
+ */
+const tableTasks =
+  (fallback: Record<Level, LevelProfile>): Generator =>
+  (level, n, profile) => {
+    const p = profile?.levels[level].factors ? profile.levels[level] : fallback[level]
+    const tasks = times(p.factors ?? [], n, p.instruction ?? 'Regn ut.', p.groups)
+    if (!profile?.strategyFocus) return tasks
+    return tasks.map(([type, a, op, b, instruction]): TaskSpec => [type, a, op, b, strategyInstruction(level, a, b) ?? instruction])
+  }
 
 /** Delestykker som alltid går opp. */
 const divide = (divisors: number[], n: number, instruction: string, minQ = 2, maxQ = 10, type: TaskType = H) =>
@@ -144,25 +162,38 @@ const skillTasks: Record<string, Generator> = {
   ),
 
   // Multiplikasjon
-  'mult.tabell-2-10': byLevel(
-    (n) => times([2, 5, 10], n, 'Regn ut. Tenk like grupper.'),
-    (n) => times([3, 4], n, 'Regn ut. Doble hvis du kan.'),
-    (n) => times([3, 4, 5], n, 'Regn ut.'),
-  ),
-  'mult.tabell-6-9': byLevel(
-    (n) => times([6], n, 'Regn ut. Bruk 3-gangen og doble.'),
-    (n) => times([7, 8], n, 'Regn ut.'),
-    (n) => times([6, 7, 8, 9], n, 'Regn ut.'),
-  ),
-  'mult.tiere-hundrere': byLevel(
-    (n) => five((i): TaskSpec => [H, vary(n, i, 2, 9), '*', 10, 'Regn ut. Hva skjer når du ganger med 10?']),
-    (n) => five((i): TaskSpec => [H, vary(n, i, 2, 9), '*', pick([20, 30, 40, 50], i + n), 'Regn ut. Gang med tieren.']),
-    (n) => five((i): TaskSpec => [H, vary(n, i, 2, 9), '*', pick([100, 200, 300, 400, 500], i + n), 'Regn ut med hundrere.']),
-  ),
+  // Like grupper: gjentatt addisjon som skal skrives som gange.
+  'mult.like-grupper': (level, n, profile) => {
+    const p = profile?.levels[level] ?? { numbers: '', factors: [2, 5, 10], groups: [2, 4] as [number, number] }
+    const [min, max] = p.groups ?? [2, 4]
+    return five((i): TextSpec => {
+      const size = pick(p.factors ?? [2], i + n)
+      const groups = vary(n, i, min, max)
+      return {
+        text: `Skriv som gangestykke, og regn ut.\n${Array(groups).fill(size).join(' + ')} = ___`,
+        solution: `${groups} · ${size} = ${groups * size}`,
+      }
+    })
+  },
+  'mult.tabell-2-10': tableTasks({
+    1: { numbers: '', factors: [2, 5, 10], instruction: 'Regn ut. Tenk like grupper.' },
+    2: { numbers: '', factors: [3, 4], instruction: 'Regn ut. Doble hvis du kan.' },
+    3: { numbers: '', factors: [3, 4, 5] },
+  }),
+  'mult.tabell-6-9': tableTasks({
+    1: { numbers: '', factors: [6], instruction: 'Regn ut. Bruk 3-gangen og doble.' },
+    2: { numbers: '', factors: [7, 8] },
+    3: { numbers: '', factors: [6, 7, 8, 9] },
+  }),
+  'mult.tiere-hundrere': tableTasks({
+    1: { numbers: '', factors: [10], groups: [2, 9], instruction: 'Regn ut. Hva skjer når du ganger med 10?' },
+    2: { numbers: '', factors: [20, 30, 40, 50], groups: [2, 9], instruction: 'Regn ut. Gang med tieren.' },
+    3: { numbers: '', factors: [100, 200, 300, 400, 500], groups: [2, 9], instruction: 'Regn ut med hundrere.' },
+  }),
   'mult.dele-opp': byLevel(
     (n) => five((i): TaskSpec => [H, vary(n, i, 11, 19), '*', vary(n + 1, i, 2, 5), 'Del opp: gang tieren og eneren hver for seg.']),
     (n) => five((i): TaskSpec => [H, vary(n, i, 21, 49), '*', vary(n + 1, i, 3, 6), 'Del opp: gang tierne og enerne hver for seg.']),
-    (n) => five((i): TaskSpec => [O, vary(n, i, 52, 98), '*', vary(n + 1, i, 4, 9), 'Still opp og regn ut.']),
+    (n) => five((i): TaskSpec => [H, vary(n, i, 52, 98), '*', vary(n + 1, i, 4, 9), 'Del opp tallet på en smart måte, og regn ut.']),
   ),
   'mult.blokkmodeller': byLevel(
     (n) =>
@@ -504,12 +535,25 @@ const skillTasks: Record<string, Generator> = {
     }),
 
   // Måling
-  'mal.volum': (level, n) =>
-    five((i): TaskSpec => {
-      const layer = vary(n, i, level === 1 ? 4 : 6, level === 1 ? 9 : level === 2 ? 16 : 25)
-      const layers = vary(n + 2, i, 2, level === 3 ? 6 : 4)
-      return [H, layers, '*', layer, `Hvert lag i en boks har ${layer} kuber. Hvor mange kuber er det i ${layers} lag?`]
-    }),
+  // Volum i liter og desiliter (ikke kuber – de ble bare gangestykker).
+  'mal.volum': byLevel(
+    (n) =>
+      five((i): TaskSpec => {
+        const [a, b] = [vary(n, i, 2, 5), vary(n + 1, i, 1, 4)]
+        return [H, a, '+', b, `En kanne har ${a} dl saft. Du heller i ${b} dl til. Hvor mange dl er det i kanna nå?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const liters = vary(n, i, 1, 3)
+        const used = vary(n + 1, i, 2, 9)
+        return [H, liters * 10, '-', used, `En flaske har ${liters} liter vann (${liters * 10} dl). Du heller ut ${used} dl. Hvor mange dl er igjen?`]
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const x = vary(n, i, 11, 39)
+        return { text: `${dec(x / 10)} liter er hvor mange desiliter?`, solution: `${x} dl  (1 liter = 10 dl)` }
+      }),
+  ),
   'mal.liter-dl': byLevel(
     (n) => five((i): TaskSpec => [H, vary(n, i, 2, 9), '*', 10, 'Hvor mange desiliter er så mange liter? (1 liter = 10 dl)']),
     (n) => five((i): TaskSpec => [H, 10 * vary(n, i, 2, 9), '/', 10, 'Hvor mange liter er så mange desiliter? (10 dl = 1 liter)']),
@@ -519,21 +563,20 @@ const skillTasks: Record<string, Generator> = {
         return [H, 10, '/', g, `Hvor mange glass på ${g} dl kan du fylle fra 1 liter (10 dl)?`]
       }),
   ),
-  'mal.desimaltall': byLevel(
+  // Lengde: cm og mm, m og cm, og sammenligne lengder.
+  'mal.lengde': byLevel(
+    (n) => five((i): TaskSpec => [H, vary(n, i, 2, 9), '*', 10, 'Hvor mange millimeter er så mange centimeter? (1 cm = 10 mm)']),
     (n) =>
       five((i): TextSpec => {
-        const x = vary(n, i, 11, 39)
-        return { text: `${dec(x / 10)} liter er hvor mange desiliter?`, solution: `${x} dl` }
+        const [cm, mm] = [vary(n, i, 2, 15), vary(n + 1, i, 1, 9)]
+        return { text: `Hvor mange millimeter er ${cm} cm og ${mm} mm?`, solution: `${cm * 10 + mm} mm  (${cm} · 10 + ${mm})` }
       }),
     (n) =>
       five((i): TextSpec => {
-        const x = vary(n, i, 11, 49)
-        return { text: `${dec(x / 10)} kg er hvor mange gram?`, solution: `${x * 100} g` }
-      }),
-    (n) =>
-      five((i): TextSpec => {
-        const x = vary(n, i, 11, 99)
-        return { text: `Skriv ${x} dl som liter med desimaltall.`, solution: `${dec(x / 10)} liter` }
+        const m = vary(n, i, 1, 5)
+        const cm = 100 * m + 10 * vary(n + 1, i, -5, 5)
+        const sign = 100 * m > cm ? '>' : 100 * m < cm ? '<' : '='
+        return { text: `Sett inn riktig tegn: <, > eller =.\n${m} m ___ ${cm} cm`, solution: `${m} m ${sign} ${cm} cm  (${m} m = ${100 * m} cm)` }
       }),
   ),
   'mal.kg-g': byLevel(
@@ -706,10 +749,31 @@ const skillTasks: Record<string, Generator> = {
     }),
 }
 
-/** Fem oppgaver på nivået for økt nummer `n`. Har økta flere undertemaer, byttes det på. */
-export function tasksFor(skills: string[], level: Level, n: number): GeneratedTask[] {
-  if (skills.length === 1) return skillTasks[skills[0]](level, n)
-  return five((i) => skillTasks[pick(skills, i)](level, n + i)[i])
+/** To oppgaver er like når teksten, eller regnestykket, er det samme. */
+export const taskKey = (task: GeneratedTask) => (isTextSpec(task) ? task.text : `${task[1]} ${task[2]} ${task[3]}`)
+
+function round(skills: string[], level: Level, n: number, profile?: TaskProfile): GeneratedTask[] {
+  if (skills.length === 1) return skillTasks[skills[0]](level, n, profile)
+  return five((i) => skillTasks[pick(skills, i)](level, n + i, profile)[i])
+}
+
+/**
+ * Fem ulike oppgaver på nivået for økt nummer `n`. Har økta flere undertemaer, byttes det på.
+ * Med profil følger tallene profilen (f.eks. bare 0- og 1-gangen). Like oppgaver byttes ut.
+ */
+export function tasksFor(skills: string[], level: Level, n: number, profile?: TaskProfile): GeneratedTask[] {
+  const seen = new Set<string>()
+  const result: GeneratedTask[] = []
+  // Nye runder med andre tall til det er fem ulike (noen profiler har få mulige stykker).
+  for (let attempt = 0; attempt < 12 && result.length < 5; attempt++) {
+    for (const task of round(skills, level, n + attempt * 5, profile)) {
+      if (result.length < 5 && !seen.has(taskKey(task))) {
+        seen.add(taskKey(task))
+        result.push(task)
+      }
+    }
+  }
+  return result
 }
 
 export const isTextSpec = (task: GeneratedTask): task is TextSpec => !Array.isArray(task)
@@ -728,11 +792,136 @@ const repetitionLevels: UnitSpec['levels'] = [
 
 const s = (heading: string, ...skills: string[]): SessionPlan => ({ heading, skills })
 
+/** Økt med oppgaveprofil. */
+const p = (heading: string, skills: string[], profile: TaskProfile): SessionPlan => ({ heading, skills, profile })
+
+const unique = (list: number[]) => [...new Set(list)].sort((a, b) => a - b)
+
+const shortTimes = {
+  formats: ['Hoderegning'],
+  steps: 'Ett steg. Ingen delspørsmål.',
+  figures: false,
+}
+
+/**
+ * Gangeøkt: gangestykker med bare gangetabellene i `levels`. Alle nivåene i en økt bruker de samme
+ * gangetabellene – nivåene skiller seg i støtte, tallområde og hvor selvstendig eleven regner.
+ */
+const timesProfile = (
+  focus: string,
+  levels: [LevelProfile, LevelProfile, LevelProfile],
+  extra: Partial<TaskProfile> = {},
+): TaskProfile => ({
+  focus,
+  operations: ['*'],
+  factors: unique(levels.flatMap((l) => l.factors ?? [])),
+  ...shortTimes,
+  avoid: ['Gangetabeller som økta ikke handler om', 'Lange tekstoppgaver med flere delspørsmål'],
+  levels: { 1: levels[0], 2: levels[1], 3: levels[2] },
+  ...extra,
+})
+
+/** Hele tiere og hele hundrere (10–90 og 100–900). */
+const TENS_AND_HUNDREDS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300, 400, 500, 600, 700, 800, 900]
+
+/** «2, 5 eller 10» */
+const orList = (numbers: number[]) => numbers.join(', ').replace(/, (\d+)$/, ' eller $1')
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
+
+/**
+ * Nivå 1–3 i en strategiøkt: samme tabeller. Instruksjonen lages per regnestykke (strategyInstruction):
+ * konkret mellomsteg på nivå 1, strategi i ord på nivå 2 og åpen på nivå 3. Nivå 3 har ikke 0 og 1
+ * som det andre tallet, så stykkene gir en reell strategiutfordring.
+ */
+const strategyLevels = (tables: number[], name: string): [LevelProfile, LevelProfile, LevelProfile] => [
+  {
+    title: `${capitalize(name)} med støtte`,
+    subtitle: 'Konkret hjelp i hvert stykke.',
+    description: `Bruke ${name} med et konkret mellomsteg, f.eks. «Finn 5 · 4 og legg til 2 · 4».`,
+    numbers: `Tall fra 2 til 5 ganget med ${orList(tables)}`,
+    factors: tables,
+    groups: [2, 5],
+  },
+  {
+    title: capitalize(name),
+    subtitle: 'Strategi i ord.',
+    description: `Bruke ${name} med en foreslått strategi, f.eks. dobling eller 10-gangen minus grupper.`,
+    numbers: `Tall fra 2 til 10 ganget med ${orList(tables)}`,
+    factors: tables,
+    groups: [2, 10],
+  },
+  {
+    title: `${capitalize(name)} – selvstendig`,
+    subtitle: 'Velg strategi selv.',
+    description: `Bruke ${name} blandet og velge en smart strategi selv.`,
+    numbers: `Tall fra 3 til 10 ganget med ${orList(tables)}, blandet`,
+    factors: tables,
+    groups: [3, 10],
+    instruction: OPEN_STRATEGY,
+  },
+]
+
+/** Nivå 1–3 i en tabelløkt: samme tabeller, mer støtte på nivå 1 og mer selvstendighet på nivå 3. */
+const tableLevels = (
+  tables: number[],
+  name: string,
+  support: string,
+  standard: string,
+  independent: string,
+): [LevelProfile, LevelProfile, LevelProfile] => [
+  {
+    title: `${capitalize(name)} med støtte`,
+    subtitle: 'Små tall og tydelig struktur.',
+    description: `Bruke ${name} med små tall. ${support}`,
+    numbers: `Tall fra 1 til 5 ganget med ${orList(tables)}`,
+    factors: tables,
+    groups: [1, 5],
+    instruction: `Regn ut. ${support}`,
+  },
+  {
+    title: capitalize(name),
+    subtitle: 'Hele tabellen.',
+    description: `Bruke ${name} med tall fra 0 til 10. ${standard}`,
+    numbers: `Tall fra 0 til 10 ganget med ${orList(tables)}`,
+    factors: tables,
+    groups: [1, 10],
+    instruction: `Regn ut. ${standard}`,
+  },
+  {
+    title: `${capitalize(name)} – selvstendig`,
+    subtitle: 'Blandet, uten hjelp.',
+    description: `Bruke ${name} blandet og velge strategi selv. ${independent}`,
+    numbers: `Tall fra 0 til 10 ganget med ${orList(tables)}, blandet`,
+    factors: tables,
+    groups: [0, 10],
+    instruction: `Regn ut. ${independent}`,
+  },
+]
+
+/** Måleøkt. */
+const measureProfile = (
+  focus: string,
+  units: string[],
+  operations: Operator[],
+  levels: [LevelProfile, LevelProfile, LevelProfile],
+  extra: Partial<TaskProfile> = {},
+): TaskProfile => ({
+  focus,
+  operations,
+  units,
+  formats: ['Hoderegning', 'Tekstoppgave'],
+  steps: 'Ett steg, høyst to på nivå 3. Ingen delspørsmål.',
+  avoid: ['Rene gangestykker der måleenheten ikke betyr noe', 'Kubeoppgaver som bare er gangestykker'],
+  figures: false,
+  levels: { 1: levels[0], 2: levels[1], 3: levels[2] },
+  ...extra,
+})
+
 export const unitSpecs: UnitSpec[] = [
   {
     unitId: 'tall',
-    title: 'Tall',
-    topic: 'Tall',
+    title: 'Tall og plassverdi',
+    topic: 'Tall og plassverdi',
     area: 'Tall og algebra',
     description:
       'Elevene utforsker plassverdi, regner i hodet og runder av, legger sammen og trekker fra med og uten veksling, stiller opp tall over 1000 og møter negative tall på tallinjen.',
@@ -793,12 +982,148 @@ export const unitSpecs: UnitSpec[] = [
     area: 'De fire regneartene',
     description:
       'Elevene utforsker gange som like grupper, øver på gangetabellen, ganger med tiere og hundrere, deler opp tall og bruker blokkmodeller og kombinasjoner.',
+    // Én profil per økt, så hver økt bare øver på gangetabellene i overskriften.
     weeks: [
-      { title: 'Uke 1 - gange som like grupper', sessions: [s('Like grupper og gjentatt addisjon', 'mult.tabell-2-10'), s('Gangetegnet og 0- og 1-gangen', 'mult.tabell-2-10')] },
-      { title: 'Uke 2 - 2-, 3-, 4-, 5- og 10-gangen', sessions: [s('2-, 5- og 10-gangen', 'mult.tabell-2-10'), s('3- og 4-gangen – doble og halvere', 'mult.tabell-2-10')] },
-      { title: 'Uke 3 - 6-, 7-, 8- og 9-gangen', sessions: [s('6-gangen og sammenhenger i tabellen', 'mult.tabell-6-9'), s('7-, 8- og 9-gangen med smarte strategier', 'mult.tabell-6-9')] },
-      { title: 'Uke 4 - store tall', sessions: [s('Multiplisere med tiere og hundrere', 'mult.tiere-hundrere'), s('Dele opp og multiplisere', 'mult.dele-opp')] },
-      { title: 'Uke 5 - modeller og kombinasjoner', sessions: [s('Bruke blokkmodeller', 'mult.blokkmodeller'), s('Antall ulike kombinasjoner', 'mult.kombinasjoner')] },
+      {
+        title: 'Uke 1 - gange som like grupper',
+        sessions: [
+          p('Like grupper og gjentatt addisjon', ['mult.like-grupper'], {
+            focus: 'Multiplikasjon som like grupper: skrive gjentatt addisjon som gange og regne ut.',
+            area: 'tabell-2-3-4-5-10',
+            operations: ['+', '*'],
+            factors: [2, 3, 4, 5, 10],
+            formats: ['Tekstoppgave: «Skriv som gangestykke, og regn ut.» med én gjentatt addisjon'],
+            steps: 'Ett steg: skriv om til gange og regn ut. Ingen delspørsmål.',
+            avoid: ['Gangestykker fra gangetabellen uten like grupper', 'Lange tekstoppgaver med flere delspørsmål'],
+            figures: true,
+            levels: {
+              1: { title: 'Få grupper', subtitle: '2–3 like grupper.', description: 'Se like grupper og skrive dem som gange.', numbers: '2–3 grupper med 2, 3, 4, 5 eller 10 i hver', factors: [2, 3, 4, 5, 10], groups: [2, 3] },
+              2: { title: 'Flere grupper', subtitle: '4–5 like grupper.', description: 'Skrive lange plusstykker som gange.', numbers: '4–5 grupper med 2, 3, 4, 5 eller 10 i hver', factors: [2, 3, 4, 5, 10], groups: [4, 5] },
+              3: { title: 'Mange grupper', subtitle: '6–8 like grupper.', description: 'Skrive om og regne ut selvstendig med mange grupper.', numbers: '6–8 grupper med 2, 3, 4, 5 eller 10 i hver', factors: [2, 3, 4, 5, 10], groups: [6, 8] },
+            },
+          }),
+          p(
+            'Gangetegnet og 0- og 1-gangen',
+            ['mult.tabell-2-10'],
+            timesProfile('Gangetegnet (·), 0-gangen og 1-gangen.', [
+              { title: '0- og 1-gangen', subtitle: 'Gange med 0 og 1.', description: 'Vite at et tall ganger 1 er tallet selv, og ganger 0 er 0.', numbers: 'Tall fra 0 til 10 ganget med 0 eller 1', factors: [0, 1], groups: [0, 10] },
+              { title: '0- og 1-gangen', subtitle: 'Blandet og raskt.', description: 'Bruke reglene for 0 og 1 raskt, med 0 og 1 først eller sist.', numbers: 'Tall fra 0 til 10 ganget med 0 eller 1, blandet', factors: [0, 1], groups: [0, 10] },
+              { title: 'Store tall med 0 og 1', subtitle: 'Tall opp til 100.', description: 'Bruke reglene for 0 og 1 på store tall.', numbers: 'Tall fra 11 til 99 ganget med 0 eller 1', factors: [0, 1], groups: [11, 99] },
+            ], { area: 'tabell-2-3-4-5-10', allowSwappedFactors: true }),
+          ),
+        ],
+      },
+      {
+        title: 'Uke 2 - 2-, 3-, 4-, 5- og 10-gangen',
+        sessions: [
+          p(
+            '2-, 5- og 10-gangen',
+            ['mult.tabell-2-10'],
+            timesProfile(
+              '2-gangen, 5-gangen og 10-gangen.',
+              tableLevels([2, 5, 10], '2-, 5- og 10-gangen', 'Tell i steg på 2, 5 eller 10.', '5-gangen er halvparten av 10-gangen.', 'Velg den raskeste måten.'),
+              { area: 'tabell-2-3-4-5-10' },
+            ),
+          ),
+          p(
+            '3- og 4-gangen – doble og halvere',
+            ['mult.tabell-2-10'],
+            timesProfile(
+              '3-gangen og 4-gangen. 4-gangen er det dobbelte av 2-gangen.',
+              tableLevels([3, 4], '3- og 4-gangen', 'Tell i steg på 3 eller 4.', 'Doble 2-gangen når du ganger med 4.', 'Bruk dobling og kjente stykker.'),
+              { area: 'tabell-2-3-4-5-10' },
+            ),
+          ),
+        ],
+      },
+      {
+        title: 'Uke 3 - 6-, 7-, 8- og 9-gangen',
+        sessions: [
+          p(
+            '6-gangen og sammenhenger i tabellen',
+            ['mult.tabell-6-9'],
+            timesProfile(
+              '6-gangen. Strategi: 6 · a er det dobbelte av 3 · a, eller 5 · a pluss én gruppe.',
+              strategyLevels([6], '6-gangen'),
+              { area: 'tabell-6-7-8-9', strategyFocus: true },
+            ),
+          ),
+          p(
+            '7-, 8- og 9-gangen med smarte strategier',
+            ['mult.tabell-6-9'],
+            timesProfile(
+              '7-gangen, 8-gangen og 9-gangen med strategier som dobling og 10-gangen minus én gruppe.',
+              strategyLevels([7, 8, 9], '7-, 8- og 9-gangen'),
+              { area: 'tabell-6-7-8-9', strategyFocus: true },
+            ),
+          ),
+        ],
+      },
+      {
+        title: 'Uke 4 - store tall',
+        sessions: [
+          p(
+            'Multiplisere med tiere og hundrere',
+            ['mult.tiere-hundrere'],
+            timesProfile(
+              'Gange ensifrede tall med hele tiere og hele hundrere ved å bruke gangetabellen og plassverdi.',
+              [
+                { title: 'Tiere og hundrere med støtte', subtitle: 'Få grupper, tydelig struktur.', description: 'Tenke tiere og hundrere som enheter: 3 · 2 tiere = 6 tiere.', numbers: 'Tall fra 2 til 4 ganget med hele tiere eller hele hundrere', factors: TENS_AND_HUNDREDS, groups: [2, 4], instruction: 'Regn ut. Tenk tiere eller hundrere: 3 · 20 er 3 · 2 tiere.' },
+                { title: 'Tiere og hundrere', subtitle: 'Ensifret · tiere og hundrere.', description: 'Bruke gangetabellen og plassverdi.', numbers: 'Tall fra 2 til 9 ganget med hele tiere eller hele hundrere', factors: TENS_AND_HUNDREDS, groups: [2, 9], instruction: 'Regn ut. Bruk gangetabellen og plassverdi.' },
+                { title: 'Tiere og hundrere – selvstendig', subtitle: 'Uten hjelp.', description: 'Regne selvstendig og kontrollere svaret med plassverdi.', numbers: 'Tall fra 3 til 9 ganget med hele tiere eller hele hundrere', factors: TENS_AND_HUNDREDS, groups: [3, 9], instruction: 'Regn ut, og sjekk svaret med plassverdi.' },
+              ],
+              { area: 'tiere-hundrere' },
+            ),
+          ),
+          p('Dele opp og multiplisere', ['mult.dele-opp'], {
+            focus: 'Dele opp et tosifret tall i tiere og enere og gange hver del med et ensifret tall.',
+            area: 'dele-opp',
+            operations: ['*'],
+            formats: ['Hoderegning der eleven deler opp tallet, på alle nivåer'],
+            steps: 'Ett regnestykke. Eleven deler opp – ingen delspørsmål.',
+            avoid: ['Gangetabellfakta uten tosifret tall', 'Oppstilling (standardalgoritmen)', 'Lange tekstoppgaver med flere delspørsmål'],
+            figures: false,
+            levels: {
+              1: { title: 'Dele opp med støtte', subtitle: 'Tall fra 11 til 19.', description: 'Dele opp i 10 og enerne, gange hver del og legge sammen.', numbers: 'Tall fra 11 til 19 ganget med 2–5' },
+              2: { title: 'Dele opp', subtitle: 'Tall fra 21 til 49.', description: 'Dele opp i tiere og enere selv og finne delproduktene.', numbers: 'Tall fra 21 til 49 ganget med 3–6' },
+              3: { title: 'Dele opp – selvstendig', subtitle: 'Tall fra 52 til 98.', description: 'Velge en smart oppdeling selv, også ved å runde opp og trekke fra.', numbers: 'Tall fra 52 til 98 ganget med 4–9' },
+            },
+          }),
+        ],
+      },
+      {
+        title: 'Uke 5 - modeller og kombinasjoner',
+        sessions: [
+          p('Bruke blokkmodeller', ['mult.blokkmodeller'], {
+            focus: 'Like grupper i hverdagssituasjoner, løst med en blokkmodell og ett gangestykke.',
+            area: 'blokkmodell',
+            operations: ['*'],
+            formats: ['Kort hverdagsoppgave med ett gangestykke: «Tegn en blokkmodell: …»'],
+            steps: 'Ett steg. Ingen delspørsmål.',
+            avoid: ['Oppgaver med flere regnearter eller flere steg'],
+            figures: false,
+            levels: {
+              1: { title: 'Blokkmodell med støtte', subtitle: 'Få deler, små tall.', description: 'Lese en blokkmodell med kjent antall deler og kjent verdi i hver del.', numbers: '2–5 grupper med 3–6 i hver' },
+              2: { title: 'Blokkmodell', subtitle: 'Flere deler.', description: 'Gjøre en kort situasjon om til en blokkmodell og ett gangestykke.', numbers: '3–8 grupper med 4–9 i hver' },
+              3: { title: 'Blokkmodell – selvstendig', subtitle: 'Større tall i hver del.', description: 'Lage modellen selv og regne med tosifrede tall i hver del.', numbers: '3–6 grupper med 12–25 i hver' },
+            },
+          }),
+          p('Antall ulike kombinasjoner', ['mult.kombinasjoner'], {
+            focus: 'Finne antall kombinasjoner av to valg med ett gangestykke.',
+            area: 'kombinasjoner',
+            operations: ['*'],
+            formats: ['Kort hverdagsoppgave med ett gangestykke'],
+            steps: 'Ett steg. Ingen delspørsmål.',
+            avoid: ['Kombinasjoner med tre eller flere valg', 'Lange tekstoppgaver med flere delspørsmål'],
+            figures: false,
+            levels: {
+              1: { title: 'Kombinasjoner med støtte', subtitle: 'Få valg.', description: 'Finne alle kombinasjoner av to små valg, gjerne ved å liste dem opp.', numbers: '2–3 og 2–4 valg' },
+              2: { title: 'Kombinasjoner', subtitle: 'Flere valg.', description: 'Se at antall kombinasjoner er et gangestykke.', numbers: '3–5 og 3–6 valg' },
+              3: { title: 'Kombinasjoner – selvstendig', subtitle: 'Mange valg.', description: 'Finne antallet med gange uten å liste opp, og forklare hvorfor.', numbers: '4–6 og 5–8 valg' },
+            },
+          }),
+        ],
+      },
     ],
     goals: [
       'Forstå multiplikasjon som like grupper og gjentatt addisjon.',
@@ -845,7 +1170,19 @@ export const unitSpecs: UnitSpec[] = [
     description: 'Elevene repeterer høstens tema og velger selv strategi og regneart. Økta avsluttes med en felles samtale om hva de mestrer.',
     weeks: [
       { title: 'Uke 1 - tall', sessions: [s('Repetisjon: tallforståelse og plassverdi', 'tall.firesifrede', 'tall.hoderegning'), s('Repetisjon: addisjon og subtraksjon', 'tall.addisjon-subtraksjon')] },
-      { title: 'Uke 2 - gange og dele', sessions: [s('Repetisjon: gangetabellen', 'mult.tabell-2-10', 'mult.tabell-6-9'), s('Repetisjon: grunnleggende divisjon', 'div.mult-og-div', 'div.delings-malings')] },
+      {
+        title: 'Uke 2 - gange og dele',
+        sessions: [
+          p(
+            'Repetisjon: gangetabellen',
+            ['mult.tabell-2-10', 'mult.tabell-6-9'],
+            timesProfile(
+              'Repetisjon av gangetabellen fra 2 til 10.',
+              tableLevels([2, 3, 4, 5, 6, 7, 8, 9, 10], 'gangetabellen', 'Tell i steg eller bruk et stykke du kan.', 'Bruk dobling og kjente stykker.', 'Velg en smart strategi.'),
+            ),
+          ), s('Repetisjon: grunnleggende divisjon', 'div.mult-og-div', 'div.delings-malings'),
+        ],
+      },
       {
         title: 'Uke 3 - flere regnearter',
         sessions: [
@@ -953,10 +1290,77 @@ export const unitSpecs: UnitSpec[] = [
     topic: 'Måling',
     area: 'Måling',
     description: 'Elevene måler volum, masse, areal, omkrets og tid, og bytter mellom måleenheter.',
+    // Hver økt måler én størrelse, så oppgavene og AI-en holder seg til enhetene i overskriften.
     weeks: [
-      { title: 'Uke 1 - volum og masse', sessions: [s('Måle volum – liter og desiliter', 'mal.volum', 'mal.liter-dl'), s('Kilogram og gram', 'mal.kg-g')] },
-      { title: 'Uke 2 - enheter og areal', sessions: [s('Sammenligne måleenheter og desimaltall', 'mal.desimaltall'), s('Måle areal', 'mal.areal')] },
-      { title: 'Uke 3 - omkrets og tid', sessions: [s('Areal og omkrets', 'mal.areal-omkrets'), s('Tid – klokka og hvor lang tid', 'mal.tid')] },
+      {
+        title: 'Uke 1 - volum og masse',
+        sessions: [
+          p(
+            'Måle volum – liter og desiliter',
+            ['mal.volum', 'mal.liter-dl'],
+            measureProfile('Volum: måle i liter og desiliter, og gjøre om mellom dem (1 liter = 10 dl).', ['liter', 'dl', 'ml'], ['+', '-', '*', '/'], [
+              { title: 'Liter og dl', subtitle: 'Hele liter og desiliter.', description: 'Legge sammen og trekke fra desiliter.', numbers: 'Desiliter opp til 10, hele liter opp til 3', units: ['liter', 'dl'] },
+              { title: 'Gjøre om', subtitle: 'Liter til dl og dl til liter.', description: 'Bruke at 1 liter er 10 dl.', numbers: 'Opp til 9 liter og 90 dl', units: ['liter', 'dl'] },
+              { title: 'Sammenligne volum', subtitle: 'Liter, dl, ml og desimaltall.', description: 'Sammenligne og gjøre om med desimaltall.', numbers: 'Desimaltall med tideler (f.eks. 2,5 liter) og liter, dl og ml', units: ['liter', 'dl', 'ml'] },
+            ]),
+          ),
+          p(
+            'Kilogram og gram',
+            ['mal.kg-g'],
+            measureProfile('Masse: kilogram og gram, og gjøre om mellom dem (1 kg = 1000 g).', ['kg', 'g'], ['+', '*', '/'], [
+              { title: 'Kilo til gram', subtitle: 'Hele kilo.', description: 'Bruke at 1 kg er 1000 g.', numbers: '1–9 kg', units: ['kg', 'g'] },
+              { title: 'Regne med gram', subtitle: 'Hele hundre gram.', description: 'Legge sammen gram.', numbers: '100–900 g', units: ['g'] },
+              { title: 'Sammenligne masse', subtitle: 'Kilo og gram.', description: 'Dele opp en kilo og sammenligne kilo og gram.', numbers: 'Opp til 8000 g og 8 kg', units: ['kg', 'g'] },
+            ]),
+          ),
+        ],
+      },
+      {
+        title: 'Uke 2 - lengde og areal',
+        sessions: [
+          p(
+            'Lengde – cm, mm og sammenligne måleenheter',
+            ['mal.lengde'],
+            measureProfile('Lengde: centimeter og millimeter, meter og centimeter, og sammenligne lengder med ulike enheter.', ['km', 'm', 'dm', 'cm', 'mm'], ['+', '*'], [
+              { title: 'Centimeter og millimeter', subtitle: 'cm og mm.', description: 'Bruke at 1 cm er 10 mm.', numbers: '1–20 cm', units: ['cm', 'mm'] },
+              { title: 'Sammenligne lengder', subtitle: 'cm og mm.', description: 'Gjøre om til samme enhet før jeg sammenligner.', numbers: 'Opp til 25 cm og 300 mm', units: ['m', 'cm', 'mm'] },
+              { title: 'Sammenligne måleenheter', subtitle: 'km, m, dm, cm og mm.', description: 'Sammenligne lengder med ulike enheter og løse lengdegåter.', numbers: 'Opp til 5 km og 5 m', units: ['km', 'm', 'dm', 'cm', 'mm'] },
+            ]),
+          ),
+          p(
+            'Måle areal',
+            ['mal.areal'],
+            measureProfile('Areal: telle ruter på 1 cm² og regne ut areal av rektangler som rader · ruter.', ['cm²', 'm²'], ['*'], [
+              { title: 'Telle ruter', subtitle: 'Små rektangler.', description: 'Telle ruter på 1 cm².', numbers: '2–5 rader med 3–8 ruter', units: ['cm²'] },
+              { title: 'Rader og ruter', subtitle: 'Større rektangler.', description: 'Regne rader · ruter.', numbers: '2–9 rader med 3–8 ruter', units: ['cm²'] },
+              { title: 'Areal i cm² og m²', subtitle: 'Sammensatte figurer og m².', description: 'Finne areal og sammenligne cm² og m².', numbers: '2–9 rader med 3–12 ruter, og cm² og m²', units: ['cm²', 'm²'] },
+            ], { figures: true }),
+          ),
+        ],
+      },
+      {
+        title: 'Uke 3 - omkrets og tid',
+        sessions: [
+          p(
+            'Areal og omkrets',
+            ['mal.areal-omkrets'],
+            measureProfile('Areal og omkrets av rektangler og kvadrater.', ['cm', 'cm²'], ['+', '*', '/'], [
+              { title: 'Areal', subtitle: 'Rektangler.', description: 'Lengde · bredde.', numbers: 'Sider fra 2 til 9 cm', units: ['cm', 'cm²'] },
+              { title: 'Areal og omkrets', subtitle: 'Rektangler.', description: 'Skille mellom areal og omkrets.', numbers: 'Sider fra 2 til 12 cm', units: ['cm', 'cm²'] },
+              { title: 'Fra omkrets til areal', subtitle: 'Kvadrater.', description: 'Finne siden ut fra omkretsen.', numbers: 'Omkrets opp til 36 cm', units: ['cm', 'cm²'] },
+            ]),
+          ),
+          p(
+            'Tid – klokka og hvor lang tid',
+            ['mal.tid'],
+            measureProfile('Tid: lese klokka, minutter, kvarter og timer, og regne ut hvor lang tid noe tar.', ['minutter', 'kvarter', 'timer'], ['+', '-', '*'], [
+              { title: 'Kvarter og halvtimer', subtitle: 'Hel, halv og kvart.', description: 'Lese klokka og regne med kvarter.', numbers: '1–4 kvarter', units: ['minutter', 'kvarter'] },
+              { title: 'Hvor lang tid?', subtitle: 'Minutter.', description: 'Regne ut hvor lang tid noe varer.', numbers: 'Opp til 60 minutter', units: ['minutter'] },
+              { title: 'Timer og minutter', subtitle: 'Timer.', description: 'Gjøre om mellom timer og minutter.', numbers: 'Opp til 6 timer', units: ['minutter', 'timer'] },
+            ], { figures: true }),
+          ),
+        ],
+      },
     ],
     goals: ['Måle og sammenligne volum, masse og lengde.', 'Bytte mellom måleenheter.', 'Finne areal og omkrets.', 'Lese klokka og regne med tid.'],
     levels: [

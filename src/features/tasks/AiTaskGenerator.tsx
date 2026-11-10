@@ -1,27 +1,33 @@
 import { LoaderCircle, Sparkles, X } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import { AiError, newTaskId, requestTasks, subjectContext, toTextTask } from '../../ai/client'
+import { AiError, SLOW_AI_HINT, fallbackNotice, newTaskId, requestTasks, subjectContext, toSessionTask } from '../../ai/client'
+import { isCompletePackage } from '../../ai/drafts'
+import { buildLevelContexts, toAiProfile } from '../../ai/referenceTasks'
 import { Button } from '../../components/ui/Button'
-import type { Session, TextTask } from '../../types'
+import { useSlowAiHint } from '../../hooks/useSlowAiHint'
+import type { Session, SessionTask } from '../../types'
 
 interface AiTaskGeneratorProps {
   session: Session
+  /** Utkastet slik det er nå. Noen representative oppgaver per nivå sendes med, så de nye passer inn. */
+  tasks: SessionTask[]
   /** Oppgavene legges i utkastet. Læreren lagrer dem med «Lagre endringer». */
-  onAdd: (tasks: TextTask[]) => void
+  onAdd: (tasks: SessionTask[]) => void
 }
 
 const fieldClass =
   'w-full rounded-md border border-surface bg-background px-3 py-2 text-small text-on-background outline-none focus:border-secondary'
 
 /** «Lag oppgaver med AI»: generelle oppgaver på tre nivåer ut fra temaet for økta. */
-export function AiTaskGenerator({ session, onAdd }: AiTaskGeneratorProps) {
+export function AiTaskGenerator({ session, tasks: currentTasks, onAdd }: AiTaskGeneratorProps) {
   const [open, setOpen] = useState(false)
   const [perLevel, setPerLevel] = useState(2)
   const [officialGoals, setOfficialGoals] = useState('')
   const [wishes, setWishes] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [result, setResult] = useState<{ count: number; message: string } | null>(null)
+  const [result, setResult] = useState<{ count: number; message: string; warning?: string; failed: boolean; notice: string | null } | null>(null)
+  const slow = useSlowAiHint(loading, 'tasks')
 
   const generate = async (event: FormEvent) => {
     event.preventDefault()
@@ -29,7 +35,7 @@ export function AiTaskGenerator({ session, onAdd }: AiTaskGeneratorProps) {
     setError(null)
     setResult(null)
     try {
-      const { tasks, message } = await requestTasks({
+      const { tasks, message, warning, incomplete, meta } = await requestTasks({
         kind: 'general',
         lesson: {
           ...subjectContext(session.className),
@@ -41,9 +47,20 @@ export function AiTaskGenerator({ session, onAdd }: AiTaskGeneratorProps) {
         perLevel,
         officialGoals: officialGoals.trim(),
         wishes: wishes.trim(),
+        levels: buildLevelContexts(session.levels, currentTasks, session.taskProfile),
+        ...(session.taskProfile && { profile: toAiProfile(session.taskProfile) }),
       })
-      onAdd(tasks.map((t) => toTextTask(t, newTaskId(session.id))))
-      setResult({ count: tasks.length, message })
+      // Alt eller ingenting: bare en komplett pakke (nøyaktig det bestilte antallet per nivå) legges i utkastet.
+      const complete = isCompletePackage(tasks, perLevel)
+      if (complete) onAdd(tasks.map((t) => toSessionTask(t, newTaskId(session.id), meta)))
+      const failed = !complete && tasks.length > 0
+      setResult({
+        count: complete ? tasks.length : 0,
+        message,
+        warning: failed ? `AI-en laget ikke hele det bestilte antallet (${perLevel * 3} oppgaver). Ingen oppgaver ble lagt til. Prøv igjen.` : warning,
+        failed: failed || !!incomplete,
+        notice: fallbackNotice(meta, 'Oppgavene'),
+      })
     } catch (err) {
       if (!(err instanceof AiError)) console.error('Uventet feil ved oppgavegenerering:', err)
       setError(err instanceof AiError ? err.message : 'Noe gikk galt. Prøv igjen.')
@@ -127,7 +144,7 @@ export function AiTaskGenerator({ session, onAdd }: AiTaskGeneratorProps) {
             {loading ? 'Lager oppgaver …' : 'Lag oppgaver'}
           </Button>
           <p aria-live="polite" className="text-xs text-secondary">
-            {loading && 'AI-en lager og kontrollerer oppgavene. Det kan ta litt tid.'}
+            {loading && (slow ? SLOW_AI_HINT : 'AI-en lager og kontrollerer oppgavene. Det kan ta litt tid.')}
           </p>
         </div>
       </form>
@@ -138,17 +155,28 @@ export function AiTaskGenerator({ session, onAdd }: AiTaskGeneratorProps) {
         </p>
       )}
       {result && (
-        <div role="status" className="flex flex-col gap-1 rounded-md bg-background px-3 py-2 text-small text-on-background">
-          <p>
-            {result.count > 0
-              ? `${result.count} oppgaver er lagt til i utkastet under nivåene sine. Se gjennom dem, og trykk «Lagre endringer» for å gjøre dem tilgjengelige for elevene.`
-              : 'AI-en laget ingen oppgaver denne gangen.'}
-          </p>
+        <div
+          role={result.failed ? 'alert' : 'status'}
+          className="flex flex-col gap-1 rounded-md bg-background px-3 py-2 text-small text-on-background"
+        >
+          {result.failed ? (
+            <p className="text-error">{result.warning}</p>
+          ) : (
+            <>
+              <p>
+                {result.count > 0
+                  ? `${result.count} oppgaver er lagt til i utkastet under nivåene sine. Se gjennom dem, og trykk «Lagre endringer» for å gjøre dem tilgjengelige for elevene.`
+                  : 'AI-en laget ingen oppgaver denne gangen.'}
+              </p>
+              {result.warning && <p className="text-error">{result.warning}</p>}
+            </>
+          )}
           {result.message && (
             <p>
               <span className="font-medium">Fra AI-assistenten:</span> {result.message}
             </p>
           )}
+          {result.notice && <p className="text-xs text-secondary">{result.notice}</p>}
         </div>
       )}
     </section>

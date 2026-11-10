@@ -1,11 +1,12 @@
 import { EyeOff, LoaderCircle, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { AiError, newTaskId, requestTasks, subjectContext, toTextTask } from '../../ai/client'
+import { AiError, SLOW_AI_HINT, fallbackNotice, newTaskId, requestTasks, subjectContext, toTextTask } from '../../ai/client'
 import type { AnonStudentProfile } from '../../ai/contract'
 import { AiBadge } from '../../components/ui/AiBadge'
 import { Button } from '../../components/ui/Button'
 import { Modal, ModalCloseButton } from '../../components/ui/Modal'
 import { levelStyles } from '../../components/ui/levelStyles'
+import { useSlowAiHint } from '../../hooks/useSlowAiHint'
 import type { TextTask } from '../../types'
 import { AiReviseForm } from '../tasks/AiReviseForm'
 
@@ -21,7 +22,10 @@ interface SuggestedTasksDialogProps {
   onConfirm: (tasks: TextTask[]) => void
 }
 
-type State = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; message: string }
+type State =
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'ready'; message: string; notice: string | null }
 
 /**
  * «Forslag fra AI til …»: individuelt tilpassede oppgaver. De er bare forslag – ingenting
@@ -41,17 +45,18 @@ export function SuggestedTasksDialog({
   // Forslagene læreren har åpnet. Alle må åpnes før de kan legges til.
   const [seen, setSeen] = useState<Set<string>>(new Set())
   const [attempt, setAttempt] = useState(0)
+  const slow = useSlowAiHint(state.status === 'loading', 'tasks')
 
   useEffect(() => {
     let cancelled = false
     requestTasks({ kind: 'individual', classId, context: subjectContext(classId), student: profile, count: 4, wishes: '' })
-      .then(({ tasks: drafts, message }) => {
+      .then(({ tasks: drafts, message, meta }) => {
         if (cancelled) return
-        const suggestions = drafts.map((d) => toTextTask(d, newTaskId(studentId)))
+        const suggestions = drafts.map((d) => toTextTask(d, newTaskId(studentId), meta))
         setTasks(suggestions)
         setSelectedId(suggestions[0]?.id)
         setSeen(new Set(suggestions.slice(0, 1).map((t) => t.id)))
-        setState({ status: 'ready', message })
+        setState({ status: 'ready', message, notice: fallbackNotice(meta, 'Forslagene') })
       })
       .catch((err: unknown) => {
         if (cancelled) return
@@ -102,7 +107,7 @@ export function SuggestedTasksDialog({
         // Fast høyde, så dialogen ikke hopper når forslagene kommer.
         <p aria-live="polite" className="flex min-h-64 items-center justify-center gap-2 text-small text-secondary">
           <LoaderCircle className="size-5 motion-safe:animate-spin" aria-hidden />
-          AI-en lager forslag ut fra {studentName}s resultater …
+          {slow ? SLOW_AI_HINT : `AI-en lager forslag ut fra ${studentName}s resultater …`}
         </p>
       )}
 
@@ -130,6 +135,7 @@ export function SuggestedTasksDialog({
               <span className="font-medium">Fra AI-assistenten:</span> {state.message}
             </p>
           )}
+          {state.notice && <p className="text-xs text-secondary">{state.notice}</p>}
           <div className="flex flex-col gap-5 md:flex-row">
             <ul className="flex flex-1 flex-col gap-1.5">
               {tasks.map((task, i) => {

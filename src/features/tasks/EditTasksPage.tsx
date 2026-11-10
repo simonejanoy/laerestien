@@ -1,11 +1,12 @@
-import { Check, Plus } from 'lucide-react'
-import { useState } from 'react'
+import { Check, Eye, Plus } from 'lucide-react'
+import { useCallback, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import type { Level, SessionTask, Task } from '../../types'
 import { FullPageMessage } from '../auth/ProtectedRoute'
 import { sessionLabel, useSessions } from '../sessions/sessionsContext'
 import { AiTaskGenerator } from './AiTaskGenerator'
 import { LevelTabs } from './LevelTabs'
+import { StudentPreviewDialog } from './StudentPreviewDialog'
 import { TaskCard } from './TaskCard'
 import { TextTaskCard } from './TextTaskCard'
 import { sessionCrumbs } from '../sessions/crumbs'
@@ -16,7 +17,7 @@ const toLevel = (value: string | null): Level => (value === '2' ? 2 : value === 
 export function EditTasksPage() {
   const { sessionId = '' } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { sessions, getTasks, saveTasks } = useSessions()
+  const { sessions, getTasks, saveTasks, storageNotice } = useSessions()
   const session = sessions.find((s) => s.id === sessionId)
 
   // Utkast som lagres med «Lagre endringer».
@@ -24,6 +25,9 @@ export function EditTasksPage() {
   const [dirty, setDirty] = useState(false)
   // Oppgaven som redigeres, og hvordan den så ut før redigeringen startet («Avbryt» setter den tilbake).
   const [editing, setEditing] = useState<{ id: string; original: Task } | null>(null)
+  // Elevvisningen viser utkastet på valgt nivå. Den endrer ikke utkastet og lagrer ingenting.
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const closePreview = useCallback(() => setPreviewOpen(false), [])
 
   if (!session) return <FullPageMessage text="Fant ikke økten." />
 
@@ -50,6 +54,7 @@ export function EditTasksPage() {
       a: 0,
       operator: '+',
       b: 0,
+      source: 'teacher',
     }
     update([...draft, task])
     setEditing({ id: task.id, original: task })
@@ -107,11 +112,16 @@ export function EditTasksPage() {
             <p role="status" className="text-xs text-secondary">
               {dirty ? 'Du har endringer som ikke er lagret' : 'Alle endringer er lagret'}
             </p>
+            {storageNotice && (
+              <p role="alert" className="max-w-[24rem] text-right text-xs text-error">
+                {storageNotice}
+              </p>
+            )}
           </div>
         </div>
       </div>
 
-      <AiTaskGenerator session={session} onAdd={(tasks) => update([...draft, ...tasks])} />
+      <AiTaskGenerator session={session} tasks={draft} onAdd={(tasks) => update([...draft, ...tasks])} />
 
       <LevelTabs
         levels={session.levels}
@@ -128,14 +138,24 @@ export function EditTasksPage() {
               {levelTasks.length} oppgaver{group && ` · ${group.subtitle.replace(/\.$/, '').toLowerCase()}`}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={addTask}
-            className="flex h-[38px] cursor-pointer items-center gap-[7px] rounded-[7px] border border-surface bg-background px-3.5 text-small text-primary hover:bg-surface-light"
-          >
-            <Plus className="size-4" strokeWidth={2.2} />
-            Legg til oppgave
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPreviewOpen(true)}
+              className="flex h-[38px] cursor-pointer items-center gap-[7px] rounded-[7px] border border-surface bg-background px-3.5 text-small text-primary hover:bg-surface-light"
+            >
+              <Eye className="size-4" strokeWidth={2.2} />
+              Elevvisning
+            </button>
+            <button
+              type="button"
+              onClick={addTask}
+              className="flex h-[38px] cursor-pointer items-center gap-[7px] rounded-[7px] border border-surface bg-background px-3.5 text-small text-primary hover:bg-surface-light"
+            >
+              <Plus className="size-4" strokeWidth={2.2} />
+              Legg til oppgave
+            </button>
+          </div>
         </div>
 
         {levelTasks.length === 0 ? (
@@ -145,7 +165,10 @@ export function EditTasksPage() {
         ) : (
           <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
             {levelTasks.map((task, i) => {
-              const onChange = (changed: SessionTask) => update(draft.map((t) => (t.id === changed.id ? changed : t)))
+              // Oppgaver læreren endrer selv, regnes som lærerens egne (gode eksempler for AI-en).
+              // AI-oppgaver beholder AI-merket – «gjennomgått» settes med egen knapp.
+              const onChange = (changed: SessionTask) =>
+                update(draft.map((t) => (t.id === changed.id ? (changed.aiGenerated ? changed : { ...changed, source: 'teacher' as const }) : t)))
               const onDelete = () => {
                 update(draft.filter((t) => t.id !== task.id))
                 if (editing?.id === task.id) setEditing(null)
@@ -179,6 +202,8 @@ export function EditTasksPage() {
           </div>
         )}
       </section>
+
+      {previewOpen && <StudentPreviewDialog session={session} level={level} tasks={levelTasks} onClose={closePreview} />}
     </div>
   )
 }

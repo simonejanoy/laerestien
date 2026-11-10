@@ -1,3 +1,5 @@
+import type { AiTaskMeta, MultiplicationArea } from '../ai/contract.ts'
+
 export type Role = 'teacher' | 'student'
 
 /** Lagres i Firestore under users/{uid}. */
@@ -79,6 +81,8 @@ export interface Session {
   slots: CalendarSlot[]
   /** Ferdighetene (undertemaene) økta øver på – brukes til progresjon på tvers av perioder. */
   skillIds?: string[]
+  /** Hva oppgavene i akkurat denne økta skal øve på. Styrer oppgavegeneratoren og AI-en. */
+  taskProfile?: TaskProfile
   totalSessions: number
   levels: LevelGroup[]
   goals: string[]
@@ -89,6 +93,58 @@ export interface Session {
 export type SessionStatus = 'completed' | 'skipped' | 'available' | 'locked'
 
 export type TaskType = 'Hoderegning' | 'Oppstilling'
+
+/**
+ * Hvor oppgaven kommer fra (AI-oppgaver har i tillegg `aiGenerated`). Brukes til å velge
+ * gode eksempler når AI-en lager nye oppgaver: lærerens egne først, så arbeidsark, så generert.
+ */
+export type TaskSource = 'teacher' | 'worksheet' | 'generated'
+
+/** Tallområde og utfordring på ett nivå i én økt. */
+export interface LevelProfile {
+  /** Øktspesifikk nivåbeskrivelse – erstatter temaets generelle når den er satt. */
+  title?: string
+  subtitle?: string
+  description?: string
+  /** F.eks. «0 og 1 ganget med tall fra 0 til 10». */
+  numbers: string
+  /** Gangetabellene (faktorene) på nivået. Generatoren bruker bare disse. */
+  factors?: number[]
+  /** Måleenheter på nivået. */
+  units?: string[]
+  /** Antall grupper (første faktor) i gangestykkene, fra–til. */
+  groups?: [number, number]
+  /** Instruksjonen over regnestykkene, f.eks. «Regn ut. Doble 2-gangen.». */
+  instruction?: string
+}
+
+/** Oppgaveprofil for én økt: det faglige innholdet oppgavene skal holde seg til. */
+export interface TaskProfile {
+  /** Konkret faglig fokus, f.eks. «Gangetegnet, 0-gangen og 1-gangen». */
+  focus: string
+  operations: Operator[]
+  /** Alle gangetabellene økta bruker. */
+  factors?: number[]
+  units?: string[]
+  /** Ønskede oppgaveformater, f.eks. «Hoderegning» eller «Tekstoppgave». */
+  formats: string[]
+  /** Antall steg og delspørsmål, f.eks. «Ett steg, ingen delspørsmål». */
+  steps: string
+  /** Formater og innhold som ikke skal brukes. */
+  avoid: string[]
+  /** Om økta bruker figurer appen kan vise (rutefigur eller klokke). AI-en kan ikke lage figurer. */
+  figures: boolean
+  /** Fagområdet i multiplikasjon. Da velger serveren AI-referansene fra referansebanken for fagområdet. */
+  area?: MultiplicationArea
+  /** Byttede faktorer (3 · 7 og 7 · 3) regnes som ulike oppgaver, fordi økta handler om å bytte rekkefølge. */
+  allowSwappedFactors?: boolean
+  /**
+   * Strategier er læringsfokus (f.eks. 7-, 8- og 9-gangen). Da får hvert regnestykke en strategi-
+   * instruksjon som passer akkurat det stykket og nivået (se multiplicationStrategies.ts).
+   */
+  strategyFocus?: boolean
+  levels: Record<Level, LevelProfile>
+}
 
 /** Pluss, minus, gange (·) og dele (:). */
 export type Operator = '+' | '-' | '*' | '/'
@@ -104,6 +160,13 @@ export interface Task {
   a: number
   operator: Operator
   b: number
+  source?: TaskSource
+  /** Laget av AI-assistenten (vises bare for læreren). */
+  aiGenerated?: boolean
+  /** Læreren har selv sett gjennom en AI-generert oppgave. */
+  reviewed?: boolean
+  /** Sporbarhet for AI-genererte oppgaver (modell, regelversjon, referanser …). Vises aldri for eleven. */
+  aiMeta?: AiTaskMeta
 }
 
 /** Figur som tegnes til en oppgave: rutefigur (areal) eller analog klokke. */
@@ -132,6 +195,9 @@ export interface TextTask {
   reviewed: boolean
   /** Figur som hører til oppgaven (valgfritt). */
   figure?: TaskFigure
+  source?: TaskSource
+  /** Sporbarhet for AI-genererte oppgaver (modell, regelversjon, referanser …). Vises aldri for eleven. */
+  aiMeta?: AiTaskMeta
 }
 
 export type SessionTask = Task | TextTask

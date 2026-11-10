@@ -1,8 +1,9 @@
 import { ArrowUp, LoaderCircle } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import { AiError, sendChat, subjectContext } from '../../ai/client'
+import { AiError, SLOW_AI_HINT, fallbackNotice, sendChat, subjectContext } from '../../ai/client'
 import type { ChatContent } from '../../ai/contract'
 import { SparkleIcon } from '../../components/ui/icons'
+import { useSlowAiHint } from '../../hooks/useSlowAiHint'
 import type { Task } from '../../types'
 import { answerOf, expressionOf } from './taskUtils'
 
@@ -16,6 +17,8 @@ interface AiAssistantProps {
 interface Message {
   role: 'user' | 'model'
   text: string
+  /** Beskjed når svaret kom fra reservemodellen. */
+  notice?: string | null
 }
 
 /**
@@ -29,6 +32,7 @@ export function AiAssistant({ task, taskNumber, topic }: AiAssistantProps) {
   const [history, setHistory] = useState<ChatContent[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const slow = useSlowAiHint(loading, 'chat')
 
   const suggestions = [`Forenkle oppgave ${taskNumber}`, 'Bytt til tekstoppgave', 'Generer ny lignende', 'Legg til hint']
 
@@ -51,7 +55,7 @@ export function AiAssistant({ task, taskNumber, topic }: AiAssistantProps) {
     try {
       const reply = await sendChat([...history, userTurn])
       setHistory([...history, userTurn, reply.content])
-      setMessages((m) => [...m, { role: 'model', text: reply.text }])
+      setMessages((m) => [...m, { role: 'model', text: reply.text, notice: fallbackNotice(reply.meta, 'Svaret') }])
     } catch (err) {
       if (!(err instanceof AiError)) console.error('Uventet feil i AI-chatten:', err)
       setError(err instanceof AiError ? err.message : 'Noe gikk galt. Prøv igjen.')
@@ -101,6 +105,7 @@ export function AiAssistant({ task, taskNumber, topic }: AiAssistantProps) {
               >
                 <span className="sr-only">{message.role === 'user' ? 'Du: ' : 'AI-assistenten: '}</span>
                 {message.text}
+                {message.notice && <span className="mt-1 block text-xs text-secondary">{message.notice}</span>}
               </li>
             ))}
           </ol>
@@ -110,7 +115,7 @@ export function AiAssistant({ task, taskNumber, topic }: AiAssistantProps) {
           {loading && (
             <span className="flex items-center gap-1.5">
               <LoaderCircle className="size-3.5 motion-safe:animate-spin" aria-hidden />
-              AI-assistenten skriver …
+              {slow ? SLOW_AI_HINT : 'AI-assistenten skriver …'}
             </span>
           )}
         </p>

@@ -1,4 +1,4 @@
-import type { Operator, Task } from '../../types'
+import type { Operator, Task } from '../../types/index.ts'
 
 const numberFormat = new Intl.NumberFormat('nb-NO')
 

@@ -11,8 +11,8 @@ export const standardPlan: PlanItem[] = [
 /** Standardinnhold for nye økter i temaet. */
 export const sessionBase = {
   topicId: 'tall',
-  title: 'Tall',
-  topic: 'Tall',
+  title: 'Tall og plassverdi',
+  topic: 'Tall og plassverdi',
   area: 'Tall og algebra',
   className: '4A',
   totalSessions: 8,

@@ -1,19 +1,11 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import type { Content } from '@google/genai'
-import {
-  parseTaskResult,
-  type ChatRequest,
-  type ChatResponse,
-  type ProfileRequest,
-  type TaskRequest,
-  type TaskResult,
-  type TextResponse,
-} from '../src/ai/contract.ts'
+import type { AiResponseMeta, ChatRequest, ChatResponse, ProfileRequest, TextResponse } from '../src/ai/contract.ts'
 import { requireOwnClass, requireTeacher, type Teacher } from './auth.ts'
 import { HttpError } from './errors.ts'
-import { generate } from './gemini.ts'
-import { profilePrompt, taskPrompt } from './prompts.ts'
-import { taskSchema } from './taskSchema.ts'
+import { generate, logToConsole, type GenerateResult } from './gemini.ts'
+import { profilePrompt } from './prompts.ts'
+import { createTaskHandler } from './taskHandler.ts'
 
 // API-serveren for AI-assistenten. Nettleseren snakker bare med denne – aldri direkte
 // med Gemini – så API-nøkkelen holdes på serveren.
@@ -23,6 +15,9 @@ const PORT = Number(process.env.AI_SERVER_PORT ?? 8787)
 const MAX_BODY_BYTES = 200_000
 
 const userTurn = (text: string): Content => ({ role: 'user', parts: [{ text }] })
+
+/** Forteller appen hvilken modell som svarte, så læreren ser om reservemodellen ble brukt. */
+const metaOf = ({ model, fallbackUsed }: GenerateResult): AiResponseMeta => ({ model, fallbackUsed })
 
 async function readJson(req: IncomingMessage): Promise<unknown> {
   let size = 0
@@ -41,41 +36,15 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
 
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 
-async function tasks(body: unknown, teacher: Teacher): Promise<TaskResult> {
-  if (!isObject(body) || !['general', 'individual', 'revise'].includes(body.kind as string)) {
-    throw new HttpError(400, 'Ukjent type oppgavebestilling.')
-  }
-  const request = body as unknown as TaskRequest
-  if (request.kind === 'individual' || (request.kind === 'revise' && request.student)) {
-    requireOwnClass(teacher, request.classId)
-  }
-
-  const { text } = await generate('tasks', [userTurn(taskPrompt(request))], taskSchema)
-
-  let raw: unknown
-  try {
-    raw = JSON.parse(text)
-  } catch {
-    console.error('Gemini returnerte ugyldig JSON:', text.slice(0, 500))
-    throw new HttpError(502, 'AI-svaret hadde feil format og kan ikke vises. Prøv igjen.')
-  }
-  const result = parseTaskResult(raw)
-  if (!result) {
-    console.error('Gemini-svaret fulgte ikke skjemaet:', text.slice(0, 500))
-    throw new HttpError(502, 'AI-svaret hadde feil format og kan ikke vises. Prøv igjen.')
-  }
-  if (result.tasks.length === 0 && !result.message) {
-    throw new HttpError(502, 'AI-en laget ingen brukbare oppgaver. Prøv igjen.')
-  }
-  return result
-}
+/** Oppgavebestillinger (se taskHandler.ts). Referansebanken lastes og kontrolleres når serveren starter. */
+const tasks = createTaskHandler({ generate, log: logToConsole })
 
 async function profile(body: unknown, teacher: Teacher): Promise<TextResponse> {
   if (!isObject(body) || !isObject(body.student)) throw new HttpError(400, 'Elevopplysningene mangler.')
   const request = body as unknown as ProfileRequest
   requireOwnClass(teacher, request.classId)
-  const { text } = await generate('profile', [userTurn(profilePrompt(request))])
-  return { text }
+  const answer = await generate('profile', [userTurn(profilePrompt(request))])
+  return { text: answer.text, meta: metaOf(answer) }
 }
 
 async function chat(body: unknown): Promise<ChatResponse> {
@@ -87,8 +56,8 @@ async function chat(body: unknown): Promise<ChatResponse> {
   if (!valid) throw new HttpError(400, 'Samtalen hadde feil format.')
 
   // Historikken sendes uendret, så thought signatures i modellens tidligere turer blir med.
-  const { text, content } = await generate('chat', history as Content[])
-  return { text, content: content as ChatResponse['content'] }
+  const answer = await generate('chat', history as Content[])
+  return { text: answer.text, content: answer.content as ChatResponse['content'], meta: metaOf(answer) }
 }
 
 const routes: Record<string, (body: unknown, teacher: Teacher) => Promise<unknown>> = {

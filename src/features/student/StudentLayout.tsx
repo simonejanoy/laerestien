@@ -7,13 +7,16 @@ interface StudentLayoutProps {
   label?: string
   /** Ruteark i vanlig visning, mørk tavle når læreren har pause. */
   background?: 'paper' | 'board'
-  onLogout: () => void
+  /** Uten denne vises ikke «Logg ut» (brukes i lærerens forhåndsvisning). */
+  onLogout?: () => void
+  /** Inne i lærerens forhåndsvisning: fyller rammen den ligger i i stedet for hele skjermen. */
+  embedded?: boolean
   children: ReactNode
 }
 
-export function StudentLayout({ label, background = 'paper', onLogout, children }: StudentLayoutProps) {
+export function StudentLayout({ label, background = 'paper', onLogout, embedded = false, children }: StudentLayoutProps) {
   return (
-    <div className="relative flex min-h-screen flex-col">
+    <div className={`relative flex flex-col ${embedded ? 'flex-1' : 'min-h-screen'}`}>
       <img
         src={background === 'board' ? board : paper}
         alt=""
@@ -35,9 +38,11 @@ export function StudentLayout({ label, background = 'paper', onLogout, children 
             </>
           )}
         </div>
-        <button type="button" onClick={onLogout} className="cursor-pointer text-small text-muted hover:underline">
-          Logg ut
-        </button>
+        {onLogout && (
+          <button type="button" onClick={onLogout} className="cursor-pointer text-small text-muted hover:underline">
+            Logg ut
+          </button>
+        )}
       </header>
 
       <main className="relative flex flex-1 flex-col">{children}</main>

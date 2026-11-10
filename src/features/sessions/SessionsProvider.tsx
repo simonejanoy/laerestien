@@ -1,9 +1,11 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import type { CalendarSession, LevelGroup, Session, SessionTask, TextTask } from '../../types'
 import { describeSlots, timeSlots, weekdays, type WeekRef } from '../calendar/mockData'
 import { topicDetails, unitById } from '../topics/mockData'
 import { initialProgress, initialTasks, sessionBase, sessions as initialSessions } from './mockData'
 import { scheduled } from './schedule'
+import { mergeTasks } from './sessionTasks'
+import { browserStorage, loadTaskSets, saveTaskSets, type TaskSets } from './taskStorage'
 import { worksheetTasks } from './worksheetTasks'
 import { SessionsContext, type SessionInput } from './sessionsContext'
 
@@ -37,16 +39,31 @@ const emptyLevels: LevelGroup[] = ([1, 2, 3] as const).map((level) => ({
   studentCount: 0,
 }))
 
-/** Holder styr på øktene, framdriften og oppgavene (bare i minnet foreløpig). */
+/**
+ * Holder styr på øktene, framdriften og oppgavene. Oppgavesettene læreren har lagret, lagres også
+ * i nettleseren (se taskStorage.ts), så de er der etter omlasting. Alt annet – også elevsvar,
+ * framdrift og individuelle elevforslag – ligger bare i minnet.
+ */
 export function SessionsProvider({ children }: { children: ReactNode }) {
   const [sessions, setSessions] = useState(() => normalize([...initialSessions, ...scheduled.sessions]))
   const [progress, setProgress] = useState(initialProgress)
+  // Lagrede oppgavesett leses én gang. Blokkert lagring eller ødelagte data gir standardoppgavene og en beskjed.
+  const [stored] = useState(() => loadTaskSets(browserStorage()))
+  const savedSets = useRef<TaskSets>(stored.sets)
+  const [storageNotice, setStorageNotice] = useState<string | null>(stored.notice)
   const [tasks, setTasks] = useState<Record<string, SessionTask[]>>(() => {
     const all: Record<string, SessionTask[]> = { ...initialTasks, ...scheduled.tasks }
-    // Oppgavene fra arbeidsarkene kommer først i øktene sine.
-    for (const [sessionId, added] of Object.entries(worksheetTasks)) all[sessionId] = [...added, ...(all[sessionId] ?? [])]
-    return all
+    // Oppgavene fra arbeidsarkene kommer først i øktene sine. Like oppgaver på samme nivå tas med én gang.
+    for (const [sessionId, added] of Object.entries(worksheetTasks)) all[sessionId] = mergeTasks(added, all[sessionId] ?? [])
+    // Oppgavesett læreren har lagret, går foran standardoppgavene.
+    return { ...all, ...stored.sets }
   })
+
+  /** Skriver lærerens lagrede oppgavesett til nettleseren. Bare oppgavesett – aldri elevdata. */
+  const persistTaskSets = (sets: TaskSets) => {
+    savedSets.current = sets
+    setStorageNotice(saveTaskSets(browserStorage(), sets))
+  }
   const [studentTasks, setStudentTasks] = useState<Record<string, TextTask[]>>({})
 
   const calendarEntries: CalendarSession[] = sessions.flatMap((s) =>
@@ -120,13 +137,16 @@ export function SessionsProvider({ children }: { children: ReactNode }) {
   const removeSession = (id: string) => {
     setSessions((prev) => normalize(prev.filter((s) => s.id !== id)))
     setTasks((prev) => Object.fromEntries(Object.entries(prev).filter(([key]) => key !== id)))
+    if (id in savedSets.current) persistTaskSets(Object.fromEntries(Object.entries(savedSets.current).filter(([key]) => key !== id)))
     setProgress((prev) => Object.fromEntries(Object.entries(prev).filter(([key]) => key !== id)))
   }
 
   const getTasks = (sessionId: string) => tasks[sessionId] ?? []
 
-  const saveTasks = (sessionId: string, updated: SessionTask[]) =>
+  const saveTasks = (sessionId: string, updated: SessionTask[]) => {
     setTasks((prev) => ({ ...prev, [sessionId]: updated }))
+    persistTaskSets({ ...savedSets.current, [sessionId]: updated })
+  }
 
   const getStudentTasks = (studentId: string) => studentTasks[studentId] ?? []
 
@@ -147,6 +167,7 @@ export function SessionsProvider({ children }: { children: ReactNode }) {
         removeSession,
         getTasks,
         saveTasks,
+        storageNotice,
         getStudentTasks,
         addStudentTasks,
       }}

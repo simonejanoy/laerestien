@@ -1,8 +1,8 @@
-import type { TextTask } from '../types'
 import { auth } from '../lib/firebase'
 import {
   isTaskResult,
-  type AiTaskDraft,
+  readMeta,
+  type AiResponseMeta,
   type ChatContent,
   type ChatResponse,
   type ProfileRequest,
@@ -53,13 +53,21 @@ export async function requestTasks(request: TaskRequest): Promise<TaskResult> {
     console.error('Ugyldig oppgavesvar fra API-serveren:', data)
     throw new AiError('AI-svaret hadde feil format og kan ikke vises. Prøv igjen.')
   }
-  return data
+  const warning = (data as { warning?: unknown }).warning
+  const incomplete = (data as { incomplete?: unknown }).incomplete === true
+  return {
+    tasks: data.tasks,
+    message: data.message,
+    warning: typeof warning === 'string' ? warning : undefined,
+    ...(incomplete && { incomplete }),
+    meta: readMeta(data),
+  }
 }
 
-export async function requestProfile(request: ProfileRequest): Promise<string> {
+export async function requestProfile(request: ProfileRequest): Promise<TextResponse> {
   const data = (await post('profil', request)) as Partial<TextResponse>
   if (typeof data.text !== 'string') throw new AiError('AI-svaret hadde feil format. Prøv igjen.')
-  return data.text
+  return { text: data.text, meta: readMeta(data) }
 }
 
 export async function sendChat(history: ChatContent[]): Promise<ChatResponse> {
@@ -68,33 +76,21 @@ export async function sendChat(history: ChatContent[]): Promise<ChatResponse> {
     console.error('Ugyldig chatsvar fra API-serveren:', data)
     throw new AiError('AI-svaret hadde feil format. Prøv igjen.')
   }
-  return data as ChatResponse
+  return { text: data.text, content: data.content, meta: readMeta(data) }
 }
 
-/** AI-oppgave → fritekstoppgave i appen. Alltid «ikke gjennomgått» til læreren sier noe annet. */
-export function toTextTask(draft: AiTaskDraft, id: string): TextTask {
-  return {
-    kind: 'text',
-    id,
-    level: draft.level,
-    text: draft.studentText,
-    solution: draft.solution,
-    competenceGoal: draft.competenceGoal,
-    adaptation: draft.adaptation,
-    aiGenerated: true,
-    reviewed: false,
-  }
+/** Vises mens læreren venter, når hovedmodellen har brukt opp tidsgrensen sin. Ikke en feil. */
+export const SLOW_AI_HINT = 'Dette tar litt lengre tid. Vi prøver en reservemodell.'
+
+/**
+ * Diskret beskjed når svaret kom fra reservemodellen, f.eks. «Oppgavene ble laget …».
+ * Gir null når hovedmodellen svarte (eller metadata mangler).
+ */
+export function fallbackNotice(meta: AiResponseMeta | undefined, what: string): string | null {
+  return meta?.fallbackUsed ? `${what} ble laget med reservemodellen fordi hovedmodellen var midlertidig utilgjengelig.` : null
 }
 
-export function toDraft(task: TextTask): AiTaskDraft {
-  return {
-    level: task.level,
-    studentText: task.text,
-    solution: task.solution,
-    competenceGoal: task.competenceGoal,
-    adaptation: task.adaptation,
-  }
-}
+export { toDraft, toSessionTask, toTextTask } from './drafts'
 
 let counter = 0
 /** Unik id for nye AI-oppgaver. */

@@ -25,6 +25,8 @@ export interface SessionsContextValue {
   removeSession: (id: string) => void
   getTasks: (sessionId: string) => SessionTask[]
   saveTasks: (sessionId: string, tasks: SessionTask[]) => void
+  /** Beskjed til læreren når oppgavene ikke kan lagres i eller leses fra nettleseren, ellers null. */
+  storageNotice: string | null
   /** Individuelle oppgaver læreren har lagt til for en elev. */
   getStudentTasks: (studentId: string) => TextTask[]
   addStudentTasks: (studentId: string, tasks: TextTask[]) => void

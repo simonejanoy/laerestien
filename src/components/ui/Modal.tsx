@@ -11,17 +11,36 @@ interface ModalProps {
   large?: boolean
   /** Bredere popup (880px) for tabeller og lister. */
   wide?: boolean
+  /**
+   * Nesten hele skjermen (opptil 1440px bred), uten innerpolstring og uten egen rulling –
+   * innholdet styrer selv hva som ruller. Brukt i elevvisningen for læreren.
+   */
+  fullScreen?: boolean
   children: ReactNode
 }
 
-export function Modal({ open, onClose, labelledBy, className = '', large = false, wide = false, children }: ModalProps) {
+/** Åpne modaler, den øverste sist. Escape lukker bare den øverste (f.eks. en dialog inne i elevvisningen). */
+const openModals: object[] = []
+
+export function Modal({ open, onClose, labelledBy, className = '', large = false, wide = false, fullScreen = false, children }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null)
+  const selfRef = useRef({})
+
+  // Plassen i rekken følger bare åpning og lukking – ikke at onClose får ny identitet.
+  useEffect(() => {
+    if (!open) return
+    const self = selfRef.current
+    openModals.push(self)
+    return () => {
+      openModals.splice(openModals.indexOf(self), 1)
+    }
+  }, [open])
 
   useEffect(() => {
     if (!open) return
     panelRef.current?.focus()
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape' && openModals.at(-1) === selfRef.current) onClose()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -40,7 +59,9 @@ export function Modal({ open, onClose, labelledBy, className = '', large = false
         aria-modal="true"
         aria-labelledby={labelledBy}
         tabIndex={-1}
-        className={`flex max-h-full w-full flex-col overflow-y-auto bg-background p-8 outline-none ${wide ? 'max-w-[880px]' : 'max-w-[560px]'} ${large ? 'rounded-3xl' : 'rounded-2xl'} ${className}`}
+        className={`flex max-h-full w-full flex-col bg-background outline-none ${
+          fullScreen ? 'h-full max-w-[1440px] overflow-hidden' : `overflow-y-auto p-8 ${wide ? 'max-w-[880px]' : 'max-w-[560px]'}`
+        } ${large ? 'rounded-3xl' : 'rounded-2xl'} ${className}`}
       >
         {children}
       </div>
