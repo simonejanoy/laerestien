@@ -189,6 +189,7 @@ function areaLevelSection(level: AiLevelContext, textOnly = false) {
     `Beskrivelse: ${level.description || 'Ikke oppgitt.'}`,
     level.numbers && `Tallområde og utfordring: ${level.numbers}`,
     level.factors && `Gangetabeller på nivået: ${level.factors.join(', ')}`,
+    level.units && `Måleenheter på nivået: ${level.units.join(', ')}`,
     level.dominantTaskType &&
       `Vanligste oppgavetype i oppgavesettet: ${level.dominantTaskType}${isMathType(level.dominantTaskType) && !textOnly ? ' – lag format «regnestykke»' : ''}`,
     level.support && `Støttestruktur i instruksjonen på nivået: ${level.support}`,
@@ -266,6 +267,27 @@ const AREA_GUIDANCE: Partial<Record<ReferenceArea, string[]>> = {
     'Bruk lengder i m, dm, cm og mm med høyst én desimal i enheten svaret oppgis i: 1 m = 10 dm = 100 cm, 1 dm = 10 cm, 1 cm = 10 mm. Ikke lag oppgaver som krever hundredeler (f.eks. 1,25 m).',
     'Enheten skal stå både i oppgaven og i fasiten. Sammenlignes lengder i ulike enheter, skal fasiten gjøre dem om til samme enhet, f.eks. «4,5 cm er 45 mm, og 45 mm er mer enn 42 mm.».',
   ],
+  'volum-liter-desiliter': [
+    'Bruk liter (L) og desiliter (dL), og volum som antall like terninger. 1 L = 10 dL. Bare hele tall – desimaltall hører til økta om desimaltall i måling.',
+    'Volum i terninger er rader · terninger i hver rad · antall lag. Oppgaveteksten må oppgi alle målene (antall rader, terninger i hver rad og antall lag, f.eks. «Det er bare ett lag»), fordi appen ikke viser figuren.',
+    'Svaret skal ha enhet eller benevning (30 dL, 5 glass, 12 terninger). Sammenlignes eller regnes volum i ulike enheter sammen, skal fasiten gjøre dem om til samme enhet, f.eks. «2 L = 20 dL, og 20 dL er mer enn 15 dL.».',
+  ],
+  'desimaltall-maling': [
+    'Desimaltall med én desimal i liter og kilogram, skrevet med komma: 0,1 L = 1 dL og 0,1 kg = 100 g. 1,3 L er 13 dL (ikke 0,13 L), og 1,5 kg er 1500 g (ikke 150 g). Ingen hundredeler (f.eks. 1,25 kg) og ingen desimaltall i dL eller g.',
+    'Enheten skal stå både i oppgaven og i fasiten. Sammenlignes størrelser i ulike enheter, skal fasiten gjøre dem om til samme enhet, f.eks. «0,8 kg = 800 g, og 800 g er mer enn 750 g.».',
+  ],
+  'kilogram-gram': [
+    'Bruk kilogram (kg) og gram (g): 1 kg = 1000 g. Blandede enheter regnes om riktig: 2 kg og 50 g er 2050 g (ikke 2500 g), 3 kg og 250 g er 3250 g.',
+    'Vektene skal være rimelige for tingen som veies (et eple veier omtrent 150 g, en sykkel omtrent 12 kg). Svaret skal ha enhet, og fasiten viser omgjøringen når enhetene er ulike.',
+  ],
+  'areal-omkrets': [
+    'Areal er hvor mye en flate dekker: antall ruter eller kvadratenheter (cm², m²). Areal av et rektangel er lengde · bredde. Omkrets er lengden rundt: summen av alle fire sidene, i lengdeenheter (cm, m) eller rutesider. Skriv kvadratenheter med ² (cm², m²).',
+    'Spør om det oppgaven mener: gjerde, kant og bånd rundt er omkrets; plen, teppe og fliser som dekker er areal. Appen viser ikke figurer: beskriv rektangelet med lengde og bredde i teksten. Spør bare om arealet av en sammensatt figur – omkretsen avhenger av hvordan delene ligger.',
+  ],
+  tid: [
+    '1 time = 60 minutter (ikke 100). Skriv klokkeslett som 24-timers digital tid med kolon, f.eks. kl. 08:45 – aldri med punktum. Tidsintervaller over hel time regnes via hel time: fra 08:45 til 09:20 er 15 + 20 = 35 minutter.',
+    'Sluttid og starttid må stemme med varigheten. Appen viser ikke urskiver i AI-oppgaver: beskriv en analog klokke med ord (hvor viserne peker) og si om det er formiddag eller ettermiddag når svaret er et digitalt klokkeslett. Ikke desimaltall i tid (ikke 1,5 time).',
+  ],
   modeller: [
     'Eleven skal faktisk bruke eller tolke en modell: like grupper, tallinje, rutenett eller blokkmodell. Appen kan ikke vise figurer, så beskriv modellen i teksten (f.eks. «En blokk med totalen 35 er delt i 5 like store deler») eller be eleven tegne en bestemt modell. Å bare nevne ordet «modell» er ikke nok.',
   ],
@@ -279,6 +301,7 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
   const geometry = topic === 'geometri'
   const problemSolving = topic === 'problemlosing'
   const numbersAndOperations = topic === 'tall-og-regning'
+  const measurement = topic === 'maling'
   const secondary = profile.secondaryAreas ?? []
   const allowsRemainder = area === 'divisjon-med-rest' || secondary.includes('divisjon-med-rest')
   // Todimensjonale figurer og vinkler: hver oppgave skal ha en figur appen tegner, og figurer finnes bare i tekstoppgaver.
@@ -323,12 +346,16 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
         ? '- Hold deg til fagområdet i økta og tallområdet i referansene på nivået. Bruk hele tall – ikke desimaltall, negative tall, brøk eller andre tema.'
         : numbersAndOperations
         ? '- Hold deg til fagområdet i økta og tallområdet i referansene på nivået. Ikke negative tall, ikke hundredeler, og ikke et nytt deltema – heller ikke når ønskene ber om det (f.eks. gir «bruk penger» ikke kroner og øre i en økt om tideler).'
+        : measurement
+        ? `- Hold deg til fagområdet i økta, tallområdet i referansene på nivået og måleenhetene i økta${profile.units?.length ? ` (${profile.units.join(', ')})` : ''}. Ikke andre enheter, ikke negative tall, ikke hundredeler og ikke et nytt deltema – heller ikke når ønskene ber om det (f.eks. gir «bruk matlaging» ikke milliliter, centiliter eller hundredeler).`
         : geometry
         ? '- Hold deg til geometriområdet i økta. Ikke ta inn areal, omkrets eller andre deltema, og ikke bytt til en annen regneart eller et annet tema – heller ikke når ønskene ber om det.'
         : division
         ? '- Hold deg til gangetabellen og tallområdet på nivået: divisor og antall hele grupper høyst 10. Bruk hele tall – ikke desimaltall, negative tall eller deling med 0.'
         : '- Hold deg til tallområdet og regneartene i økta, og ikke ta inn et nytt deltema (f.eks. avrunding) som læreren ikke har bedt om.',
-    numbersAndOperations
+    measurement
+      ? '- Nivå 1: tydelig støtte og ett faglig steg (gjøre om med hjelp, telle, legge sammen eller lese av). Nivå 2: eleven gjør om selv, sammenligner i ulike enheter eller løser et problem med to steg. Nivå 3: vurdere en påstand, finne feil, løse flerstegsproblemer eller forklare – ikke bare større tall. Alle nivåene har samme faglige fokus.'
+      : numbersAndOperations
       ? '- Nivå 1: tydelig støtte, ett faglig steg (fyll inn, skriv tallet, gjør om med hjelp). Nivå 2: eleven bruker sammenhengen selv – ukjent tall, sammenligning, omgjøring eller addisjon over én hel. Nivå 3: vurdere en påstand, finne feil, forklare eller løse på to måter – oppgaveteksten ber eleven forklare eller begrunne. Nivåforskjellen skal ikke bare være større tall. Alle nivåene har samme faglige fokus.'
       : problemSolving
       ? '- Nivåforskjellen handler om støtte og resonnement, ikke bare større tall. Nivå 1: kort tekst, ett steg eller synlige mellomsteg, ferdig modell eller tydelig tegneinstruksjon. Nivå 2: eleven velger framgangsmåte selv, to steg uten synlig støtte, enkel begrunnelse. Nivå 3: vurdere andres løsninger, finne feil, forklare, eller løse problemer der svaret må tolkes ut fra situasjonen – oppgaveteksten ber eleven forklare, begrunne eller vurdere. Alle nivåene har samme faglige fokus.'
@@ -350,6 +377,8 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
       ? '- Du kan ikke lage figurer. Modeller skrives som tekst i oppgaveteksten, eller eleven får en nøyaktig tegneinstruksjon. Skriv aldri «se figuren», «se bildet» eller «modellen under» uten at modellen står i teksten.'
       : area === 'modeller'
       ? '- Du kan ikke lage figurer. Modellen må derfor beskrives i teksten eller tegnes av eleven.'
+      : measurement
+      ? '- Du kan ikke lage figurer eller klokker. Beskriv rektangler, esker med terninger og klokker med ord og mål i teksten. Skriv aldri «se figuren», «se på klokka» eller «rektangelet under».'
       : '- Du kan ikke lage figurer, så oppgavene må kunne løses uten figur.',
     '- Regn ut og kontroller alle regnestykker og fasiter selv. Ikke viderefør feil fra referansene – noen referanser er feilanalyser med en bevisst feil.',
     '- Lærerens ekstra ønsker går foran referansene og oppgavesettet når ønskene er faglig korrekte, trygge og passer med timens tema og mål.',

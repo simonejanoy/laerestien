@@ -9,14 +9,18 @@ import {
   type TaskRequest,
   type TaskResult,
 } from '../src/ai/contract.ts'
-import { isReferenceArea, topicOfArea, type DivisionArea, type GeometryArea, type NumbersAndOperationsArea, type ProblemSolvingArea, type ReferenceArea } from '../src/ai/contract.ts'
+import { isReferenceArea, topicOfArea, type DivisionArea, type GeometryArea, type MeasurementArea, type NumbersAndOperationsArea, type ProblemSolvingArea, type ReferenceArea } from '../src/ai/contract.ts'
 import { strategyProblem } from '../src/features/topics/multiplicationStrategies.ts'
 import { divisionProblem, wishRequiresRoundUp } from './divisionChecks.ts'
 import { geometryProblem } from './geometryChecks.ts'
+import { measurementProblem } from './measurementChecks.ts'
 import { numbersProblem } from './numbersAndOperationsChecks.ts'
 import { problemSolvingProblem } from './problemSolvingChecks.ts'
 import { visualProblem } from './visualChecks.ts'
 import { divisionReferences } from './references/division.ts'
+import { geometryReferences } from './references/geometry.ts'
+import { numbersAndOperationsReferences } from './references/numbersAndOperations.ts'
+import { isAreaOrPerimeterReference } from './references/selectReferences.ts'
 import { checkEquations, checkReferenceMath } from './references/validate.ts'
 
 // Kontroller av generelle oppgaver etter at AI-en har svart. Stiltreff styres av
@@ -96,6 +100,10 @@ export type RemovalReason =
   | 'tooManyDecimals'
   | 'wrongConversion'
   | 'missingUnit'
+  | 'foreignUnit'
+  | 'wrongAreaUnit'
+  | 'wrongTime'
+  | 'unreasonableValue'
 
 export interface GeneralCheck {
   result: TaskResult
@@ -250,8 +258,12 @@ const REMOVAL_TEXT: Record<RemovalReason, string> = {
   revealedSolution: 'avslørte svaret i oppgaveteksten',
   decimalFormat: 'skrev desimaltall med punktum i stedet for komma',
   tooManyDecimals: 'brukte hundredeler eller flere desimaler',
-  wrongConversion: 'hadde feil omgjøring mellom måleenheter, eller sammenlignet lengder uten å gjøre dem om til samme enhet',
+  wrongConversion: 'hadde feil omgjøring mellom måleenheter, eller sammenlignet størrelser uten å gjøre dem om til samme enhet',
   missingUnit: 'manglet enhet i fasiten',
+  foreignUnit: 'brukte en måleenhet som ikke hører til økta',
+  wrongAreaUnit: 'blandet areal og omkrets (areal i lengdeenhet, omkrets i kvadratenhet eller kvadratenhet skrevet uten ²)',
+  wrongTime: 'regnet feil med tid (f.eks. som om en time har 100 minutter), eller hadde et ugyldig eller tvetydig klokkeslett',
+  unreasonableValue: 'hadde en vekt som ikke er rimelig for tingen som veies',
 }
 
 const emptyRemoved = (): Record<RemovalReason, number> => ({
@@ -295,6 +307,10 @@ const emptyRemoved = (): Record<RemovalReason, number> => ({
   tooManyDecimals: 0,
   wrongConversion: 0,
   missingUnit: 0,
+  foreignUnit: 0,
+  wrongAreaUnit: 0,
+  wrongTime: 0,
+  unreasonableValue: 0,
 })
 
 /** «Tatt bort: 2 som var like …, 1 som …» – eller tom streng. */
@@ -418,9 +434,9 @@ export function requiresCarry(task: AiTaskDraft): boolean {
 // Intern systemtekst: hører hjemme i serverloggen, aldri i synlige felt.
 
 const INTERNAL_TEXT =
-  /reserve\s?(kandidat|oppgave)\w*|utfyllings?(forsøk|runde)\w*|\brefill\w*|\bfallback\w*|reservemodell\w*|\bprompt\w*|referanse[- ]?(id|oppgave)\w*|\b(?:[MTDGP]|TR)\d-N\d-\d{2}\b|\bkandidat(en|er|ene|nummer|nr)?\b/i
+  /reserve\s?(kandidat|oppgave)\w*|utfyllings?(forsøk|runde)\w*|\brefill\w*|\bfallback\w*|reservemodell\w*|\bprompt\w*|referanse[- ]?(id|oppgave)\w*|\b(?:[MTDGP]|TR|MA)\d-N\d-\d{2}\b|\bkandidat(en|er|ene|nummer|nr)?\b/i
 
-/** Om teksten inneholder interne ord eller ID-er (reservekandidat, utfyllingsforsøk, prompt, M4-N2-01, D3-N2-01, P2-N1-03, TR2-N2-01 …). */
+/** Om teksten inneholder interne ord eller ID-er (reservekandidat, utfyllingsforsøk, prompt, M4-N2-01, D3-N2-01, P2-N1-03, TR2-N2-01, MA4-N2-01 …). */
 export const containsInternalText = (text: string) => INTERNAL_TEXT.test(text)
 
 /** Teksten uten setningene som inneholder interne ord. */
@@ -473,7 +489,10 @@ function claimIn(text: string) {
  *   og det riktige svaret må stå der. Kan påstanden ikke leses, kan svaret ikke kontrolleres → uklart.
  * Den bevisste feilen i oppgaveteksten er lov – det er løsningen som må identifisere den.
  */
-export function assessmentProblem(task: AiTaskDraft, { verbalClaims = false }: { verbalClaims?: boolean } = {}): 'wrongConclusion' | 'unclearSolution' | null {
+export function assessmentProblem(
+  task: AiTaskDraft,
+  { verbalClaims = false, measureClaims = false }: { verbalClaims?: boolean; measureClaims?: boolean } = {},
+): 'wrongConclusion' | 'unclearSolution' | null {
   if (isMathDraft(task)) return null
   const { solution } = task
   if (HESITATION.test(solution) || NAME_ALTERNATIVE.test(solution)) return 'unclearSolution'
@@ -483,6 +502,8 @@ export function assessmentProblem(task: AiTaskDraft, { verbalClaims = false }: {
   if (answers.size > 1) return 'unclearSolution'
   const conclusion = /^\s*(ja|nei)\b/i.exec(solution)?.[1].toLowerCase()
   if (!conclusion) return 'unclearSolution'
+  // Måling: påstanden har enheter eller klokkeslett («1130 − 1040 = 90» er ikke 90 minutter) og regnes ut i measurementChecks.ts.
+  if (measureClaims) return null
   const claim = claimIn(task.studentText)
   // Påstander i ord («Alle kvadrater er rektangler») kan ikke regnes ut. I Geometri er de vanlige: da kreves
   // bare én entydig ja/nei-konklusjon – fagkontrollene og prompten tar resten.
@@ -526,6 +547,9 @@ export interface CandidateCheck {
  *   - Tall og regning: sammenhengen mellom regneartene og regnefamilier (samme kontroll som i Divisjon), rest,
  *     desimaltall med komma og én desimal, tideler, sammenligninger, lengder og enheter (se numbersAndOperationsChecks.ts).
  *     Sammenhengen mellom gange og dele sammenlignes også med referansene i divisjonsbanken (kopier).
+ *   - Måling: enheter som hører til økta, enhet i svaret, omgjøringer (L og dL, kg og g, timer og minutter), regnestykker
+ *     med enheter og klokkeslett, desimaltall med én desimal i liter og kilogram, terninger, areal og omkrets av rektangler,
+ *     tidsintervaller og rimelig vekt (se measurementChecks.ts). Kopier sammenlignes også med Tall og regning og Geometri.
  * - uten fagområde logges gangestykker utenfor øktas tabeller (som før)
  * Kontrollene er de samme for første generering og for utfylling.
  */
@@ -570,9 +594,10 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
   // Løsningsforslaget må være entydig, og ja/nei i vurderingsoppgaver må stemme (alle økter).
   // Geometri, Problemløsing og Tall og regning har påstander i ord («Er modellen riktig?», «1,3 er mindre enn 0,9»):
   // da kreves én entydig ja/nei-konklusjon (påstander om desimaltall og lengder kontrolleres i numbersAndOperationsChecks.ts).
-  const verbalClaims = !!profile?.area && ['geometri', 'problemlosing', 'tall-og-regning'].includes(topicOfArea(profile.area))
+  const verbalClaims = !!profile?.area && ['geometri', 'problemlosing', 'tall-og-regning', 'maling'].includes(topicOfArea(profile.area))
+  const measureClaims = !!profile?.area && topicOfArea(profile.area) === 'maling'
   tasks = tasks.filter((t) => {
-    const problem = assessmentProblem(t, { verbalClaims })
+    const problem = assessmentProblem(t, { verbalClaims, measureClaims })
     return !problem || remove(t, problem)
   })
 
@@ -604,6 +629,7 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
     const geometry = topic === 'geometri'
     const problemSolving = topic === 'problemlosing'
     const numbersAndOperations = topic === 'tall-og-regning'
+    const measurement = topic === 'maling'
     const numbersContext = numbersAndOperations
       ? {
           area: area as NumbersAndOperationsArea,
@@ -682,6 +708,13 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
         const problem = numbersProblem(task, numbersContext)
         if (problem) return remove(task, problem)
       }
+      // Måling: enheter og omgjøringer, desimaltall i liter og kilogram, terninger, areal og omkrets, tid og
+      // rimelig vekt (se measurementChecks.ts). Synlig nøling i oppgaveteksten avvises også.
+      if (measurement) {
+        if (!isMathDraft(task) && HESITATION.test(task.studentText)) return remove(task, 'unclearSolution')
+        const problem = measurementProblem(task, { area: area as MeasurementArea })
+        if (problem) return remove(task, problem)
+      }
       // Økter der tierovergang er det uttrykkelige målet: minst én addisjon med veksling.
       if (profile?.requiresCarry && !requiresCarry(task)) return remove(task, 'missingCarry')
       if (!hasWishes && outsideTables(task, factorsOf(task.level))) return remove(task, 'outsideTables')
@@ -693,6 +726,11 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
       const references = [
         ...(levelInfo(task.level)?.referenceTasks ?? []),
         ...(area === 'sammenheng-multiplikasjon-divisjon' ? divisionReferences.filter((r) => r.area === 'multiplikasjon-divisjon') : []),
+        // Måling overlapper med Tall og regning (desimaltall og lengdemåling) og Geometri (areal og omkrets):
+        // kandidaten må heller ikke kopiere de referansene.
+        ...(measurement
+          ? [...numbersAndOperationsReferences.filter((r) => r.area === 'desimaltall-tideler' || r.area === 'desimaltall-lengde'), ...geometryReferences.filter(isAreaOrPerimeterReference)]
+          : []),
       ]
       // Figuroppgaver som spør om «figuren» eller «vinkelen» har innholdet i figuren appen tegner, ikke i teksten:
       // et kort spørsmål som «Hvor mange sider har figuren?» er ikke en kopi av en referanse uten figur.
@@ -707,7 +745,7 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
         }
         // Divisjon og Problemløsing: de samme tallene som en referanse og lignende formulering er samme oppgave
         // (samme gangefakta i et annet format, f.eks. «__ · 8 = 56» og «Regn ut 56 : 8», er lov).
-        if ((division || problemSolving || numbersAndOperations) && references.some((r) => numbersIn(task.studentText) === numbersIn(r.studentText) && textSimilarity(task.studentText, r.studentText) >= SAME_NUMBERS_SIMILARITY)) {
+        if ((division || problemSolving || numbersAndOperations || measurement) && references.some((r) => numbersIn(task.studentText) === numbersIn(r.studentText) && textSimilarity(task.studentText, r.studentText) >= SAME_NUMBERS_SIMILARITY)) {
           return remove(task, 'copiedReference')
         }
       } else if (placeValue) {
@@ -719,8 +757,10 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
       // Nivå 1 i Tall og plassverdi og Divisjon: hovedsakelig ett faglig steg – ikke flerstegs- eller
       // feilanalyseoppgaver (gjelder også med «Andre ønsker»). Problemløsing har egne nivåregler: synlige
       // mellomsteg og svaralternativer hører hjemme på nivå 1 (se problemSolvingChecks.ts).
+      // Måling: nivå 1 kan ha to korte spørsmål («Trenger du å vite arealet eller omkretsen? …»), som referansene.
       if (!multiplication && !problemSolving && task.level === 1 && !isMathDraft(task)) {
-        if (isLongOrMultiPart(task.studentText) || ERROR_ANALYSIS.test(task.studentText)) return remove(task, 'levelMismatch')
+        const tooLong = measurement ? task.studentText.length > 180 : isLongOrMultiPart(task.studentText)
+        if (tooLong || ERROR_ANALYSIS.test(task.studentText)) return remove(task, 'levelMismatch')
       }
       inResponse.add(keys.exact)
       inResponse.add(keys.swapped)

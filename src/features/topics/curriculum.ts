@@ -91,7 +91,7 @@ export const topics: Topic[] = [
     skills: [
       skill('mal.volum', 'Måle volum'),
       skill('mal.liter-dl', 'Liter og desiliter'),
-      skill('mal.lengde', 'Lengde og sammenligne måleenheter'),
+      skill('mal.desimal', 'Desimaltall'),
       skill('mal.kg-g', 'Kilogram og gram'),
       skill('mal.areal', 'Måle areal'),
       skill('mal.areal-omkrets', 'Areal og omkrets'),

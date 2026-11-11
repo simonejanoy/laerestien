@@ -51,7 +51,9 @@ export interface SelectOptions {
  * Måling). De blir værende i banken, men velges ikke.
  */
 const OUTSIDE_SESSIONS = /\bomkrets|\bareal\b/i
-const fitsSessions = (ref: ReferenceTask) => !(ref.topic === 'geometri' && OUTSIDE_SESSIONS.test(`${ref.studentText} ${ref.purpose}`))
+/** Geometrireferanser om areal eller omkrets (ingen i banken nå). Måling velger dem ikke, men sammenligner kopier med dem. */
+export const isAreaOrPerimeterReference = (ref: ReferenceTask) => ref.topic === 'geometri' && OUTSIDE_SESSIONS.test(`${ref.studentText} ${ref.purpose}`)
+const fitsSessions = (ref: ReferenceTask) => !isAreaOrPerimeterReference(ref)
 
 /**
  * Divisjonstypen en referanse viser: typen hensikten nevner (ingen når den nevner begge), ellers typen
@@ -112,11 +114,11 @@ export function selectReferences(bank: readonly ReferenceTask[], { area, seconda
 
 /**
  * Referansen slik AI-en får den: ID, format, hensikt, eventuell representasjon, tekst og fasit.
- * I Problemløsing og Tall og regning er den visuelle støtten beskrevet med ord (f.eks. en tekstbasert blokkmodell) – ikke en figur som mangler.
+ * I Problemløsing, Tall og regning og Måling er den visuelle støtten beskrevet med ord (f.eks. en tekstbasert blokkmodell eller tidslinje) – ikke en figur som mangler.
  * Løsningsforslaget, lærernotatet og flervalgsmetadataene sendes ikke (alternativene står i elevteksten).
  */
 export function toAiReference(ref: ReferenceTask): AiReferenceTask {
-  const inText = ref.topic === 'problemlosing' || ref.topic === 'tall-og-regning'
+  const inText = ref.topic === 'problemlosing' || ref.topic === 'tall-og-regning' || ref.topic === 'maling'
   return {
     id: ref.id,
     taskType: ref.format,

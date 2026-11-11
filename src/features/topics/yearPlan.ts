@@ -1,4 +1,4 @@
-import { visualSignature, type AiVisual, type DivisionArea, type DivisionType, type GeometryArea, type NumbersAndOperationsArea, type PlaceValueArea, type ProblemSolvingArea } from '../../ai/contract.ts'
+import { visualSignature, type AiVisual, type DivisionArea, type DivisionType, type GeometryArea, type MeasurementArea, type NumbersAndOperationsArea, type PlaceValueArea, type ProblemSolvingArea } from '../../ai/contract.ts'
 import type { Level, LevelGroup, LevelProfile, Operator, TaskProfile, TaskType, TopicDetails } from '../../types/index.ts'
 import { OPEN_STRATEGY, strategyInstruction } from './multiplicationStrategies.ts'
 import { columnTasks, fourDigitTasks, mentalStrategyTasks, negativeNumberTasks, type FourDigitVariant } from './placeValueTasks.ts'
@@ -1259,10 +1259,17 @@ const skillTasks: Record<string, Generator> = {
         const used = vary(n + 1, i, 2, 9)
         return [H, liters * 10, '-', used, `En flaske har ${liters} liter vann (${liters * 10} dl). Du heller ut ${used} dl. Hvor mange dl er igjen?`]
       }),
+    // Nivå 3: to steg med hele liter og desiliter (desimaltall hører til økta om desimaltall i måling).
     (n) =>
       five((i): TextSpec => {
-        const x = vary(n, i, 11, 39)
-        return { text: `${dec(x / 10)} liter er hvor mange desiliter?`, solution: `${x} dl  (1 liter = 10 dl)` }
+        const liters = vary(n, i, 2, 3)
+        const glasses = vary(n + 1, i, 2, 4)
+        const size = pick([2, 3], i + n)
+        const [all, used] = [liters * 10, glasses * size]
+        return {
+          text: `En kanne har ${liters} liter saft. Du fyller ${glasses} glass som rommer ${size} dl hver. Hvor mange dl saft er igjen i kanna?`,
+          solution: `${all - used} dl  (${liters} liter = ${all} dl. ${glasses} · ${size} dl = ${used} dl. ${all} dl − ${used} dl = ${all - used} dl.)`,
+        }
       }),
   ),
   'mal.liter-dl': byLevel(
@@ -1274,20 +1281,47 @@ const skillTasks: Record<string, Generator> = {
         return [H, 10, '/', g, `Hvor mange glass på ${g} dl kan du fylle fra 1 liter (10 dl)?`]
       }),
   ),
-  // Lengde: cm og mm, m og cm, og sammenligne lengder.
-  'mal.lengde': byLevel(
-    (n) => five((i): TaskSpec => [H, vary(n, i, 2, 9), '*', 10, 'Hvor mange millimeter er så mange centimeter? (1 cm = 10 mm)']),
+  // Desimaltall i måling: liter og kilogram med én desimal (lengde med desimaltall hører til Tall og regning).
+  'mal.desimal': byLevel(
     (n) =>
       five((i): TextSpec => {
-        const [cm, mm] = [vary(n, i, 2, 15), vary(n + 1, i, 1, 9)]
-        return { text: `Hvor mange millimeter er ${cm} cm og ${mm} mm?`, solution: `${cm * 10 + mm} mm  (${cm} · 10 + ${mm})` }
+        const t = vary(n, i, 1, 9)
+        if (i % 2 === 0) {
+          const container = pick(['Et glass', 'En kopp', 'En boks'], i + n)
+          return { text: `${container} rommer ${t} dl. Skriv hvor mange liter det er, som desimaltall.`, solution: `0,${t} liter  (${t} dl er ${t} tideler av en liter)` }
+        }
+        return { text: `En ost veier 0,${t} kg. Hvor mange gram er det? Tips: 0,1 kg = 100 g.`, solution: `${t * 100} g  (0,${t} kg er ${t} tideler av en kilo. ${t} · 100 g = ${t * 100} g.)` }
       }),
     (n) =>
       five((i): TextSpec => {
-        const m = vary(n, i, 1, 5)
-        const cm = 100 * m + 10 * vary(n + 1, i, -5, 5)
-        const sign = 100 * m > cm ? '>' : 100 * m < cm ? '<' : '='
-        return { text: `Sett inn riktig tegn: <, > eller =.\n${m} m ___ ${cm} cm`, solution: `${m} m ${sign} ${cm} cm  (${m} m = ${100 * m} cm)` }
+        const [a, b] = [vary(n, i, 1, 3), vary(n + 1, i, 1, 9)]
+        if (i % 2 === 0) {
+          return { text: `Gjør om ${a},${b} liter til desiliter.`, solution: `${a * 10 + b} dl  (${a} liter er ${a * 10} dl, og 0,${b} liter er ${b} dl.)` }
+        }
+        const item = pick(['En pose poteter', 'En sekk med jord', 'En pose mel'], i + n)
+        return { text: `${item} veier ${a},${b} kg på butikkvekta. Skriv vekten i gram.`, solution: `${a * 1000 + b * 100} g  (${a} kg er ${a * 1000} g, og 0,${b} kg er ${b * 100} g.)` }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const [a, b] = [vary(n, i, 1, 3), vary(n + 1, i, 1, 9)]
+        if (i % 2 === 0) {
+          // Den andre kanna har 1–3 dl mer eller mindre (aldri like mye).
+          const dl = 10 * a + b
+          const other = dl + pick([-3, -2, -1, 1, 2, 3], i + n)
+          const [red, blue] = [`${a},${b} liter`, `${other} dl`]
+          const winner = other > dl ? ['Den blå kanna', blue] : ['Den røde kanna', red]
+          return {
+            text: `Den røde kanna rommer ${red}. Den blå kanna rommer ${blue}. Hvilken kanne rommer mest? Forklar med samme enhet.`,
+            solution: `${winner[0]} rommer mest: ${winner[1]}. ${red} er ${dl} dl, og ${Math.max(dl, other)} dl er mer enn ${Math.min(dl, other)} dl.`,
+          }
+        }
+        // Masse: 0,b kg mot gram som er 50 g mer eller mindre.
+        const grams = 100 * b + pick([-50, 50], i + n)
+        const heavy = grams > 100 * b ? `${grams} g` : `0,${b} kg`
+        return {
+          text: `En pakke veier 0,${b} kg. En annen pakke veier ${grams} g. Hvilken pakke er tyngst? Forklar med samme enhet.`,
+          solution: `Pakken på ${heavy} er tyngst. 0,${b} kg er ${100 * b} g, og ${Math.max(grams, 100 * b)} g er mer enn ${Math.min(grams, 100 * b)} g.`,
+        }
       }),
   ),
   'mal.kg-g': byLevel(
@@ -1333,7 +1367,7 @@ const skillTasks: Record<string, Generator> = {
         const start = 5 * vary(n, i, 1, 5)
         const end = start + 5 * vary(n + 3, i, 3, 6)
         const pad = (m: number) => String(m).padStart(2, '0')
-        return [H, end, '-', start, `Filmen begynner kl. 18.${pad(start)} og slutter kl. 18.${pad(end)}. Hvor mange minutter varer den?`]
+        return [H, end, '-', start, `Filmen begynner kl. 18:${pad(start)} og slutter kl. 18:${pad(end)}. Hvor mange minutter varer den?`]
       }),
     (n) =>
       five((i): TaskSpec => {
@@ -1996,8 +2030,21 @@ const numbersProfile = (area: NumbersAndOperationsArea, focus: string, { taskVar
   ) as Record<Level, LevelProfile>,
 })
 
-/** Måleøkt. */
+/** Hva måleøktene ikke skal ha, per fagområde (i tillegg til det felles). */
+const MEASURE_AVOID: Record<MeasurementArea, string> = {
+  'volum-liter-desiliter': 'Milliliter, centiliter og desimaltall (desimaltall hører til økta om desimaltall i måling)',
+  'desimaltall-maling': 'Hundredeler (f.eks. 1,25 kg), desimaltall i dL eller g, og lengder (hører til Tall og regning)',
+  'kilogram-gram': 'Tonn, milligram og vekter som ikke er rimelige for tingen som veies',
+  'areal-omkrets': 'Areal i lengdeenheter, omkrets i kvadratenheter og omkrets av sammensatte figurer uten at det står hvordan delene ligger',
+  tid: 'Tid regnet som om en time har 100 minutter, klokkeslett med punktum og urskiver som ikke vises',
+}
+
+/**
+ * Måleøkt. Fagområdet styrer referansene og kontrollene på serveren; enhetene sier hva AI-en kan bruke.
+ * Underpunktene i innholdsplanen er samlet i fem fagområder (se MEASUREMENT_AREAS i ai/contract.ts).
+ */
 const measureProfile = (
+  area: MeasurementArea,
   focus: string,
   units: string[],
   operations: Operator[],
@@ -2005,11 +2052,18 @@ const measureProfile = (
   extra: Partial<TaskProfile> = {},
 ): TaskProfile => ({
   focus,
+  area,
   operations,
   units,
   formats: ['Hoderegning', 'Tekstoppgave'],
-  steps: 'Ett steg, høyst to på nivå 3. Ingen delspørsmål.',
-  avoid: ['Rene gangestykker der måleenheten ikke betyr noe', 'Kubeoppgaver som bare er gangestykker'],
+  steps: 'Nivå 1: ett steg. Nivå 2: ett eller to steg. Nivå 3: to steg, vurdering eller forklaring. Høyst to korte spørsmål i samme oppgave.',
+  avoid: [
+    MEASURE_AVOID[area],
+    'Svar uten enhet',
+    'Rene gangestykker der måleenheten ikke betyr noe',
+    'Kubeoppgaver som bare er gangestykker',
+    'Henvisninger til figurer, klokker eller bilder som ikke vises («se figuren», «se på klokka»)',
+  ],
   figures: false,
   levels: { 1: levels[0], 2: levels[1], 3: levels[2] },
   ...extra,
@@ -2613,8 +2667,10 @@ export const unitSpecs: UnitSpec[] = [
     title: 'Måling',
     topic: 'Måling',
     area: 'Måling',
-    description: 'Elevene måler volum, masse, areal, omkrets og tid, og bytter mellom måleenheter.',
-    // Hver økt måler én størrelse, så oppgavene og AI-en holder seg til enhetene i overskriften.
+    description: 'Elevene måler volum i liter og desiliter, bruker desimaltall i liter og kilogram, gjør om mellom kilogram og gram, finner areal og omkrets og regner med tid.',
+    // Hver økt hører til ett av de fem fagområdene i Måling (se measureProfile), så oppgavene og AI-en holder seg
+    // til enhetene i overskriften. Økt-ID-ene, rekkefølgen og antallet er de samme som før; økt 3 handlet om lengde
+    // (ikke i innholdsplanen – lengde med desimaltall hører til Tall og regning) og er nå desimaltall i måling.
     weeks: [
       {
         title: 'Uke 1 - volum og masse',
@@ -2622,16 +2678,16 @@ export const unitSpecs: UnitSpec[] = [
           p(
             'Måle volum – liter og desiliter',
             ['mal.volum', 'mal.liter-dl'],
-            measureProfile('Volum: måle i liter og desiliter, og gjøre om mellom dem (1 liter = 10 dl).', ['liter', 'dl', 'ml'], ['+', '-', '*', '/'], [
-              { title: 'Liter og dl', subtitle: 'Hele liter og desiliter.', description: 'Legge sammen og trekke fra desiliter.', numbers: 'Desiliter opp til 10, hele liter opp til 3', units: ['liter', 'dl'] },
-              { title: 'Gjøre om', subtitle: 'Liter til dl og dl til liter.', description: 'Bruke at 1 liter er 10 dl.', numbers: 'Opp til 9 liter og 90 dl', units: ['liter', 'dl'] },
-              { title: 'Sammenligne volum', subtitle: 'Liter, dl, ml og desimaltall.', description: 'Sammenligne og gjøre om med desimaltall.', numbers: 'Desimaltall med tideler (f.eks. 2,5 liter) og liter, dl og ml', units: ['liter', 'dl', 'ml'] },
+            measureProfile('volum-liter-desiliter', 'Volum: måle i liter og desiliter, og gjøre om mellom dem (1 L = 10 dL).', ['L', 'dL'], ['+', '-', '*', '/'], [
+              { title: 'Liter og dl', subtitle: 'Hele liter og desiliter.', description: 'Legge sammen og trekke fra desiliter.', numbers: 'Desiliter opp til 10, hele liter opp til 3', units: ['L', 'dL'] },
+              { title: 'Gjøre om', subtitle: 'Liter til dl og dl til liter.', description: 'Bruke at 1 liter er 10 dl.', numbers: 'Opp til 9 liter og 90 dl', units: ['L', 'dL'] },
+              { title: 'Flere steg', subtitle: 'Liter og desiliter.', description: 'Gjøre om og regne i to steg med hele liter og desiliter.', numbers: 'Hele liter opp til 3 og desiliter opp til 30', units: ['L', 'dL'] },
             ]),
           ),
           p(
             'Kilogram og gram',
             ['mal.kg-g'],
-            measureProfile('Masse: kilogram og gram, og gjøre om mellom dem (1 kg = 1000 g).', ['kg', 'g'], ['+', '*', '/'], [
+            measureProfile('kilogram-gram', 'Masse: kilogram og gram, og gjøre om mellom dem (1 kg = 1000 g).', ['kg', 'g'], ['+', '*', '/'], [
               { title: 'Kilo til gram', subtitle: 'Hele kilo.', description: 'Bruke at 1 kg er 1000 g.', numbers: '1–9 kg', units: ['kg', 'g'] },
               { title: 'Regne med gram', subtitle: 'Hele hundre gram.', description: 'Legge sammen gram.', numbers: '100–900 g', units: ['g'] },
               { title: 'Sammenligne masse', subtitle: 'Kilo og gram.', description: 'Dele opp en kilo og sammenligne kilo og gram.', numbers: 'Opp til 8000 g og 8 kg', units: ['kg', 'g'] },
@@ -2640,24 +2696,24 @@ export const unitSpecs: UnitSpec[] = [
         ],
       },
       {
-        title: 'Uke 2 - lengde og areal',
+        title: 'Uke 2 - desimaltall og areal',
         sessions: [
           p(
-            'Lengde – cm, mm og sammenligne måleenheter',
-            ['mal.lengde'],
-            measureProfile('Lengde: centimeter og millimeter, meter og centimeter, og sammenligne lengder med ulike enheter.', ['km', 'm', 'dm', 'cm', 'mm'], ['+', '*'], [
-              { title: 'Centimeter og millimeter', subtitle: 'cm og mm.', description: 'Bruke at 1 cm er 10 mm.', numbers: '1–20 cm', units: ['cm', 'mm'] },
-              { title: 'Sammenligne lengder', subtitle: 'cm og mm.', description: 'Gjøre om til samme enhet før jeg sammenligner.', numbers: 'Opp til 25 cm og 300 mm', units: ['m', 'cm', 'mm'] },
-              { title: 'Sammenligne måleenheter', subtitle: 'km, m, dm, cm og mm.', description: 'Sammenligne lengder med ulike enheter og løse lengdegåter.', numbers: 'Opp til 5 km og 5 m', units: ['km', 'm', 'dm', 'cm', 'mm'] },
+            'Desimaltall i måling – liter og kilogram',
+            ['mal.desimal'],
+            measureProfile('desimaltall-maling', 'Desimaltall med én desimal i liter og kilogram: 0,1 L = 1 dL og 0,1 kg = 100 g.', ['L', 'dL', 'kg', 'g'], ['+', '-'], [
+              { title: 'Tideler av liter og kilo', subtitle: '0,1 L = 1 dL og 0,1 kg = 100 g.', description: 'Skrive desiliter som tideler av en liter, og gjøre om tideler av en kilo til gram.', numbers: 'Én desimal: 0,1–0,9 L og 0,1–0,9 kg', units: ['L', 'dL', 'kg', 'g'] },
+              { title: 'Gjøre om', subtitle: 'Liter til dl og kilo til gram.', description: 'Gjøre om liter og kilogram med én desimal til desiliter og gram.', numbers: 'Én desimal: opp til 3,9 L og 3,9 kg', units: ['L', 'dL', 'kg', 'g'] },
+              { title: 'Sammenligne og forklare', subtitle: 'Samme enhet.', description: 'Sammenligne mengder i ulike enheter, vurdere omgjøringer og løse problemer i flere steg.', numbers: 'Én desimal: opp til 3,9 L og 0,9 kg', units: ['L', 'dL', 'kg', 'g'] },
             ]),
           ),
           p(
             'Måle areal',
             ['mal.areal'],
-            measureProfile('Areal: telle ruter på 1 cm² og regne ut areal av rektangler som rader · ruter.', ['cm²', 'm²'], ['*'], [
-              { title: 'Telle ruter', subtitle: 'Små rektangler.', description: 'Telle ruter på 1 cm².', numbers: '2–5 rader med 3–8 ruter', units: ['cm²'] },
-              { title: 'Rader og ruter', subtitle: 'Større rektangler.', description: 'Regne rader · ruter.', numbers: '2–9 rader med 3–8 ruter', units: ['cm²'] },
-              { title: 'Areal i cm² og m²', subtitle: 'Sammensatte figurer og m².', description: 'Finne areal og sammenligne cm² og m².', numbers: '2–9 rader med 3–12 ruter, og cm² og m²', units: ['cm²', 'm²'] },
+            measureProfile('areal-omkrets', 'Areal: telle ruter på 1 cm² og regne ut areal av rektangler som rader · ruter.', ['cm²', 'ruter'], ['*'], [
+              { title: 'Telle ruter', subtitle: 'Små rektangler.', description: 'Telle ruter på 1 cm².', numbers: '2–5 rader med 3–8 ruter', units: ['cm²', 'ruter'] },
+              { title: 'Rader og ruter', subtitle: 'Større rektangler.', description: 'Regne rader · ruter.', numbers: '2–9 rader med 3–8 ruter', units: ['cm²', 'ruter'] },
+              { title: 'Areal av større figurer', subtitle: 'Rektangler og sammensatte figurer.', description: 'Finne arealet av større rektangler og figurer satt sammen av ruter.', numbers: '2–9 rader med 3–12 ruter', units: ['cm²', 'ruter'] },
             ], { figures: true }),
           ),
         ],
@@ -2668,7 +2724,7 @@ export const unitSpecs: UnitSpec[] = [
           p(
             'Areal og omkrets',
             ['mal.areal-omkrets'],
-            measureProfile('Areal og omkrets av rektangler og kvadrater.', ['cm', 'cm²'], ['+', '*', '/'], [
+            measureProfile('areal-omkrets', 'Areal og omkrets av rektangler og kvadrater: areal = lengde · bredde i cm², omkrets = summen av sidene i cm.', ['cm', 'cm²'], ['+', '*', '/'], [
               { title: 'Areal', subtitle: 'Rektangler.', description: 'Lengde · bredde.', numbers: 'Sider fra 2 til 9 cm', units: ['cm', 'cm²'] },
               { title: 'Areal og omkrets', subtitle: 'Rektangler.', description: 'Skille mellom areal og omkrets.', numbers: 'Sider fra 2 til 12 cm', units: ['cm', 'cm²'] },
               { title: 'Fra omkrets til areal', subtitle: 'Kvadrater.', description: 'Finne siden ut fra omkretsen.', numbers: 'Omkrets opp til 36 cm', units: ['cm', 'cm²'] },
@@ -2677,7 +2733,7 @@ export const unitSpecs: UnitSpec[] = [
           p(
             'Tid – klokka og hvor lang tid',
             ['mal.tid'],
-            measureProfile('Tid: lese klokka, minutter, kvarter og timer, og regne ut hvor lang tid noe tar.', ['minutter', 'kvarter', 'timer'], ['+', '-', '*'], [
+            measureProfile('tid', 'Tid: lese klokka, minutter, kvarter og timer (1 time = 60 minutter), og regne ut hvor lang tid noe tar. Klokkeslett skrives digitalt med kolon, f.eks. kl. 08:45.', ['minutter', 'kvarter', 'timer'], ['+', '-', '*'], [
               { title: 'Kvarter og halvtimer', subtitle: 'Hel, halv og kvart.', description: 'Lese klokka og regne med kvarter.', numbers: '1–4 kvarter', units: ['minutter', 'kvarter'] },
               { title: 'Hvor lang tid?', subtitle: 'Minutter.', description: 'Regne ut hvor lang tid noe varer.', numbers: 'Opp til 60 minutter', units: ['minutter'] },
               { title: 'Timer og minutter', subtitle: 'Timer.', description: 'Gjøre om mellom timer og minutter.', numbers: 'Opp til 6 timer', units: ['minutter', 'timer'] },
@@ -2686,7 +2742,7 @@ export const unitSpecs: UnitSpec[] = [
         ],
       },
     ],
-    goals: ['Måle og sammenligne volum, masse og lengde.', 'Bytte mellom måleenheter.', 'Finne areal og omkrets.', 'Lese klokka og regne med tid.'],
+    goals: ['Måle volum og gjøre om mellom liter og desiliter.', 'Bruke desimaltall i liter og kilogram.', 'Gjøre om mellom kilogram og gram.', 'Finne og skille mellom areal og omkrets.', 'Lese klokka og regne med tid.'],
     levels: [
       { title: 'Måle', subtitle: 'Hele enheter.', description: 'Måle og telle.' },
       { title: 'Bytte enheter', subtitle: 'Liter, dl, kg og g.', description: 'Gjøre om mellom enheter.' },

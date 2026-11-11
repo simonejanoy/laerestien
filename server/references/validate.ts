@@ -1,8 +1,8 @@
-import { DIVISION_AREAS, GEOMETRY_AREAS, MULTIPLICATION_AREAS, NUMBERS_AND_OPERATIONS_AREAS, PLACE_VALUE_AREAS, PROBLEM_SOLVING_AREAS } from '../../src/ai/contract.ts'
+import { DIVISION_AREAS, GEOMETRY_AREAS, MEASUREMENT_AREAS, MULTIPLICATION_AREAS, NUMBERS_AND_OPERATIONS_AREAS, PLACE_VALUE_AREAS, PROBLEM_SOLVING_AREAS } from '../../src/ai/contract.ts'
 import type { ReferenceBank, ReferenceTask } from './types.ts'
 
 // Kontroll av referansebankene. Kjøres når serveren starter (multiplication.ts, placeValue.ts, division.ts, geometry.ts,
-// problemSolving.ts, numbersAndOperations.ts) og i testene.
+// problemSolving.ts, numbersAndOperations.ts, measurement.ts) og i testene.
 
 /** Hva en bank skal inneholde: tema, ID-prefiks (M1-N1-01, T1-N1-01) og fagområdene i rekkefølge. */
 export interface BankSpec {
@@ -17,6 +17,7 @@ export const DIVISION_BANK: BankSpec = { topic: 'divisjon', idPrefix: 'D', areas
 export const GEOMETRY_BANK: BankSpec = { topic: 'geometri', idPrefix: 'G', areas: GEOMETRY_AREAS }
 export const PROBLEM_SOLVING_BANK: BankSpec = { topic: 'problemlosing', idPrefix: 'P', areas: PROBLEM_SOLVING_AREAS }
 export const NUMBERS_AND_OPERATIONS_BANK: BankSpec = { topic: 'tall-og-regning', idPrefix: 'TR', areas: NUMBERS_AND_OPERATIONS_AREAS }
+export const MEASUREMENT_BANK: BankSpec = { topic: 'maling', idPrefix: 'MA', areas: MEASUREMENT_AREAS }
 const REQUIRED_TEXT = ['id', 'topic', 'area', 'areaTitle', 'title', 'format', 'purpose', 'studentText', 'solution'] as const
 
 export interface BankCheck {
@@ -112,7 +113,11 @@ const STEP_LABEL = /\b(steg|trinn|del)\s*$/i
 function operatorBefore(text: string) {
   const trimmed = text.trimEnd()
   const last = trimmed.slice(-1)
-  if (last === ':') return /[\d)]$/.test(trimmed.slice(0, -1).trimEnd())
+  // Kolon etter et tall, eller med mellomrom etter en måling («2000 g : 4 = 500 g»), er et deletegn – ikke kolon etter et ord.
+  if (last === ':') {
+    const before = trimmed.slice(0, -1)
+    return /[\d)]$/.test(before.trimEnd()) || /\d\s*(mm|cm|dm|m|cm²|m²|g|kg|l|dl|min)\s$/i.test(before)
+  }
   return last === '_' || (last !== '' && OPERATOR.test(last))
 }
 

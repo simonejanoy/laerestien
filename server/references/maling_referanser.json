@@ -1,0 +1,908 @@
+{
+  "schemaVersion": 1,
+  "topic": "maling",
+  "description": "Referansebank for AI-generering av ekstraoppgaver i Måling. Referansene styrer fagområde, innhold, oppgavetype, tallområde, nivå, språk og representasjon. De skal ikke vises direkte til elever. Ingen eksterne oppgaveark er brukt. Oppgavene er skrevet for Lærestien. Progresjon og oppgavetyper følger innholdsplanen for 4. trinn.",
+  "referenceCount": 45,
+  "references": [
+    {
+      "id": "MA1-N1-01",
+      "topic": "maling",
+      "area": "volum-liter-desiliter",
+      "areaTitle": "Volum, liter og desiliter",
+      "level": 1,
+      "title": "Terninger i en eske",
+      "format": "telle-volum",
+      "purpose": "Eleven finner volumet til et lag som antall like terninger.",
+      "studentText": "En eske fylles med like store terninger. Bunnen har 3 rader med 4 terninger i hver rad. Det er bare ett lag. Hvor mange terninger er det i esken?",
+      "solution": "12 terninger. 3 · 4 = 12.",
+      "workedSolution": "Hver rad har 4 terninger. 3 rader gir 12.",
+      "representationHint": "Tegn 3 rader med 4 ruter.",
+      "teacherNote": "Volumet måles her i antall terninger.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA1-N1-02",
+      "topic": "maling",
+      "area": "volum-liter-desiliter",
+      "areaTitle": "Volum, liter og desiliter",
+      "level": 1,
+      "title": "Liter til desiliter",
+      "format": "enheter",
+      "purpose": "Eleven gjør om fra liter til desiliter.",
+      "studentText": "1 liter er 10 desiliter. Hvor mange desiliter er 3 liter?",
+      "solution": "30 dL.",
+      "workedSolution": "Hver liter er 10 dL. 3 · 10 = 30.",
+      "representationHint": null,
+      "teacherNote": "Enheten må være med i svaret.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA1-N1-03",
+      "topic": "maling",
+      "area": "volum-liter-desiliter",
+      "areaTitle": "Volum, liter og desiliter",
+      "level": 1,
+      "title": "Fyll mugga",
+      "format": "situasjon",
+      "purpose": "Eleven bruker at 1 L = 10 dL til å finne antall glass.",
+      "studentText": "Et glass rommer 2 dL. Hvor mange fulle glass trenger du for å fylle en mugge som rommer 1 liter?",
+      "solution": "5 glass. 1 L = 10 dL, og 10 : 2 = 5.",
+      "workedSolution": "2, 4, 6, 8, 10 dL. Det er 5 glass.",
+      "representationHint": "[ 2 dL ][ 2 dL ][ 2 dL ][ 2 dL ][ 2 dL ] = 1 L",
+      "teacherNote": "Eleven må gjøre om til desiliter først.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA1-N2-01",
+      "topic": "maling",
+      "area": "volum-liter-desiliter",
+      "areaTitle": "Volum, liter og desiliter",
+      "level": 2,
+      "title": "To lag",
+      "format": "telle-volum",
+      "purpose": "Eleven finner volumet av en eske med flere lag.",
+      "studentText": "En eske har 2 lag med like store terninger. Hvert lag har 3 rader med 5 terninger. Hvor mange terninger er det i esken?",
+      "solution": "30 terninger. Ett lag: 3 · 5 = 15. To lag: 2 · 15 = 30.",
+      "workedSolution": "Finn først antall i ett lag, og gang så med antall lag.",
+      "representationHint": null,
+      "teacherNote": "Volumet måles i antall terninger.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA1-N2-02",
+      "topic": "maling",
+      "area": "volum-liter-desiliter",
+      "areaTitle": "Volum, liter og desiliter",
+      "level": 2,
+      "title": "Hvilken rommer mest?",
+      "format": "sammenligne",
+      "purpose": "Eleven sammenligner volum gitt i ulike enheter.",
+      "studentText": "Hvilken flaske rommer mest: en flaske på 15 dL eller en flaske på 2 L? Forklar.",
+      "solution": "Flasken på 2 L rommer mest. 2 L = 20 dL, og 20 dL er mer enn 15 dL.",
+      "workedSolution": "Gjør om til samme enhet før du sammenligner.",
+      "representationHint": null,
+      "teacherNote": "Vanlig feil er å svare 15 dL fordi 15 er større enn 2.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA1-N2-03",
+      "topic": "maling",
+      "area": "volum-liter-desiliter",
+      "areaTitle": "Volum, liter og desiliter",
+      "level": 2,
+      "title": "Bland saft",
+      "format": "situasjon",
+      "purpose": "Eleven legger sammen volum og gjør om til liter.",
+      "studentText": "Du blander 2 dL saft og 8 dL vann. Hvor mye blir det til sammen? Svar både i desiliter og i liter.",
+      "solution": "10 dL, som er 1 L.",
+      "workedSolution": "2 dL + 8 dL = 10 dL. 10 dL er 1 L.",
+      "representationHint": null,
+      "teacherNote": "Begge enhetene skal være med.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA1-N3-01",
+      "topic": "maling",
+      "area": "volum-liter-desiliter",
+      "areaTitle": "Volum, liter og desiliter",
+      "level": 3,
+      "title": "Har Emma rett?",
+      "format": "feilvurdering",
+      "purpose": "Eleven vurderer en sammenligning der enhetene er ulike.",
+      "studentText": "Emma sier at 4 L er mindre enn 25 dL, fordi 4 er mindre enn 25. Har Emma rett? Forklar.",
+      "solution": "Nei. 4 L = 40 dL, og 40 dL er mer enn 25 dL.",
+      "workedSolution": "Emma sammenligner tallene uten å se på enhetene.",
+      "representationHint": null,
+      "teacherNote": "Be eleven alltid gjøre om til samme enhet.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA1-N3-02",
+      "topic": "maling",
+      "area": "volum-liter-desiliter",
+      "areaTitle": "Volum, liter og desiliter",
+      "level": 3,
+      "title": "Fyll akvariet",
+      "format": "flersteg",
+      "purpose": "Eleven løser et volumproblem med to steg og gjør om mellom enheter.",
+      "studentText": "Et akvarium rommer 12 L. Du fyller det med en bøtte som rommer 3 L. Hvor mange fulle bøtter trengs? Hvor mange desiliter rommer akvariet?",
+      "solution": "4 bøtter. 12 : 3 = 4. Akvariet rommer 120 dL. 12 · 10 = 120.",
+      "workedSolution": "Først antall bøtter. Så omgjøring fra liter til desiliter.",
+      "representationHint": null,
+      "teacherNote": "Begge svarene trenger enhet eller benevning.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA1-N3-03",
+      "topic": "maling",
+      "area": "volum-liter-desiliter",
+      "areaTitle": "Volum, liter og desiliter",
+      "level": 3,
+      "title": "Samme volum, ulik form",
+      "format": "lag-oppgave",
+      "purpose": "Eleven lager to esker med samme volum og ulik form.",
+      "studentText": "Lag to ulike esker som begge rommer nøyaktig 12 like terninger. Skriv for hver eske hvor mange lag, hvor mange rader i hvert lag og hvor mange terninger i hver rad det er. Forklar hvordan du vet at begge har 12.",
+      "solution": "For eksempel 1 lag med 3 rader på 4 terninger, og 2 lag med 2 rader på 3 terninger. Lag · rader · terninger i raden må bli 12.",
+      "workedSolution": "1 · 3 · 4 = 12 og 2 · 2 · 3 = 12.",
+      "representationHint": null,
+      "teacherNote": "Godta alle riktige kombinasjoner.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA2-N1-01",
+      "topic": "maling",
+      "area": "desimaltall-maling",
+      "areaTitle": "Desimaltall i måling",
+      "level": 1,
+      "title": "En halv liter",
+      "format": "desimal-enhet",
+      "purpose": "Eleven skriver desiliter som tideler av en liter.",
+      "studentText": "En flaske rommer 5 dL. Hvor mange liter er det? Skriv svaret som desimaltall.",
+      "solution": "0,5 L.",
+      "workedSolution": "1 dL er en tidel av en liter. 5 dL er 5 tideler, altså 0,5 L.",
+      "representationHint": "1 L = [ 1 dL ][ 1 dL ][ 1 dL ][ 1 dL ][ 1 dL ][ 1 dL ][ 1 dL ][ 1 dL ][ 1 dL ][ 1 dL ]",
+      "teacherNote": "Enheten må være med i svaret.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA2-N1-02",
+      "topic": "maling",
+      "area": "desimaltall-maling",
+      "areaTitle": "Desimaltall i måling",
+      "level": 1,
+      "title": "Liter og desiliter",
+      "format": "desimal-enhet",
+      "purpose": "Eleven skriver liter og desiliter som ett desimaltall i liter.",
+      "studentText": "En mugge rommer 1 liter og 3 desiliter. Skriv hvor mye mugga rommer i liter, som desimaltall.",
+      "solution": "1,3 L.",
+      "workedSolution": "1 hel liter og 3 tideler av en liter.",
+      "representationHint": null,
+      "teacherNote": "Enheten må være med i svaret.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA2-N1-03",
+      "topic": "maling",
+      "area": "desimaltall-maling",
+      "areaTitle": "Desimaltall i måling",
+      "level": 1,
+      "title": "Tideler av et kilo",
+      "format": "desimal-enhet",
+      "purpose": "Eleven ser at en tidel av et kilogram er 100 gram.",
+      "studentText": "1 kg er 1000 g. 0,1 kg er 100 g. Hvor mange gram er 0,3 kg?",
+      "solution": "300 g.",
+      "workedSolution": "0,3 kg er 3 tideler av et kilogram. 3 · 100 g = 300 g.",
+      "representationHint": null,
+      "teacherNote": "Enheten må være med i svaret.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA2-N2-01",
+      "topic": "maling",
+      "area": "desimaltall-maling",
+      "areaTitle": "Desimaltall i måling",
+      "level": 2,
+      "title": "Fra liter til desiliter",
+      "format": "desimal-enhet",
+      "purpose": "Eleven gjør om fra liter med én desimal til desiliter.",
+      "studentText": "Skriv 2,4 L i desiliter.",
+      "solution": "24 dL.",
+      "workedSolution": "2 L er 20 dL. 0,4 L er 4 dL. 20 + 4 = 24.",
+      "representationHint": null,
+      "teacherNote": "Vanlig feil er å svare 2,4 dL.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA2-N2-02",
+      "topic": "maling",
+      "area": "desimaltall-maling",
+      "areaTitle": "Desimaltall i måling",
+      "level": 2,
+      "title": "Pose med mel",
+      "format": "desimal-enhet",
+      "purpose": "Eleven gjør om fra kilogram med én desimal til gram.",
+      "studentText": "En pose mel veier 1,5 kg. Hvor mange gram er det?",
+      "solution": "1500 g.",
+      "workedSolution": "1 kg er 1000 g. 0,5 kg er 500 g. 1000 + 500 = 1500.",
+      "representationHint": null,
+      "teacherNote": "Vanlig feil er å svare 150 g.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA2-N2-03",
+      "topic": "maling",
+      "area": "desimaltall-maling",
+      "areaTitle": "Desimaltall i måling",
+      "level": 2,
+      "title": "Hvilken er tyngst?",
+      "format": "sammenligne",
+      "purpose": "Eleven sammenligner masser gitt i ulike enheter.",
+      "studentText": "Hvilken er tyngst: en pakke på 0,8 kg eller en pakke på 750 g? Forklar.",
+      "solution": "Pakken på 0,8 kg er tyngst. 0,8 kg = 800 g, og 800 g er mer enn 750 g.",
+      "workedSolution": "Gjør om til gram før du sammenligner.",
+      "representationHint": null,
+      "teacherNote": "Eleven må bruke samme enhet.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA2-N3-01",
+      "topic": "maling",
+      "area": "desimaltall-maling",
+      "areaTitle": "Desimaltall i måling",
+      "level": 3,
+      "title": "Har Ola rett?",
+      "format": "feilvurdering",
+      "purpose": "Eleven vurderer en feil omgjøring fra kilogram til gram.",
+      "studentText": "Ola sier at 0,5 kg er det samme som 5 g. Har Ola rett? Forklar.",
+      "solution": "Nei. 0,5 kg er 500 g.",
+      "workedSolution": "En tidel av et kilogram er 100 g. 5 tideler er 500 g.",
+      "representationHint": null,
+      "teacherNote": "Ola har trolig tenkt at én tidel er 1 g.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA2-N3-02",
+      "topic": "maling",
+      "area": "desimaltall-maling",
+      "areaTitle": "Desimaltall i måling",
+      "level": 3,
+      "title": "Brus i glass",
+      "format": "flersteg",
+      "purpose": "Eleven løser et volumproblem med desimaltall og flere steg.",
+      "studentText": "Du har 1,5 L brus. Du heller opp 3 glass med 2 dL i hvert. Hvor mye brus er igjen? Svar både i desiliter og i liter.",
+      "solution": "9 dL, som er 0,9 L.",
+      "workedSolution": "1,5 L = 15 dL. 3 · 2 dL = 6 dL. 15 dL − 6 dL = 9 dL = 0,9 L.",
+      "representationHint": null,
+      "teacherNote": "Eleven må gjøre om før de trekker fra.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA2-N3-03",
+      "topic": "maling",
+      "area": "desimaltall-maling",
+      "areaTitle": "Desimaltall i måling",
+      "level": 3,
+      "title": "Sorter volumene",
+      "format": "ordne",
+      "purpose": "Eleven ordner volum gitt i liter og desiliter.",
+      "studentText": "Sorter volumene fra minst til størst: 1,2 L, 9 dL, 0,8 L og 11 dL. Forklar hvordan du tenker.",
+      "solution": "0,8 L, 9 dL, 11 dL, 1,2 L.",
+      "workedSolution": "Gjør om til desiliter: 12 dL, 9 dL, 8 dL og 11 dL.",
+      "representationHint": null,
+      "teacherNote": "Alle volumene må ha samme enhet før de sorteres.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA3-N1-01",
+      "topic": "maling",
+      "area": "kilogram-gram",
+      "areaTitle": "Kilogram og gram",
+      "level": 1,
+      "title": "Gram i kilo",
+      "format": "enheter",
+      "purpose": "Eleven gjør om fra kilogram til gram.",
+      "studentText": "1 kg er 1000 g. Hvor mange gram er 2 kg?",
+      "solution": "2000 g.",
+      "workedSolution": "2 · 1000 g = 2000 g.",
+      "representationHint": null,
+      "teacherNote": "Enheten må være med i svaret.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA3-N1-02",
+      "topic": "maling",
+      "area": "kilogram-gram",
+      "areaTitle": "Kilogram og gram",
+      "level": 1,
+      "title": "Velg enhet",
+      "format": "velge-enhet",
+      "purpose": "Eleven velger passende enhet for å veie ulike ting.",
+      "studentText": "Vil du oppgi vekten av et eple i kilogram eller gram? Hva med vekten av en hund?",
+      "solution": "Eplet i gram. Hunden i kilogram.",
+      "workedSolution": "Lette ting veies i gram, tyngre ting i kilogram.",
+      "representationHint": null,
+      "teacherNote": "Godta begrunnelser om hvor tunge tingene er.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA3-N1-03",
+      "topic": "maling",
+      "area": "kilogram-gram",
+      "areaTitle": "Kilogram og gram",
+      "level": 1,
+      "title": "To bøker",
+      "format": "addisjon",
+      "purpose": "Eleven legger sammen to masser i gram.",
+      "studentText": "En bok veier 400 g. En annen bok veier 300 g. Hvor mye veier bøkene til sammen?",
+      "solution": "700 g.",
+      "workedSolution": "400 g + 300 g = 700 g.",
+      "representationHint": null,
+      "teacherNote": "Enheten må være med i svaret.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA3-N2-01",
+      "topic": "maling",
+      "area": "kilogram-gram",
+      "areaTitle": "Kilogram og gram",
+      "level": 2,
+      "title": "Mer enn ett kilo?",
+      "format": "sammenligne",
+      "purpose": "Eleven legger sammen gram og sammenligner med 1 kg.",
+      "studentText": "En pose epler veier 650 g. En pose pærer veier 450 g. Veier posene til sammen mer enn 1 kg? Forklar.",
+      "solution": "Ja. 650 g + 450 g = 1100 g. Det er 100 g mer enn 1 kg.",
+      "workedSolution": "1 kg = 1000 g.",
+      "representationHint": null,
+      "teacherNote": "Eleven må bruke at 1 kg = 1000 g.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA3-N2-02",
+      "topic": "maling",
+      "area": "kilogram-gram",
+      "areaTitle": "Kilogram og gram",
+      "level": 2,
+      "title": "Kilo og gram",
+      "format": "enheter",
+      "purpose": "Eleven skriver en masse med kilogram og gram i gram.",
+      "studentText": "Skriv 3 kg og 250 g i gram.",
+      "solution": "3250 g.",
+      "workedSolution": "3 kg = 3000 g. 3000 g + 250 g = 3250 g.",
+      "representationHint": null,
+      "teacherNote": "Vanlig feil er 3250 kg eller 325 g.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA3-N2-03",
+      "topic": "maling",
+      "area": "kilogram-gram",
+      "areaTitle": "Kilogram og gram",
+      "level": 2,
+      "title": "Hvor mye mangler?",
+      "format": "subtraksjon",
+      "purpose": "Eleven finner hvor mye som mangler opp til 1 kg.",
+      "studentText": "Du skal bruke 1 kg sukker. Du har 350 g. Hvor mye sukker mangler du?",
+      "solution": "650 g.",
+      "workedSolution": "1 kg = 1000 g. 1000 g − 350 g = 650 g.",
+      "representationHint": null,
+      "teacherNote": "Enheten må være med i svaret.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA3-N3-01",
+      "topic": "maling",
+      "area": "kilogram-gram",
+      "areaTitle": "Kilogram og gram",
+      "level": 3,
+      "title": "Har Sara rett?",
+      "format": "feilvurdering",
+      "purpose": "Eleven vurderer en feil omgjøring med kilogram og gram.",
+      "studentText": "Sara sier at 2 kg og 50 g er det samme som 2500 g. Har Sara rett? Forklar.",
+      "solution": "Nei. 2 kg og 50 g er 2050 g.",
+      "workedSolution": "2 kg = 2000 g. 2000 g + 50 g = 2050 g.",
+      "representationHint": null,
+      "teacherNote": "Sara har plassert 50 på hundrerplassen.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA3-N3-02",
+      "topic": "maling",
+      "area": "kilogram-gram",
+      "areaTitle": "Kilogram og gram",
+      "level": 3,
+      "title": "Like pakker",
+      "format": "flersteg",
+      "purpose": "Eleven gjør om og deler for å finne massen av én pakke.",
+      "studentText": "4 like pakker veier 2 kg til sammen. Hvor mange gram veier én pakke?",
+      "solution": "500 g.",
+      "workedSolution": "2 kg = 2000 g. 2000 g : 4 = 500 g.",
+      "representationHint": null,
+      "teacherNote": "Eleven må gjøre om til gram før deling.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA3-N3-03",
+      "topic": "maling",
+      "area": "kilogram-gram",
+      "areaTitle": "Kilogram og gram",
+      "level": 3,
+      "title": "Rimelig vekt",
+      "format": "vurdere",
+      "purpose": "Eleven vurderer hvilke vekter som er rimelige.",
+      "studentText": "Velg den rimelige vekten for hver ting, og forklar ett av valgene dine.\nEn sykkel: 12 g eller 12 kg?\nEn blyant: 5 g eller 5 kg?\nEt brød: 750 g eller 750 kg?",
+      "solution": "En sykkel: 12 kg. En blyant: 5 g. Et brød: 750 g.",
+      "workedSolution": "Sammenlign med noe du kjenner, for eksempel at en liter melk veier omtrent 1 kg.",
+      "representationHint": null,
+      "teacherNote": "Forklaringen kan bruke kjente referanser.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA4-N1-01",
+      "topic": "maling",
+      "area": "areal-omkrets",
+      "areaTitle": "Areal og omkrets",
+      "level": 1,
+      "title": "Tell rutene",
+      "format": "areal-ruter",
+      "purpose": "Eleven finner areal som antall ruter.",
+      "studentText": "Tegn et rektangel på rutepapir som er 4 ruter langt og 3 ruter bredt. Hvor mange ruter dekker rektangelet?",
+      "solution": "12 ruter. 3 · 4 = 12.",
+      "workedSolution": "3 rader med 4 ruter i hver.",
+      "representationHint": "Tegn 3 rader med 4 ruter.",
+      "teacherNote": "Arealet oppgis i antall ruter.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA4-N1-02",
+      "topic": "maling",
+      "area": "areal-omkrets",
+      "areaTitle": "Areal og omkrets",
+      "level": 1,
+      "title": "Gå rundt",
+      "format": "omkrets",
+      "purpose": "Eleven finner omkretsen ved å legge sammen alle sidene.",
+      "studentText": "Et rektangel er 5 cm langt og 2 cm bredt. Hva er omkretsen?",
+      "solution": "14 cm.",
+      "workedSolution": "5 cm + 2 cm + 5 cm + 2 cm = 14 cm.",
+      "representationHint": "Rektangel med sidene 5 cm, 2 cm, 5 cm og 2 cm.",
+      "teacherNote": "Omkrets oppgis i lengdeenhet.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA4-N1-03",
+      "topic": "maling",
+      "area": "areal-omkrets",
+      "areaTitle": "Areal og omkrets",
+      "level": 1,
+      "title": "Areal eller omkrets?",
+      "format": "velge-begrep",
+      "purpose": "Eleven avgjør om en situasjon handler om areal eller omkrets.",
+      "studentText": "Du skal sette gjerde rundt en hage. Trenger du å vite arealet eller omkretsen? Du skal legge ny plen i hele hagen. Trenger du å vite arealet eller omkretsen?",
+      "solution": "Gjerde: omkrets. Plen: areal.",
+      "workedSolution": "Gjerdet går rundt hagen. Plenen dekker hagen.",
+      "representationHint": null,
+      "teacherNote": "Kjernen i området er å skille begrepene.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA4-N2-01",
+      "topic": "maling",
+      "area": "areal-omkrets",
+      "areaTitle": "Areal og omkrets",
+      "level": 2,
+      "title": "Areal og omkrets",
+      "format": "areal-og-omkrets",
+      "purpose": "Eleven finner både areal og omkrets og bruker riktige enheter.",
+      "studentText": "Et rektangel er 6 cm langt og 4 cm bredt. Finn arealet og omkretsen. Husk riktig enhet.",
+      "solution": "Areal: 24 cm². Omkrets: 20 cm.",
+      "workedSolution": "Areal: 6 · 4 = 24. Omkrets: 6 + 4 + 6 + 4 = 20.",
+      "representationHint": null,
+      "teacherNote": "Areal i cm², omkrets i cm.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA4-N2-02",
+      "topic": "maling",
+      "area": "areal-omkrets",
+      "areaTitle": "Areal og omkrets",
+      "level": 2,
+      "title": "Kvadrat",
+      "format": "areal-og-omkrets",
+      "purpose": "Eleven finner areal og omkrets av et kvadrat.",
+      "studentText": "Et kvadrat har sider som er 5 m lange. Finn omkretsen og arealet.",
+      "solution": "Omkrets: 20 m. Areal: 25 m².",
+      "workedSolution": "Omkrets: 4 · 5 = 20. Areal: 5 · 5 = 25.",
+      "representationHint": null,
+      "teacherNote": "Alle sidene i et kvadrat er like lange.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA4-N2-03",
+      "topic": "maling",
+      "area": "areal-omkrets",
+      "areaTitle": "Areal og omkrets",
+      "level": 2,
+      "title": "Finn siden",
+      "format": "ukjent-side",
+      "purpose": "Eleven finner en ukjent side ut fra arealet, og bruker den til å finne omkretsen.",
+      "studentText": "Et rektangel har arealet 24 cm². Den ene siden er 3 cm. Hvor lang er den andre siden? Hva er omkretsen?",
+      "solution": "Den andre siden er 8 cm. Omkretsen er 22 cm.",
+      "workedSolution": "3 · 8 = 24. Omkrets: 3 + 8 + 3 + 8 = 22.",
+      "representationHint": null,
+      "teacherNote": "Eleven må bruke sammenhengen mellom gange og dele.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA4-N3-01",
+      "topic": "maling",
+      "area": "areal-omkrets",
+      "areaTitle": "Areal og omkrets",
+      "level": 3,
+      "title": "Samme areal, ulik omkrets",
+      "format": "lag-oppgave",
+      "purpose": "Eleven ser at figurer med samme areal kan ha ulik omkrets.",
+      "studentText": "Tegn to ulike rektangler på rutepapir som begge dekker 12 ruter. Skriv omkretsen til hvert av dem, målt i rutesider. Hva legger du merke til?",
+      "solution": "For eksempel 3 · 4 med omkrets 14 og 2 · 6 med omkrets 16. Også 1 · 12 med omkrets 26 er riktig. Arealet er likt, men omkretsen er ulik.",
+      "workedSolution": "Omkretsen finnes ved å legge sammen alle sidene.",
+      "representationHint": null,
+      "teacherNote": "Godta alle rektangler med 12 ruter.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA4-N3-02",
+      "topic": "maling",
+      "area": "areal-omkrets",
+      "areaTitle": "Areal og omkrets",
+      "level": 3,
+      "title": "Hva har Leo gjort?",
+      "format": "feilvurdering",
+      "purpose": "Eleven oppdager at areal er brukt i stedet for omkrets.",
+      "studentText": "Leo sier at et rektangel som er 7 cm langt og 3 cm bredt, har omkretsen 21 cm. Hva har Leo gjort feil? Finn riktig omkrets.",
+      "solution": "Leo har regnet ut arealet, 21 cm². Omkretsen er 7 + 3 + 7 + 3 = 20 cm.",
+      "workedSolution": "Areal er 7 · 3. Omkrets er summen av sidene.",
+      "representationHint": null,
+      "teacherNote": "Feilen er vanlig og viktig å ta opp.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA4-N3-03",
+      "topic": "maling",
+      "area": "areal-omkrets",
+      "areaTitle": "Areal og omkrets",
+      "level": 3,
+      "title": "Sammensatt figur",
+      "format": "sammensatt-areal",
+      "purpose": "Eleven finner arealet av en figur satt sammen av to rektangler.",
+      "studentText": "En figur består av to rektangler som ikke overlapper. Det ene er 4 cm langt og 2 cm bredt. Det andre er 3 cm langt og 2 cm bredt. Hva er arealet til hele figuren? Forklar.",
+      "solution": "14 cm². 4 · 2 = 8 og 3 · 2 = 6. 8 + 6 = 14.",
+      "workedSolution": "Finn arealet av hver del og legg sammen.",
+      "representationHint": null,
+      "teacherNote": "Bare areal spørres om, siden omkretsen avhenger av hvordan delene ligger.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA5-N1-01",
+      "topic": "maling",
+      "area": "tid",
+      "areaTitle": "Tid",
+      "level": 1,
+      "title": "En halv time",
+      "format": "enheter",
+      "purpose": "Eleven bruker at 1 time er 60 minutter.",
+      "studentText": "1 time er 60 minutter. Hvor mange minutter er en halv time?",
+      "solution": "30 minutter.",
+      "workedSolution": "Halvparten av 60 er 30.",
+      "representationHint": null,
+      "teacherNote": "Svaret skal ha benevning.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA5-N1-02",
+      "topic": "maling",
+      "area": "tid",
+      "areaTitle": "Tid",
+      "level": 1,
+      "title": "Hvor lang er filmen?",
+      "format": "tidsintervall",
+      "purpose": "Eleven finner et tidsintervall i hele og halve timer.",
+      "studentText": "En film starter kl. 17:00 og slutter kl. 18:30. Hvor lang er filmen?",
+      "solution": "1 time og 30 minutter.",
+      "workedSolution": "Fra 17:00 til 18:00 er 1 time. Fra 18:00 til 18:30 er 30 minutter.",
+      "representationHint": "17:00 ---1 t--- 18:00 ---30 min--- 18:30",
+      "teacherNote": "Tidslinje: 17:00 - 18:00 - 18:30.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA5-N1-03",
+      "topic": "maling",
+      "area": "tid",
+      "areaTitle": "Tid",
+      "level": 1,
+      "title": "Les klokka",
+      "format": "klokkeslett",
+      "purpose": "Eleven leser et helt klokkeslett ut fra viserne og skriver det digitalt.",
+      "studentText": "Det er ettermiddag. Den lille viseren peker på 3, og den store viseren peker på 12. Hva er klokka? Skriv klokkeslettet slik en digital klokke viser det.",
+      "solution": "Klokka er 15:00.",
+      "workedSolution": "Den store viseren på 12 betyr hel time. Om ettermiddagen er klokka 3 det samme som 15.",
+      "representationHint": null,
+      "teacherNote": "«Ettermiddag» gjør svaret entydig.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA5-N2-01",
+      "topic": "maling",
+      "area": "tid",
+      "areaTitle": "Tid",
+      "level": 2,
+      "title": "Over timen",
+      "format": "tidsintervall",
+      "purpose": "Eleven finner et tidsintervall som går over en hel time.",
+      "studentText": "Bussen går kl. 08:45 og er fremme kl. 09:20. Hvor lang tid tar turen?",
+      "solution": "35 minutter.",
+      "workedSolution": "Fra 08:45 til 09:00 er 15 minutter. Fra 09:00 til 09:20 er 20 minutter. 15 + 20 = 35.",
+      "representationHint": "08:45 ---15 min--- 09:00 ---20 min--- 09:20",
+      "teacherNote": "Hopp til hel time først.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA5-N2-02",
+      "topic": "maling",
+      "area": "tid",
+      "areaTitle": "Tid",
+      "level": 2,
+      "title": "Når er du ferdig?",
+      "format": "sluttid",
+      "purpose": "Eleven finner sluttidspunkt ut fra starttid og varighet.",
+      "studentText": "Fotballtreningen starter kl. 16:30 og varer i 1 time og 15 minutter. Når er treningen ferdig?",
+      "solution": "Kl. 17:45.",
+      "workedSolution": "16:30 + 1 time = 17:30. 17:30 + 15 minutter = 17:45.",
+      "representationHint": null,
+      "teacherNote": "Legg til timene først, så minuttene.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA5-N2-03",
+      "topic": "maling",
+      "area": "tid",
+      "areaTitle": "Tid",
+      "level": 2,
+      "title": "Timer og minutter",
+      "format": "enheter",
+      "purpose": "Eleven gjør om mellom timer og minutter.",
+      "studentText": "Skriv 90 minutter i timer og minutter. Skriv 2 timer i minutter.",
+      "solution": "90 minutter er 1 time og 30 minutter. 2 timer er 120 minutter.",
+      "workedSolution": "60 minutter er 1 time. 90 − 60 = 30. 2 · 60 = 120.",
+      "representationHint": null,
+      "teacherNote": "Vanlig feil er å tenke at 1 time er 100 minutter.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA5-N3-01",
+      "topic": "maling",
+      "area": "tid",
+      "areaTitle": "Tid",
+      "level": 3,
+      "title": "Har Nora rett?",
+      "format": "feilvurdering",
+      "purpose": "Eleven vurderer en feil der tid regnes som om timen hadde 100 minutter.",
+      "studentText": "Nora skal finne tiden fra kl. 10:40 til kl. 11:30. Hun regner 1130 − 1040 = 90 og sier at det er 90 minutter. Har Nora rett? Forklar.",
+      "solution": "Nei. Det er 50 minutter. Fra 10:40 til 11:00 er 20 minutter, og fra 11:00 til 11:30 er 30 minutter.",
+      "workedSolution": "En time har 60 minutter, ikke 100. Derfor kan klokkeslett ikke trekkes fra som vanlige tall.",
+      "representationHint": null,
+      "teacherNote": "Feilen er vanlig og viktig å ta opp.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA5-N3-02",
+      "topic": "maling",
+      "area": "tid",
+      "areaTitle": "Tid",
+      "level": 3,
+      "title": "Skoledagen",
+      "format": "flersteg",
+      "purpose": "Eleven finner tid til undervisning ved å trekke fra pauser i et tidsintervall.",
+      "studentText": "Skolen starter kl. 08:30 og slutter kl. 14:00. Det er to friminutt på 15 minutter hver og en matpause på 30 minutter. Hvor lang tid er det undervisning? Vis hvordan du regner.",
+      "solution": "4 timer og 30 minutter.",
+      "workedSolution": "Hele skoledagen: 5 timer og 30 minutter. Pauser: 15 + 15 + 30 = 60 minutter. 5 t 30 min − 1 t = 4 t 30 min.",
+      "representationHint": null,
+      "teacherNote": "Eleven må først finne hele intervallet.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    },
+    {
+      "id": "MA5-N3-03",
+      "topic": "maling",
+      "area": "tid",
+      "areaTitle": "Tid",
+      "level": 3,
+      "title": "Når må du gå?",
+      "format": "starttid",
+      "purpose": "Eleven regner bakover i tid fra et gitt klokkeslett.",
+      "studentText": "Du skal være ved kinoen 10 minutter før filmen starter kl. 18:00. Det tar 25 minutter å gå dit. Når må du gå hjemmefra? Forklar.",
+      "solution": "Kl. 17:25.",
+      "workedSolution": "Du må være der kl. 17:50. 17:50 − 25 minutter = 17:25.",
+      "representationHint": null,
+      "teacherNote": "Regning bakover i tid er krevende og passer nivå 3.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "maling_referanser.json"
+      }
+    }
+  ]
+}
