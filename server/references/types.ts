@@ -31,6 +31,14 @@ export interface ReferenceTask {
   /** Eventuell representasjon (figuren finnes bare i PDF-en). */
   representationHint: string | null
   teacherNote: string | null
+  /** Problemløsing: løsningsforslag med alle steg (bare til læreren og kontrollen – sendes ikke til AI-en). */
+  workedSolution?: string
+  /** Problemløsing: «kort» svar eller «forklaring». */
+  answerForm?: 'kort' | 'forklaring'
+  /** Flervalg: alternativene i rekkefølge (A, B, C …). De står også i elevteksten. */
+  options?: string[]
+  /** Flervalg: bokstavene til de riktige alternativene. Mer enn én bare når elevteksten sier det. */
+  correctOptions?: string[]
   source: ReferenceSource
 }
 

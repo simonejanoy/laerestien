@@ -1,0 +1,801 @@
+{
+  "schemaVersion": 1,
+  "topic": "problemlosing",
+  "description": "Referansebank for AI-generering av ekstraoppgaver i Problemløsing. Referansene styrer fagområde, innhold, oppgavetype, tallområde, nivå, språk og representasjon. De skal ikke vises direkte til elever. Ingen eksterne oppgaveark er brukt. Oppgavene er skrevet for Lærestien. Progresjon og oppgavetyper følger innholdsplanen for 4. trinn.",
+  "referenceCount": 36,
+  "references": [
+    {
+      "id": "P1-N1-01",
+      "topic": "problemlosing",
+      "area": "regnefortelling-regneuttrykk",
+      "areaTitle": "Regnefortellinger og regneuttrykk",
+      "level": 1,
+      "title": "Fra fortelling til uttrykk",
+      "format": "regnefortelling",
+      "purpose": "Eleven oversetter en kort fortelling med ett steg til et regneuttrykk.",
+      "studentText": "Ida har 34 klinkekuler. Hun får 18 klinkekuler av broren sin. Hvor mange klinkekuler har Ida nå? Skriv regneuttrykket og svaret.",
+      "solution": "34 + 18 = 52. Ida har 52 klinkekuler.",
+      "workedSolution": "Ida får flere, så vi legger sammen: 34 + 18 = 52.",
+      "representationHint": "Tegn tiere og enere for 34 og 18.",
+      "teacherNote": "Se etter at eleven skriver uttrykket, ikke bare svaret.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P1-N1-02",
+      "topic": "problemlosing",
+      "area": "regnefortelling-regneuttrykk",
+      "areaTitle": "Regnefortellinger og regneuttrykk",
+      "level": 1,
+      "title": "Lag en fortelling til et uttrykk",
+      "format": "lag-regnefortelling",
+      "purpose": "Eleven lager en enkel fortelling som passer til et gitt subtraksjonsuttrykk.",
+      "studentText": "Lag en kort regnefortelling som passer til regneuttrykket 45 − 12. Fortellingen skal slutte med et spørsmål. Regn ut svaret.",
+      "solution": "45 − 12 = 33. Fortellingen må handle om at 12 tas bort fra 45, eller om forskjellen mellom 45 og 12.",
+      "workedSolution": "Eksempel: Det er 45 bøker i en kasse. 12 bøker blir lånt ut. Hvor mange bøker er igjen i kassen? 45 − 12 = 33.",
+      "representationHint": null,
+      "teacherNote": "Godta både «ta bort»- og «forskjell»-fortellinger.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P1-N1-03",
+      "topic": "problemlosing",
+      "area": "regnefortelling-regneuttrykk",
+      "areaTitle": "Regnefortellinger og regneuttrykk",
+      "level": 1,
+      "title": "Velg uttrykket som passer",
+      "format": "velg-regneuttrykk",
+      "purpose": "Eleven kjenner igjen like grupper og velger multiplikasjon.",
+      "studentText": "I et klasserom står det 5 bord. Ved hvert bord sitter 4 elever. Hvilket regneuttrykk passer: 5 + 4, 5 · 4 eller 5 − 4? Hvor mange elever er det?",
+      "solution": "5 · 4 passer. 5 · 4 = 20. Det er 20 elever.",
+      "workedSolution": "Det er 5 like grupper med 4 i hver, så vi bruker gange: 5 · 4 = 20.",
+      "representationHint": "5 bord med 4 prikker ved hvert bord.",
+      "teacherNote": "Elever som velger 5 + 4, ser ikke de like gruppene ennå.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P1-N2-01",
+      "topic": "problemlosing",
+      "area": "regnefortelling-regneuttrykk",
+      "areaTitle": "Regnefortellinger og regneuttrykk",
+      "level": 2,
+      "title": "Ett uttrykk for to hendelser",
+      "format": "regnefortelling",
+      "purpose": "Eleven skriver ett regneuttrykk med to regnetegn som beskriver hele fortellingen.",
+      "studentText": "På en hylle i biblioteket står det 126 bøker. 38 bøker blir lånt ut, og 15 bøker blir levert tilbake. Skriv ett regneuttrykk som viser hvor mange bøker som står på hylla nå. Regn ut.",
+      "solution": "126 − 38 + 15 = 103. Det står 103 bøker på hylla.",
+      "workedSolution": "126 − 38 = 88. 88 + 15 = 103.",
+      "representationHint": null,
+      "teacherNote": "Målet er ett samlet uttrykk, ikke to løse regnestykker.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P1-N2-02",
+      "topic": "problemlosing",
+      "area": "regnefortelling-regneuttrykk",
+      "areaTitle": "Regnefortellinger og regneuttrykk",
+      "level": 2,
+      "title": "Fortelling til et sammensatt uttrykk",
+      "format": "lag-regnefortelling",
+      "purpose": "Eleven lager en fortelling der både gange og pluss har en tydelig betydning.",
+      "studentText": "Lag en regnefortelling som passer til regneuttrykket 3 · 8 + 5. Fortellingen skal slutte med et spørsmål. Regn ut svaret.",
+      "solution": "3 · 8 + 5 = 29. Fortellingen må ha 3 like grupper med 8 i hver, og deretter 5 til.",
+      "workedSolution": "Eksempel: Det er 3 poser med 8 epler i hver. I tillegg ligger det 5 løse epler i kurven. Hvor mange epler er det til sammen? 3 · 8 = 24, 24 + 5 = 29.",
+      "representationHint": null,
+      "teacherNote": "Sjekk at tallet 5 ikke blir en sjette eller niende gruppe i fortellingen.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P1-N2-03",
+      "topic": "problemlosing",
+      "area": "regnefortelling-regneuttrykk",
+      "areaTitle": "Regnefortellinger og regneuttrykk",
+      "level": 2,
+      "title": "Hvilket uttrykk viser vekslepengene?",
+      "format": "velg-regneuttrykk",
+      "purpose": "Eleven velger det uttrykket som beskriver en handel med to varer og vekslepenger.",
+      "studentText": "Jonas kjøper en ball til 89 kr og en flaske vann til 25 kr. Han betaler med 200 kr. Hvilket regneuttrykk viser hvor mye han får igjen?\nA) 200 − 89 + 25\nB) 200 − 89 − 25\nC) 89 + 25 − 200\nRegn ut hvor mye Jonas får igjen.",
+      "solution": "B. 200 − 89 − 25 = 86. Jonas får 86 kr igjen.",
+      "workedSolution": "Begge varene skal trekkes fra 200 kr: 200 − 89 = 111, 111 − 25 = 86.",
+      "representationHint": null,
+      "teacherNote": "A er en vanlig feil: eleven ser at noe skal legges til, men ikke hva.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P1-N3-01",
+      "topic": "problemlosing",
+      "area": "regnefortelling-regneuttrykk",
+      "areaTitle": "Regnefortellinger og regneuttrykk",
+      "level": 3,
+      "title": "Finn feilen i uttrykket",
+      "format": "feilvurdering",
+      "purpose": "Eleven vurderer om et regneuttrykk passer til fortellingen og forklarer feilen.",
+      "studentText": "Emil skal løse denne oppgaven: «Det er 64 elever på 4. trinn. 28 av dem går i kor. Hvor mange går ikke i kor?» Emil skriver 64 + 28 = 92. Hva har Emil gjort feil? Skriv riktig regneuttrykk og svar.",
+      "solution": "Emil har lagt sammen i stedet for å trekke fra. Riktig: 64 − 28 = 36. 36 elever går ikke i kor.",
+      "workedSolution": "De 28 i kor er en del av de 64 elevene. Vi finner resten ved å trekke fra: 64 − 28 = 36. Svaret 92 er større enn antall elever, så det kan ikke stemme.",
+      "representationHint": "[ 28 i kor ][ ? ikke i kor ] = 64",
+      "teacherNote": "Be eleven bruke rimelighet: kan svaret være større enn hele trinnet?",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P1-N3-02",
+      "topic": "problemlosing",
+      "area": "regnefortelling-regneuttrykk",
+      "areaTitle": "Regnefortellinger og regneuttrykk",
+      "level": 3,
+      "title": "Hvilke fortellinger passer?",
+      "format": "vurder-fortellinger",
+      "purpose": "Eleven ser at ett uttrykk kan passe til ulike situasjoner, og avviser en som ikke passer.",
+      "studentText": "Hvilke fortellinger passer til regneuttrykket 50 − 17? Det kan være mer enn én. Forklar hvorfor.\nA) Mia hadde 50 kr. Hun brukte 17 kr. Hvor mye har hun igjen?\nB) Mia har 17 kr. Hun får 50 kr til. Hvor mye har hun nå?\nC) Mia har 50 kr, og Ola har 17 kr. Hvor mye mer har Mia enn Ola?",
+      "solution": "A og C passer. 50 − 17 = 33. B passer til 17 + 50.",
+      "workedSolution": "I A tas 17 bort fra 50. I C finner vi forskjellen mellom 50 og 17. I B blir det mer, så vi må legge sammen.",
+      "representationHint": null,
+      "teacherNote": "Oppgaven sier tydelig at flere kan være riktige.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P1-N3-03",
+      "topic": "problemlosing",
+      "area": "regnefortelling-regneuttrykk",
+      "areaTitle": "Regnefortellinger og regneuttrykk",
+      "level": 3,
+      "title": "Forklar hvert tall og tegn",
+      "format": "lag-regnefortelling",
+      "purpose": "Eleven lager en fortelling til et uttrykk med to regnetegn og forklarer hva hver del betyr.",
+      "studentText": "Lag en regnefortelling som passer til regneuttrykket 5 · 12 − 8. Forklar hva 5, 12 og 8 betyr i fortellingen din, og hvorfor det er gange og minus. Regn ut svaret.",
+      "solution": "5 · 12 − 8 = 52. Fortellingen må ha 5 like grupper med 12 i hver, og deretter 8 som tas bort.",
+      "workedSolution": "Eksempel: En klasse kjøper 5 esker med 12 blyanter i hver. De deler ut 8 blyanter. Hvor mange blyanter har de igjen? 5 · 12 = 60, 60 − 8 = 52.",
+      "representationHint": null,
+      "teacherNote": "Forklaringen er viktigere enn konteksten.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P2-N1-01",
+      "topic": "problemlosing",
+      "area": "bruke-modeller",
+      "areaTitle": "Bruke modeller",
+      "level": 1,
+      "title": "Les en blokkmodell",
+      "format": "blokkmodell",
+      "purpose": "Eleven bruker en ferdig blokkmodell for å finne en ukjent del av en helhet.",
+      "studentText": "Sara og Ali har 120 kort til sammen. Sara har 45 kort. Blokkmodellen viser problemet:\n\nTil sammen: 120\n[ Sara: 45 ][ Ali: ? ]\n\nHvor mange kort har Ali?",
+      "solution": "120 − 45 = 75. Ali har 75 kort.",
+      "workedSolution": "Hele blokken er 120. Den ene delen er 45. Den andre delen er 120 − 45 = 75.",
+      "representationHint": null,
+      "teacherNote": "Modellen må stå i elevteksten. Ikke vis til en figur som ikke finnes.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P2-N1-02",
+      "topic": "problemlosing",
+      "area": "bruke-modeller",
+      "areaTitle": "Bruke modeller",
+      "level": 1,
+      "title": "Tegn en tallinje",
+      "format": "tallinje",
+      "purpose": "Eleven tegner en enkel tallinje og bruker den til å finne hvor langt det er igjen.",
+      "studentText": "En tur er 700 meter lang. Lisa har gått 300 meter. Tegn en tallinje fra 0 til 700 med et merke for hver 100 meter. Marker hvor Lisa er. Hvor mange meter har hun igjen?",
+      "solution": "700 − 300 = 400. Lisa har 400 meter igjen.",
+      "workedSolution": "Lisa står ved 300. Fra 300 til 700 er det 4 hopp på 100, altså 400 meter.",
+      "representationHint": "0 - 100 - 200 - 300 - 400 - 500 - 600 - 700. Lisa står ved 300.",
+      "teacherNote": "Instruksjonen sier nøyaktig hvordan tallinjen skal se ut.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P2-N1-03",
+      "topic": "problemlosing",
+      "area": "bruke-modeller",
+      "areaTitle": "Bruke modeller",
+      "level": 1,
+      "title": "Tegn like grupper",
+      "format": "tegn-modell",
+      "purpose": "Eleven tegner like grupper og bruker tegningen til å finne helheten.",
+      "studentText": "Det er 4 poser med 6 epler i hver pose. Tegn 4 bokser med 6 prikker i hver boks. Hvor mange epler er det til sammen?",
+      "solution": "4 · 6 = 24. Det er 24 epler.",
+      "workedSolution": "Tegningen viser 4 grupper med 6. Vi kan telle 6, 12, 18, 24.",
+      "representationHint": "Fire bokser med seks prikker i hver.",
+      "teacherNote": "Tellingen i seksere er en god bro til gangestykket.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P2-N2-01",
+      "topic": "problemlosing",
+      "area": "bruke-modeller",
+      "areaTitle": "Bruke modeller",
+      "level": 2,
+      "title": "Sammenligningsmodell",
+      "format": "blokkmodell",
+      "purpose": "Eleven tegner en sammenligningsmodell og løser et problem i to deler.",
+      "studentText": "Nora har 36 klistremerker. Even har 15 flere enn Nora. Tegn en blokkmodell med én stripe for Nora og én for Even. Hvor mange klistremerker har Even? Hvor mange har de til sammen?",
+      "solution": "Even: 36 + 15 = 51. Til sammen: 36 + 51 = 87.",
+      "workedSolution": "Nora: [ 36 ]\nEven: [ 36 ][ 15 ]\nEven har 51. Til sammen har de 36 + 51 = 87.",
+      "representationHint": "Nora: [ 36 ]  Even: [ 36 ][ 15 ]",
+      "teacherNote": "Vanlig feil er å svare 36 + 15 = 51 på «til sammen».",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P2-N2-02",
+      "topic": "problemlosing",
+      "area": "bruke-modeller",
+      "areaTitle": "Bruke modeller",
+      "level": 2,
+      "title": "Lag en tabell",
+      "format": "tabell",
+      "purpose": "Eleven organiserer informasjon i en tabell og bruker den til å finne svaret.",
+      "studentText": "En bolle koster 8 kr. Lag en tabell som viser hva 1, 2, 3, 4 og 5 boller koster. Hvor mye koster 5 boller?",
+      "solution": "1: 8 kr, 2: 16 kr, 3: 24 kr, 4: 32 kr, 5: 40 kr. 5 boller koster 40 kr.",
+      "workedSolution": "Prisen øker med 8 kr for hver bolle. 5 · 8 = 40.",
+      "representationHint": "Tabell med kolonnene «Antall boller» og «Pris i kr».",
+      "teacherNote": "Se etter at eleven ser mønsteret i tabellen.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P2-N2-03",
+      "topic": "problemlosing",
+      "area": "bruke-modeller",
+      "areaTitle": "Bruke modeller",
+      "level": 2,
+      "title": "Velg og tegn en modell",
+      "format": "tegn-modell",
+      "purpose": "Eleven velger selv en passende modell for en likedeling og bruker den.",
+      "studentText": "Tre venner deler 54 kr likt. Tegn en blokkmodell med tre like deler. Hvor mange kroner får hver venn?",
+      "solution": "54 : 3 = 18. Hver venn får 18 kr.",
+      "workedSolution": "En blokk på 54 delt i 3 like deler:\n[ 18 ][ 18 ][ 18 ]\n18 + 18 + 18 = 54.",
+      "representationHint": "[ ? ][ ? ][ ? ] = 54",
+      "teacherNote": "Godta ulike modeller som viser 3 like deler.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P2-N3-01",
+      "topic": "problemlosing",
+      "area": "bruke-modeller",
+      "areaTitle": "Bruke modeller",
+      "level": 3,
+      "title": "Fortelling til en modell",
+      "format": "tolke-modell",
+      "purpose": "Eleven tolker en blokkmodell og lager en fortelling og et uttrykk som passer.",
+      "studentText": "Se på blokkmodellen:\n\nTil sammen: ?\n[ 25 ][ 25 ][ 25 ][ 25 ][ 10 ]\n\nLag en regnefortelling som passer til modellen. Skriv et regneuttrykk og regn ut.",
+      "solution": "4 · 25 + 10 = 110. Fortellingen må ha 4 like deler på 25 og én del på 10.",
+      "workedSolution": "Eksempel: Ola sparer 25 kr hver uke i 4 uker og får 10 kr av bestemor. Hvor mye har han? 4 · 25 = 100, 100 + 10 = 110.",
+      "representationHint": null,
+      "teacherNote": "Både 25 + 25 + 25 + 25 + 10 og 4 · 25 + 10 er riktige uttrykk.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P2-N3-02",
+      "topic": "problemlosing",
+      "area": "bruke-modeller",
+      "areaTitle": "Bruke modeller",
+      "level": 3,
+      "title": "Er modellen riktig?",
+      "format": "feilvurdering",
+      "purpose": "Eleven vurderer om en modell gjengir problemet riktig.",
+      "studentText": "Oppgave: «Ella har 3 ganger så mange perler som Tor. Tor har 14 perler. Hvor mange perler har Ella?»\nMats tegner denne modellen:\nTor:  [ 14 ]\nElla: [ 14 ][ 14 ]\nEr modellen riktig? Forklar og finn hvor mange perler Ella har.",
+      "solution": "Nei. Ella skal ha 3 blokker på 14. 3 · 14 = 42. Ella har 42 perler.",
+      "workedSolution": "«3 ganger så mange» betyr tre like store blokker. Riktig modell: Ella: [ 14 ][ 14 ][ 14 ]. 14 + 14 + 14 = 42.",
+      "representationHint": null,
+      "teacherNote": "Mats har tegnet «2 ganger». Be eleven tegne riktig modell.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P2-N3-03",
+      "topic": "problemlosing",
+      "area": "bruke-modeller",
+      "areaTitle": "Bruke modeller",
+      "level": 3,
+      "title": "To ukjente med blokkmodell",
+      "format": "blokkmodell",
+      "purpose": "Eleven bruker blokkmodell til å løse et problem der helheten og forholdet er kjent.",
+      "studentText": "En jakke og en lue koster 400 kr til sammen. Jakken koster 3 ganger så mye som luen. Tegn en blokkmodell og finn ut hva luen koster og hva jakken koster.",
+      "solution": "Luen koster 100 kr. Jakken koster 300 kr.",
+      "workedSolution": "Lue:   [ ? ]\nJakke: [ ? ][ ? ][ ? ]\nTil sammen 4 like blokker = 400 kr. 400 : 4 = 100. Luen koster 100 kr, jakken 3 · 100 = 300 kr.",
+      "representationHint": "Lue: [ ? ]  Jakke: [ ? ][ ? ][ ? ]  Til sammen 400",
+      "teacherNote": "Oppgaven kan nesten ikke løses uten modell. Det er poenget.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P3-N1-01",
+      "topic": "problemlosing",
+      "area": "flerstegsoppgaver",
+      "areaTitle": "Flerstegsoppgaver",
+      "level": 1,
+      "title": "To steg med handel",
+      "format": "flersteg-med-stotte",
+      "purpose": "Eleven løser et problem med to steg når stegene er synlige.",
+      "studentText": "Leo har 50 kr. Han kjøper en is til 18 kr og en saft til 12 kr.\nSteg 1: Hvor mye koster isen og saften til sammen?\nSteg 2: Hvor mye har Leo igjen?",
+      "solution": "Steg 1: 18 + 12 = 30 kr. Steg 2: 50 − 30 = 20 kr. Leo har 20 kr igjen.",
+      "workedSolution": "Først finner vi hva Leo bruker: 30 kr. Så trekker vi det fra 50 kr.",
+      "representationHint": null,
+      "teacherNote": "Stegene er støtten på nivå 1. Ikke fjern dem.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P3-N1-02",
+      "topic": "problemlosing",
+      "area": "flerstegsoppgaver",
+      "areaTitle": "Flerstegsoppgaver",
+      "level": 1,
+      "title": "Ledige stoler",
+      "format": "flersteg-med-stotte",
+      "purpose": "Eleven kombinerer gange og minus med synlige steg.",
+      "studentText": "I et rom er det 3 rader med 5 stoler i hver rad. 4 stoler er opptatt.\nSteg 1: Hvor mange stoler er det i rommet?\nSteg 2: Hvor mange stoler er ledige?",
+      "solution": "Steg 1: 3 · 5 = 15 stoler. Steg 2: 15 − 4 = 11. 11 stoler er ledige.",
+      "workedSolution": "Eleven kan tegne 3 rader med 5 prikker og krysse ut 4.",
+      "representationHint": "Tre rader med fem prikker. Kryss ut fire.",
+      "teacherNote": "Små tall slik at fokus er på stegene.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P3-N1-03",
+      "topic": "problemlosing",
+      "area": "flerstegsoppgaver",
+      "areaTitle": "Flerstegsoppgaver",
+      "level": 1,
+      "title": "Sider igjen i boka",
+      "format": "flersteg-med-stotte",
+      "purpose": "Eleven finner først en mellomverdi og bruker den i neste steg.",
+      "studentText": "Maja leser 10 sider hver dag i 4 dager. Boka har 60 sider.\nSteg 1: Hvor mange sider har Maja lest?\nSteg 2: Hvor mange sider har hun igjen?",
+      "solution": "Steg 1: 4 · 10 = 40 sider. Steg 2: 60 − 40 = 20. Maja har 20 sider igjen.",
+      "workedSolution": "10, 20, 30, 40 sider. 60 − 40 = 20.",
+      "representationHint": null,
+      "teacherNote": "Mellomsvaret i steg 1 er ikke svaret på oppgaven.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P3-N2-01",
+      "topic": "problemlosing",
+      "area": "flerstegsoppgaver",
+      "areaTitle": "Flerstegsoppgaver",
+      "level": 2,
+      "title": "Minibusser til turen",
+      "format": "flersteg",
+      "purpose": "Eleven finner selv stegene og ser at alle personer skal med.",
+      "studentText": "Klassen skal på tur. Det er 24 elever og 3 voksne. Hver minibuss har plass til 9 personer. Hvor mange minibusser trengs?",
+      "solution": "24 + 3 = 27 personer. 27 : 9 = 3. Det trengs 3 minibusser.",
+      "workedSolution": "Først alle personene: 27. Så hvor mange niere det er i 27: 3.",
+      "representationHint": null,
+      "teacherNote": "Vanlig feil er å glemme de voksne.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P3-N2-02",
+      "topic": "problemlosing",
+      "area": "flerstegsoppgaver",
+      "areaTitle": "Flerstegsoppgaver",
+      "level": 2,
+      "title": "Bøker og vekslepenger",
+      "format": "flersteg",
+      "purpose": "Eleven velger regneartene selv i et problem med to steg.",
+      "studentText": "Ane kjøper 3 bøker. Hver bok koster 45 kr. Hun betaler med 200 kr. Hvor mye får hun igjen?",
+      "solution": "3 · 45 = 135 kr. 200 − 135 = 65 kr. Ane får 65 kr igjen.",
+      "workedSolution": "45 + 45 + 45 = 135 eller 3 · 45 = 135. Deretter 200 − 135 = 65.",
+      "representationHint": null,
+      "teacherNote": "Godta gjentatt addisjon i første steg.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P3-N2-03",
+      "topic": "problemlosing",
+      "area": "flerstegsoppgaver",
+      "areaTitle": "Flerstegsoppgaver",
+      "level": 2,
+      "title": "Eggkartonger",
+      "format": "flersteg",
+      "purpose": "Eleven kobler deling og gange i et problem med to steg.",
+      "studentText": "En bonde har 48 egg. Hun legger 6 egg i hver kartong. Hun selger hver kartong for 25 kr. Hvor mye får hun hvis hun selger alle kartongene?",
+      "solution": "48 : 6 = 8 kartonger. 8 · 25 = 200 kr. Hun får 200 kr.",
+      "workedSolution": "Først antall kartonger: 8. Så prisen for 8 kartonger: 8 · 25 = 200.",
+      "representationHint": null,
+      "teacherNote": "8 · 25 kan regnes som 4 · 50.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P3-N3-01",
+      "topic": "problemlosing",
+      "area": "flerstegsoppgaver",
+      "areaTitle": "Flerstegsoppgaver",
+      "level": 3,
+      "title": "Busser til konserten",
+      "format": "flersteg",
+      "purpose": "Eleven løser et problem med flere steg der svaret må tolkes ut fra situasjonen.",
+      "studentText": "125 elever skal på konsert. 47 av dem går til konserten. Resten tar buss. Hver buss har plass til 20 elever. Hvor mange busser trengs? Forklar hvordan du tenker.",
+      "solution": "125 − 47 = 78 elever tar buss. 3 busser gir 60 plasser, 4 busser gir 80 plasser. Det trengs 4 busser.",
+      "workedSolution": "78 elever skal med. 3 busser er for lite, fordi 18 elever da står igjen. Derfor trengs 4 busser.",
+      "representationHint": null,
+      "teacherNote": "Svaret må rundes opp fordi alle skal med. «3 og 18 til overs» er ikke godt nok svar.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P3-N3-02",
+      "topic": "problemlosing",
+      "area": "flerstegsoppgaver",
+      "areaTitle": "Flerstegsoppgaver",
+      "level": 3,
+      "title": "Hva har Petter glemt?",
+      "format": "feilvurdering",
+      "purpose": "Eleven oppdager et manglende steg i en løsning.",
+      "studentText": "Oppgave: «Kari har 3 poser med 8 drops i hver. Hun gir bort 5 drops. Hvor mange drops har hun igjen?»\nPetter regner slik: 8 − 5 = 3. Hva har Petter glemt? Løs oppgaven riktig.",
+      "solution": "Petter har glemt at det er 3 poser. 3 · 8 = 24, 24 − 5 = 19. Kari har 19 drops igjen.",
+      "workedSolution": "Først alle dropsene: 24. Så trekker vi fra 5: 19.",
+      "representationHint": null,
+      "teacherNote": "Be eleven si hvilket steg som mangler, ikke bare gi riktig svar.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P3-N3-03",
+      "topic": "problemlosing",
+      "area": "flerstegsoppgaver",
+      "areaTitle": "Flerstegsoppgaver",
+      "level": 3,
+      "title": "Frukt for 100 kr",
+      "format": "flersteg",
+      "purpose": "Eleven planlegger egne steg og viser dem i et problem med tre steg.",
+      "studentText": "Du har 100 kr til frukt for klassen. Et eple koster 6 kr. En banan koster 4 kr. Du skal kjøpe 10 epler. Hvor mange bananer kan du kjøpe for resten av pengene? Vis alle stegene.",
+      "solution": "10 · 6 = 60 kr. 100 − 60 = 40 kr. 40 : 4 = 10. Du kan kjøpe 10 bananer.",
+      "workedSolution": "Steg 1: epler koster 60 kr. Steg 2: 40 kr igjen. Steg 3: 40 kr gir 10 bananer.",
+      "representationHint": null,
+      "teacherNote": "Tallene går opp, slik at det er ett entydig svar.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P4-N1-01",
+      "topic": "problemlosing",
+      "area": "flervalg-begrunnelse",
+      "areaTitle": "Flervalgsoppgaver",
+      "level": 1,
+      "title": "Velg riktig svar",
+      "format": "flervalg",
+      "purpose": "Eleven løser et problem med ett steg og velger riktig alternativ.",
+      "studentText": "Mia har 23 blyanter. Hun får 9 blyanter til. Hvor mange blyanter har hun nå?\nA) 14\nB) 32\nC) 31\nD) 29",
+      "solution": "B) 32. 23 + 9 = 32.",
+      "workedSolution": "23 + 7 = 30, og 2 til gir 32.",
+      "representationHint": null,
+      "teacherNote": "A kommer av å trekke fra. C og D kommer av tellefeil over tieren.",
+      "answerForm": "kort",
+      "options": [
+        "14",
+        "32",
+        "31",
+        "29"
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P4-N1-02",
+      "topic": "problemlosing",
+      "area": "flervalg-begrunnelse",
+      "areaTitle": "Flervalgsoppgaver",
+      "level": 1,
+      "title": "Velg regneuttrykk",
+      "format": "flervalg",
+      "purpose": "Eleven velger regneuttrykket som passer til en enkel fortelling.",
+      "studentText": "Det er 6 bord. Ved hvert bord står det 4 stoler. Hvilket regneuttrykk viser hvor mange stoler det er?\nA) 6 + 4\nB) 6 · 4\nC) 6 − 4\nD) 6 : 4",
+      "solution": "B) 6 · 4. Det er 24 stoler.",
+      "workedSolution": "6 like grupper med 4 i hver gir 6 · 4 = 24.",
+      "representationHint": null,
+      "teacherNote": "Alternativene viser hver sin regneart.",
+      "answerForm": "kort",
+      "options": [
+        "6 + 4",
+        "6 · 4",
+        "6 − 4",
+        "6 : 4"
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P4-N1-03",
+      "topic": "problemlosing",
+      "area": "flervalg-begrunnelse",
+      "areaTitle": "Flervalgsoppgaver",
+      "level": 1,
+      "title": "Hvor mange boller?",
+      "format": "flervalg",
+      "purpose": "Eleven velger et svar som passer situasjonen.",
+      "studentText": "Tim har 40 kr. En bolle koster 15 kr. Hvor mange boller kan Tim kjøpe?\nA) 2\nB) 3\nC) 25\nD) 55",
+      "solution": "A) 2. To boller koster 30 kr. Tre boller koster 45 kr, og det er for mye.",
+      "workedSolution": "15, 30, 45. Tim har 40 kr, så han har nok til 2 boller og får 10 kr igjen.",
+      "representationHint": null,
+      "teacherNote": "C kommer av 40 − 15, D av 40 + 15.",
+      "answerForm": "kort",
+      "options": [
+        "2",
+        "3",
+        "25",
+        "55"
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P4-N2-01",
+      "topic": "problemlosing",
+      "area": "flervalg-begrunnelse",
+      "areaTitle": "Flervalgsoppgaver",
+      "level": 2,
+      "title": "Flervalg med to steg",
+      "format": "flervalg",
+      "purpose": "Eleven løser et problem med to steg, velger svar og forklarer.",
+      "studentText": "Ola kjøper 4 pakker med 12 kjeks i hver. Han spiser 7 kjeks. Hvor mange kjeks er igjen? Forklar hvordan du fant svaret.\nA) 41\nB) 48\nC) 9\nD) 55",
+      "solution": "A) 41. 4 · 12 = 48, 48 − 7 = 41.",
+      "workedSolution": "Først alle kjeksene: 48. Så 7 færre: 41.",
+      "representationHint": null,
+      "teacherNote": "B er bare første steg. C og D kommer av å bruke tallene uten å tolke.",
+      "answerForm": "forklaring",
+      "options": [
+        "41",
+        "48",
+        "9",
+        "55"
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P4-N2-02",
+      "topic": "problemlosing",
+      "area": "flervalg-begrunnelse",
+      "areaTitle": "Flervalgsoppgaver",
+      "level": 2,
+      "title": "Hvilken fortelling passer?",
+      "format": "flervalg",
+      "purpose": "Eleven velger fortellingen som passer til et gitt regneuttrykk.",
+      "studentText": "Hvilken fortelling passer til 72 − 25?\nA) Det er 72 elever og 25 lærere. Hvor mange personer er det til sammen?\nB) Et tau er 72 cm langt. Det kuttes av 25 cm. Hvor langt er tauet nå?\nC) Det er 72 kr i hver av 25 poser. Hvor mange kroner er det?\nD) Lise har 25 kr. Hun får 72 kr. Hvor mye har hun nå?",
+      "solution": "B. 72 − 25 = 47. Tauet er 47 cm.",
+      "workedSolution": "Bare i B blir noe tatt bort fra 72. A og D er pluss, C er gange.",
+      "representationHint": null,
+      "teacherNote": "Alle alternativene bruker de samme tallene, så eleven må tolke situasjonen.",
+      "answerForm": "kort",
+      "options": [
+        "Det er 72 elever og 25 lærere. Hvor mange personer er det til sammen?",
+        "Et tau er 72 cm langt. Det kuttes av 25 cm. Hvor langt er tauet nå?",
+        "Det er 72 kr i hver av 25 poser. Hvor mange kroner er det?",
+        "Lise har 25 kr. Hun får 72 kr. Hvor mye har hun nå?"
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P4-N2-03",
+      "topic": "problemlosing",
+      "area": "flervalg-begrunnelse",
+      "areaTitle": "Flervalgsoppgaver",
+      "level": 2,
+      "title": "Overslag",
+      "format": "flervalg",
+      "purpose": "Eleven bruker overslag for å velge det mest rimelige svaret.",
+      "studentText": "Uten å regne nøyaktig: Hvilket tall er nærmest svaret på 398 + 205? Forklar hvordan du tenkte.\nA) 400\nB) 500\nC) 600\nD) 700",
+      "solution": "C) 600. 398 er nesten 400 og 205 er nesten 200. 400 + 200 = 600. Nøyaktig svar er 603.",
+      "workedSolution": "Rund av til nærmeste hundrer og legg sammen.",
+      "representationHint": null,
+      "teacherNote": "Avstanden mellom alternativene gjør at bare ett er rimelig.",
+      "answerForm": "forklaring",
+      "options": [
+        "400",
+        "500",
+        "600",
+        "700"
+      ],
+      "correctOptions": [
+        "C"
+      ],
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P4-N3-01",
+      "topic": "problemlosing",
+      "area": "flervalg-begrunnelse",
+      "areaTitle": "Flervalgsoppgaver",
+      "level": 3,
+      "title": "Hvem har tenkt riktig?",
+      "format": "flervalg",
+      "purpose": "Eleven vurderer tre løsninger og forklarer feilene i de gale.",
+      "studentText": "Oppgave: «En sykkeltur er 18 km lang. Iben sykler 3 km hver dag i 4 dager. Hvor langt har hun igjen?»\nHvem har riktig løsning? Forklar hva de andre har tenkt feil.\nA) Ali: 18 − 3 − 4 = 11\nB) Bo: 3 · 4 = 12, 18 − 12 = 6\nC) Cem: 18 − 3 = 15, 15 − 4 = 11",
+      "solution": "B) Bo. Iben har syklet 3 · 4 = 12 km og har 6 km igjen. Ali og Cem trekker fra 4 som om det var kilometer, men 4 er antall dager.",
+      "workedSolution": "Hver dag er 3 km. 4 dager gir 12 km. 18 − 12 = 6.",
+      "representationHint": null,
+      "teacherNote": "Forklaringen av feilene er hovedmålet.",
+      "answerForm": "forklaring",
+      "options": [
+        "Ali: 18 − 3 − 4 = 11",
+        "Bo: 3 · 4 = 12, 18 − 12 = 6",
+        "Cem: 18 − 3 = 15, 15 − 4 = 11"
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P4-N3-02",
+      "topic": "problemlosing",
+      "area": "flervalg-begrunnelse",
+      "areaTitle": "Flervalgsoppgaver",
+      "level": 3,
+      "title": "Lag gode gale svar",
+      "format": "lag-flervalg",
+      "purpose": "Eleven lager distraktorer og forklarer hvilken tankefeil hver av dem viser.",
+      "studentText": "Oppgave: «En pakke har 8 blyanter. Klassen kjøper 5 pakker og deler ut 30 blyanter. Hvor mange blyanter er igjen?»\nLøs oppgaven. Lag så en flervalgsoppgave med det riktige svaret og tre gale svar. Forklar hvilken feil som kan gi hvert galt svar.",
+      "solution": "Riktig svar: 5 · 8 = 40, 40 − 30 = 10 blyanter. Gale svar godtas når forklaringen viser en mulig tankefeil, for eksempel 40 (glemt å trekke fra 30), 13 (regnet 8 + 5) eller 43 (lagt sammen 8, 5 og 30).",
+      "workedSolution": "Eksempel: A) 10 B) 40 C) 13 D) 43. 40: glemte å trekke fra. 13: regnet 8 + 5. 43: la sammen alle tallene.",
+      "representationHint": null,
+      "teacherNote": "Det riktige svaret er entydig. De gale svarene vurderes ut fra forklaringen.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    },
+    {
+      "id": "P4-N3-03",
+      "topic": "problemlosing",
+      "area": "flervalg-begrunnelse",
+      "areaTitle": "Flervalgsoppgaver",
+      "level": 3,
+      "title": "Hvilke påstander er sanne?",
+      "format": "flervalg-flere-riktige",
+      "purpose": "Eleven vurderer påstander om et problem, også om antall steg og rimelighet.",
+      "studentText": "Oppgave: «Det er 5 lag med 6 spillere i hvert lag. 4 spillere er syke. Hvor mange spillere kan spille?»\nHvilke påstander er sanne? Det kan være mer enn én. Forklar.\nA) Oppgaven har to regnesteg.\nB) Svaret er 26.\nC) Oppgaven kan løses med 5 + 6 − 4.\nD) Svaret er mindre enn 30.",
+      "solution": "A, B og D er sanne. 5 · 6 = 30, 30 − 4 = 26. C er feil fordi 5 + 6 − 4 = 7.",
+      "workedSolution": "Først alle spillerne: 30. Så de syke: 26. 26 er mindre enn 30.",
+      "representationHint": null,
+      "teacherNote": "Oppgaven sier tydelig at flere kan være riktige.",
+      "answerForm": "forklaring",
+      "options": [
+        "Oppgaven har to regnesteg.",
+        "Svaret er 26.",
+        "Oppgaven kan løses med 5 + 6 − 4.",
+        "Svaret er mindre enn 30."
+      ],
+      "correctOptions": [
+        "A",
+        "B",
+        "D"
+      ],
+      "source": {
+        "kind": "lærestien",
+        "document": "problemlosing_referanser.json"
+      }
+    }
+  ]
+}

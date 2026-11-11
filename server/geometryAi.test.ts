@@ -423,7 +423,7 @@ describe('11. andre temaer og referansebanker er uendret', () => {
     assert.equal(hash(placeValueBankFile), '21ba85a512aeffed')
     assert.equal(hash(divisionBankFile), '137f3e1f03a7d25f')
     assert.deepEqual([multiplicationReferences.length, placeValueReferences.length, divisionReferences.length], [54, 45, 36])
-    assert.equal(referenceBanks.length, 54 + 45 + 36 + 36)
+    assert.equal(referenceBanks.filter((r) => r.topic !== 'problemlosing').length, 54 + 45 + 36 + 36)
   })
 
   it('utvalget i de andre bankene er det samme som før', () => {

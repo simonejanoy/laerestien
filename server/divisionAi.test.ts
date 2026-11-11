@@ -461,7 +461,7 @@ describe('12. andre temaer og referansebanker er uendret', () => {
     assert.equal(hash(placeValueBankFile), '21ba85a512aeffed')
     assert.equal(multiplicationReferences.length, 54)
     assert.equal(placeValueReferences.length, 45)
-    assert.equal(referenceBanks.filter((r) => r.topic !== 'geometri').length, 54 + 45 + 36)
+    assert.equal(referenceBanks.filter((r) => !['geometri', 'problemlosing'].includes(r.topic)).length, 54 + 45 + 36)
   })
 
   it('utvalget i de andre bankene er det samme som før (ingen divisjonstype, ingen divisjonsreferanser)', () => {

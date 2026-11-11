@@ -1,7 +1,8 @@
-import { DIVISION_AREAS, GEOMETRY_AREAS, MULTIPLICATION_AREAS, PLACE_VALUE_AREAS } from '../../src/ai/contract.ts'
+import { DIVISION_AREAS, GEOMETRY_AREAS, MULTIPLICATION_AREAS, PLACE_VALUE_AREAS, PROBLEM_SOLVING_AREAS } from '../../src/ai/contract.ts'
 import type { ReferenceBank, ReferenceTask } from './types.ts'
 
-// Kontroll av referansebankene. Kjøres når serveren starter (multiplication.ts, placeValue.ts, division.ts, geometry.ts) og i testene.
+// Kontroll av referansebankene. Kjøres når serveren starter (multiplication.ts, placeValue.ts, division.ts, geometry.ts,
+// problemSolving.ts) og i testene.
 
 /** Hva en bank skal inneholde: tema, ID-prefiks (M1-N1-01, T1-N1-01) og fagområdene i rekkefølge. */
 export interface BankSpec {
@@ -14,6 +15,7 @@ export const MULTIPLICATION_BANK: BankSpec = { topic: 'multiplikasjon', idPrefix
 export const PLACE_VALUE_BANK: BankSpec = { topic: 'tall-og-plassverdi', idPrefix: 'T', areas: PLACE_VALUE_AREAS }
 export const DIVISION_BANK: BankSpec = { topic: 'divisjon', idPrefix: 'D', areas: DIVISION_AREAS }
 export const GEOMETRY_BANK: BankSpec = { topic: 'geometri', idPrefix: 'G', areas: GEOMETRY_AREAS }
+export const PROBLEM_SOLVING_BANK: BankSpec = { topic: 'problemlosing', idPrefix: 'P', areas: PROBLEM_SOLVING_AREAS }
 const REQUIRED_TEXT = ['id', 'topic', 'area', 'areaTitle', 'title', 'format', 'purpose', 'studentText', 'solution'] as const
 
 export interface BankCheck {
@@ -102,6 +104,9 @@ const UNIT_WORD = /^\s*(tiere|tier|hundrere|hundrer|enere|ener)\b/i
 /** Rest etter en divisjon: «14 : 4 = 3 rest 2», «… = 3 med 2 til overs» eller «… = 3, og 2 til overs». */
 const REMAINDER_AFTER = /^\s*(?:rest\s+(\d+)|,?\s*(?:og|med)\s+(\d+)\s+til overs)/i
 
+/** Ordet foran en nummerert etikett («Steg 1:», «Trinn 2:»). */
+const STEP_LABEL = /\b(steg|trinn|del)\s*$/i
+
 /** Om teksten foran en regnerekke slutter med et regnetegn eller et tomt felt (ikke kolon etter et ord, som i «Fyll inn:»). */
 function operatorBefore(text: string) {
   const trimmed = text.trimEnd()
@@ -123,7 +128,9 @@ export function checkEquations(text: string): { checked: number; errors: string[
     if (!run.includes('=')) continue
     const before = operatorBefore(text.slice(0, match.index))
     const after = text.slice((match.index ?? 0) + run.length)
-    const sides = run.split('=').map((s) => s.trim())
+    // «Steg 1: 18 + 12 = 30»: tallet foran kolonet er en etikett, ikke et tall som deles.
+    const label = STEP_LABEL.test(text.slice(0, match.index)) ? /^\d+\s*:\s*/.exec(run) : null
+    const sides = (label ? run.slice(label[0].length) : run).split('=').map((s) => s.trim())
     if (before) sides.shift()
     const next = after.trimStart()[0] ?? ''
     if (OPERATOR.test(next) || next === '_' || UNIT_WORD.test(after)) sides.pop()
@@ -160,11 +167,12 @@ function numberList(solution: string): number[] | null {
  * - regnerekker i oppgaveteksten – ikke i feilanalyser, der feilen er meningen
  */
 export function checkReferenceMath(
-  ref: Pick<ReferenceTask, 'studentText' | 'solution' | 'format'> & { teacherNote?: string | null },
+  ref: Pick<ReferenceTask, 'studentText' | 'solution' | 'format'> & { teacherNote?: string | null; workedSolution?: string },
 ): { checked: number; errors: string[] } {
   const results = [checkEquations(ref.solution)]
-  // Lærernotatet viser ofte utregningen – den skal også stemme.
+  // Lærernotatet og løsningsforslaget viser ofte utregningen – den skal også stemme.
   if (ref.teacherNote) results.push(checkEquations(ref.teacherNote))
+  if (ref.workedSolution) results.push(checkEquations(ref.workedSolution))
   const answers = numberList(ref.solution)
   const blanks = ref.studentText.match(/__+/g)?.length ?? 0
 
@@ -190,6 +198,51 @@ export function checkReferenceMath(
 }
 
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
+
+// ---------------------------------------------------------------------------------------------
+// Flervalg: alternativene står i elevteksten som egne linjer («A) 14»). Brukes av valideringen av
+// banken og av kontrollen av AI-oppgaver (problemSolvingChecks.ts).
+
+export interface ChoiceOption {
+  letter: string
+  text: string
+}
+
+/** Alternativene i elevteksten: linjer som starter med «A)», «B)» … (også «A:» og «A.»), i rekkefølge. */
+export function parseOptions(studentText: string): ChoiceOption[] {
+  return [...studentText.matchAll(/^[ \t]*([A-F])[).:][ \t]+(.+?)[ \t]*$/gm)].map(([, letter, text]) => ({ letter, text }))
+}
+
+/** Elevteksten sier tydelig at flere alternativer kan være riktige. */
+export const MANY_CORRECT = /mer enn (én|ett|ei|en)\b|flere (kan være |er )?(riktige|sanne)|flere riktige|ett eller flere|en eller flere|kan være flere/i
+
+/** Bokstavene fasiten starter med: «B) 32», «B. 72 − 25 …», «A, B og D er sanne», «Riktig svar: C». */
+export function correctLetters(solution: string): string[] {
+  const m = /^\s*(?:riktig(?:e)? (?:svar|alternativ(?:er)?)\s*(?:er|:)\s*)?([A-F](?:\s*(?:,|og)\s*[A-F])*)(?=$|[\s).:,])/i.exec(solution)
+  return m ? [...new Set(m[1].toUpperCase().match(/[A-F]/g) ?? [])] : []
+}
+
+/** Kontrollerer flervalgsmetadataene i én referanse mot elevteksten og fasiten. */
+function optionErrors(ref: ReferenceTask): string[] {
+  if (ref.options === undefined && ref.correctOptions === undefined) return []
+  const errors: string[] = []
+  const options = Array.isArray(ref.options) ? ref.options : []
+  const correct = Array.isArray(ref.correctOptions) ? ref.correctOptions : []
+  const shown = parseOptions(ref.studentText)
+  if (options.length < 2) errors.push('flervalg uten minst to alternativer')
+  if (shown.length !== options.length) errors.push(`elevteksten viser ${shown.length} alternativer, metadataene har ${options.length}`)
+  shown.forEach((o, i) => {
+    if (o.letter !== 'ABCDEF'[i]) errors.push(`alternativ ${o.letter} står ikke i rekkefølge`)
+    if (options[i] !== undefined && o.text.trim() !== options[i].trim()) errors.push(`alternativ ${o.letter} er ulikt i elevteksten og metadataene`)
+  })
+  if (new Set(options.map((o) => o.trim().toLowerCase())).size !== options.length) errors.push('to alternativer er like')
+  const letters = options.map((_, i) => 'ABCDEF'[i])
+  if (correct.length === 0 || correct.some((l) => !letters.includes(l))) errors.push('korrektAlternativ peker ikke på et alternativ')
+  if (correct.length > 1 && !MANY_CORRECT.test(ref.studentText)) errors.push('flere riktige alternativer uten at elevteksten sier det')
+  const named = correctLetters(ref.solution)
+  if (named.join() !== [...correct].sort().join()) errors.push(`fasiten peker på ${named.join(', ') || 'ingen'}, korrektAlternativ på ${correct.join(', ')}`)
+  return errors
+}
 
 /**
  * Kontrollerer referansebanken: antall, unike ID-er, ID-mønster, fagområder og nivåer, påkrevde felt
@@ -251,7 +304,10 @@ export function validateReferenceBank(raw: unknown, expectedCount: number, spec:
       const math = checkReferenceMath(ref)
       checkedEquations += math.checked
       for (const error of math.errors) errors.push(`${where}: ${error}.`)
+      for (const error of optionErrors(ref)) errors.push(`${where}: ${error}.`)
     }
+    if (ref.answerForm !== undefined && !['kort', 'forklaring'].includes(ref.answerForm)) errors.push(`${where}: ugyldig svarform.`)
+    if (ref.workedSolution !== undefined && (typeof ref.workedSolution !== 'string' || !ref.workedSolution.trim())) errors.push(`${where}: tomt løsningsforslag.`)
   })
 
   const perAreaCount = expectedCount / spec.areas.length

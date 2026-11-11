@@ -252,22 +252,28 @@ export type DivisionType = 'deling' | 'maling'
 export const GEOMETRY_AREAS = ['todimensjonale-figurer', 'tredimensjonale-figurer', 'fra-3d-til-2d', 'vinkler'] as const
 export type GeometryArea = (typeof GEOMETRY_AREAS)[number]
 
+/** Fagområdene i Problemløsing, i progresjonsrekkefølge. */
+export const PROBLEM_SOLVING_AREAS = ['regnefortelling-regneuttrykk', 'bruke-modeller', 'flerstegsoppgaver', 'flervalg-begrunnelse'] as const
+export type ProblemSolvingArea = (typeof PROBLEM_SOLVING_AREAS)[number]
+
 /** Temaene som har en referansebank på serveren, med fagområdene sine. */
 export const REFERENCE_TOPICS = {
   multiplikasjon: MULTIPLICATION_AREAS,
   'tall-og-plassverdi': PLACE_VALUE_AREAS,
   divisjon: DIVISION_AREAS,
   geometri: GEOMETRY_AREAS,
+  problemlosing: PROBLEM_SOLVING_AREAS,
 } as const
 export type ReferenceTopic = keyof typeof REFERENCE_TOPICS
 /** Et fagområde i en av referansebankene. Områdene har unike ID-er på tvers av temaene. */
-export type ReferenceArea = MultiplicationArea | PlaceValueArea | DivisionArea | GeometryArea
+export type ReferenceArea = MultiplicationArea | PlaceValueArea | DivisionArea | GeometryArea | ProblemSolvingArea
 
 export const TOPIC_TITLES: Record<ReferenceTopic, string> = {
   multiplikasjon: 'Multiplikasjon',
   'tall-og-plassverdi': 'Tall og plassverdi',
   divisjon: 'Divisjon',
   geometri: 'Geometri',
+  problemlosing: 'Problemløsing',
 }
 
 export const AREA_TITLES: Record<ReferenceArea, string> = {
@@ -290,6 +296,10 @@ export const AREA_TITLES: Record<ReferenceArea, string> = {
   'tredimensjonale-figurer': 'Tredimensjonale figurer',
   'fra-3d-til-2d': 'Fra tredimensjonal til todimensjonal',
   vinkler: 'Vinkler',
+  'regnefortelling-regneuttrykk': 'Regnefortellinger og regneuttrykk',
+  'bruke-modeller': 'Bruke modeller',
+  flerstegsoppgaver: 'Flerstegsoppgaver',
+  'flervalg-begrunnelse': 'Flervalgsoppgaver',
 }
 
 export const isMultiplicationArea = (value: unknown): value is MultiplicationArea =>
@@ -316,6 +326,8 @@ export interface AiReferenceTask {
   id?: string
   purpose?: string
   representation?: string
+  /** Problemløsing: visuell støtte beskrevet med ord (f.eks. en tekstbasert blokkmodell) – ikke en figur som mangler. */
+  support?: string
 }
 
 /** Én oppgave som allerede finnes på nivået – til oppsummeringen og duplikatkontrollen. Ingen elevdata. */

@@ -1,4 +1,4 @@
-import { visualSignature, type AiVisual, type DivisionArea, type DivisionType, type GeometryArea, type PlaceValueArea } from '../../ai/contract.ts'
+import { visualSignature, type AiVisual, type DivisionArea, type DivisionType, type GeometryArea, type PlaceValueArea, type ProblemSolvingArea } from '../../ai/contract.ts'
 import type { Level, LevelGroup, LevelProfile, Operator, TaskProfile, TaskType, TopicDetails } from '../../types/index.ts'
 import { OPEN_STRATEGY, strategyInstruction } from './multiplicationStrategies.ts'
 import { columnTasks, fourDigitTasks, mentalStrategyTasks, negativeNumberTasks, type FourDigitVariant } from './placeValueTasks.ts'
@@ -498,6 +498,297 @@ const angleTypeTasks = byLevel(
 )
 
 // ---------------------------------------------------------------------------------------
+// Problemløsing: fire fagområder i fire økter – regnefortellinger og regneuttrykk, bruke modeller,
+// flerstegsoppgaver og flervalgsoppgaver. Grunnoppgavene er tekstoppgaver, så eleven selv skriver
+// regneuttrykket, tegner modellen og viser stegene. Nivåene handler om støtte og resonnement:
+// synlig støtte → velge framgangsmåte selv → vurdere, finne feil og forklare.
+
+const PEOPLE = ['Ida', 'Ola', 'Nora', 'Emil', 'Sara', 'Ali', 'Mia', 'Jonas', 'Lisa', 'Even']
+const person = (i: number) => pick(PEOPLE, i)
+const LETTERS = ['A', 'B', 'C', 'D']
+
+/** Svaralternativene på hver sin linje («A) …»). Det riktige flyttes rundt med `i`. */
+function choices(correct: string, wrong: string[], i: number) {
+  const all = [correct, ...wrong]
+  const shift = i % all.length
+  const order = [...all.slice(shift), ...all.slice(0, shift)]
+  return { lines: order.map((o, k) => `${LETTERS[k]}) ${o}`).join('\n'), letter: LETTERS[order.indexOf(correct)] }
+}
+
+/** Regnefortellinger og regneuttrykk: ett steg → ett uttrykk med to regnetegn → finne feilen i et uttrykk. */
+const storyTasks = byLevel(
+  (n) =>
+    five((i): TextSpec => {
+      const [p, q] = [vary(n, i, 12, 45), vary(n + 1, i, 10, 35)]
+      return {
+        text: `En is koster ${p} kr og en brus koster ${q} kr. Hva koster de til sammen? Skriv regneuttrykket og svaret.`,
+        solution: `${p} + ${q} = ${p + q}. De koster ${p + q} kr til sammen.`,
+      }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      const variant = (i + n) % 3
+      if (variant === 0) {
+        const [a, b, c] = [vary(n, i, 24, 48), vary(n + 1, i, 6, 19), vary(n + 2, i, 4, 15)]
+        return {
+          text: `Det sitter ${a} personer på bussen. På en holdeplass går ${b} av, og ${c} går på. Skriv ett regneuttrykk som viser hvor mange som sitter på bussen nå. Regn ut.`,
+          solution: `${a} − ${b} + ${c} = ${a - b + c}. Nå sitter det ${a - b + c} personer på bussen.`,
+        }
+      }
+      if (variant === 1) {
+        const [m, book, gift] = [vary(n, i, 60, 150), vary(n + 1, i, 25, 55), vary(n + 2, i, 20, 50)]
+        const who = person(i + n)
+        return {
+          text: `${who} har ${m} kr. ${who} kjøper en bok til ${book} kr og får ${gift} kr av bestemor. Skriv ett regneuttrykk som viser hvor mange kroner ${who} har nå. Regn ut.`,
+          solution: `${m} − ${book} + ${gift} = ${m - book + gift}. ${who} har ${m - book + gift} kr nå.`,
+        }
+      }
+      const [k, m, x] = [vary(n, i, 3, 6), vary(n + 1, i, 4, 9), vary(n + 2, i, 2, 9)]
+      return {
+        text: `Det er ${k} poser med ${m} epler i hver. I tillegg ligger det ${x} løse epler i kurven. Skriv ett regneuttrykk som viser hvor mange epler det er til sammen. Regn ut.`,
+        solution: `${k} · ${m} + ${x} = ${k * m + x}. Det er ${k * m + x} epler til sammen.`,
+      }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      const who = person(i + n + 3)
+      const variant = (i + n) % 3
+      if (variant === 0) {
+        const [t, k] = [vary(n, i, 52, 96), vary(n + 1, i, 13, 39)]
+        return {
+          text: `Oppgave: «Det er ${t} bøker i klassebiblioteket. ${k} av dem er lånt ut. Hvor mange bøker står i hylla?»\n${who} skriver ${t} + ${k} = ${t + k}. Hva har ${who} gjort feil? Skriv riktig regneuttrykk og svar, og forklar hvorfor svaret til ${who} ikke kan stemme.`,
+          solution: `${who} har lagt sammen i stedet for å trekke fra. Riktig: ${t} − ${k} = ${t - k}. ${t - k} bøker står i hylla. ${t + k} er flere enn alle bøkene i klassebiblioteket, så svaret kan ikke stemme.`,
+        }
+      }
+      if (variant === 1) {
+        const [g, m] = [vary(n, i, 3, 6), vary(n + 1, i, 6, 9)]
+        return {
+          text: `Oppgave: «Det er ${g} brett med ${m} boller på hvert brett. Hvor mange boller er det til sammen?»\n${who} skriver ${g} + ${m} = ${g + m}. Hva har ${who} gjort feil? Skriv riktig regneuttrykk og svar, og forklar.`,
+          solution: `${who} har lagt sammen tallene, men det er ${g} like grupper med ${m} i hver. Riktig: ${g} · ${m} = ${g * m}. Det er ${g * m} boller til sammen.`,
+        }
+      }
+      const [a, b] = [vary(n, i, 30, 60), vary(n + 1, i, 8, 25)]
+      return {
+        text: `Oppgave: «Lisa har ${a} klistremerker. Hun får ${b} klistremerker til. Hvor mange har hun nå?»\n${who} skriver ${a} − ${b} = ${a - b}. Hva har ${who} gjort feil? Skriv riktig regneuttrykk og svar, og forklar.`,
+        solution: `${who} har trukket fra, men Lisa får flere klistremerker. Riktig: ${a} + ${b} = ${a + b}. Lisa har ${a + b} klistremerker nå.`,
+      }
+    }),
+)
+
+/** Bruke modeller: ferdig modell eller tydelig tegneinstruksjon → tegne og bruke modellen selv → tolke og vurdere en modell. */
+const modelTasks = byLevel(
+  (n) =>
+    five((i): TextSpec => {
+      const variant = (i + n) % 4
+      if (variant === 0) {
+        const [a, b] = [vary(n, i, 12, 40), vary(n + 1, i, 3, 15)]
+        return {
+          text: `Ida har ${a} kort. Ola har ${b} flere enn Ida. Blokkmodellen viser problemet:\n\nIda: [ ${a} ]\nOla: [ ${a} ][ ${b} ]\n\nHvor mange kort har Ola?`,
+          solution: `${a} + ${b} = ${a + b}. Ola har ${a + b} kort.`,
+        }
+      }
+      if (variant === 1) {
+        const [t, a] = [vary(n, i, 60, 150), vary(n + 1, i, 15, 45)]
+        return {
+          text: `Klassen har samlet ${t} flasker på to uker. Den første uka samlet de ${a} flasker. Blokkmodellen viser problemet:\n\nTil sammen: ${t}\n[ Første uke: ${a} ][ Andre uke: ? ]\n\nHvor mange flasker samlet de den andre uka?`,
+          solution: `${t} − ${a} = ${t - a}. De samlet ${t - a} flasker den andre uka.`,
+        }
+      }
+      if (variant === 2) {
+        const [k, m] = [vary(n, i, 3, 6), vary(n + 1, i, 4, 8)]
+        return {
+          text: `På en hylle står ${k} esker. I hver eske ligger ${m} baller. Tegn ${k} ringer med ${m} prikker i hver ring. Hvor mange baller er det i alt?`,
+          solution: `${k} · ${m} = ${k * m}. Det er ${k * m} baller i alt.`,
+        }
+      }
+      const length = pick([500, 600, 700, 800, 900], i + n)
+      const walked = 100 * vary(n, i, 1, length / 100 - 1)
+      const who = person(i + n)
+      return {
+        text: `Et løp er ${length} meter. ${who} har løpt ${walked} meter. Tegn en tallinje som starter på 0 og slutter på ${length}, med en strek for hver hundre meter. Sett et kryss der ${who} er nå. Hvor langt er det igjen til mål?`,
+        solution: `${length} − ${walked} = ${length - walked}. Det er ${length - walked} meter igjen til mål.`,
+      }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      const variant = (i + n) % 4
+      const [first, second] = [person(i + n), person(i + n + 5)]
+      if (variant === 0) {
+        const b = vary(n, i, 12, 40)
+        const a = b + vary(n + 1, i, 5, 30)
+        return {
+          text: `${first} har ${a} kort og ${second} har ${b} kort. Tegn en blokkmodell med én stripe for ${first} og én for ${second}. Hvor mange flere kort har ${first}?`,
+          solution: `${a} − ${b} = ${a - b}. ${first} har ${a - b} flere kort enn ${second}.`,
+        }
+      }
+      if (variant === 1) {
+        const [a, b] = [vary(n, i, 30, 60), vary(n + 1, i, 5, 20)]
+        return {
+          text: `${first} har ${a} klistremerker. ${second} har ${b} færre enn ${first}. Tegn en blokkmodell med én stripe for ${first} og én for ${second}. Hvor mange klistremerker har ${second}? Hvor mange har de til sammen?`,
+          solution: `${second}: ${a} − ${b} = ${a - b}. Til sammen: ${a} + ${a - b} = ${2 * a - b}.`,
+        }
+      }
+      if (variant === 2) {
+        const p = vary(n, i, 6, 15)
+        const [one, many] = pick([['klistremerkeark', 'klistremerkeark'], ['frimerke', 'frimerker'], ['postkort', 'postkort']], i + n)
+        return {
+          text: `Ett ${one} koster ${p} kr. Fyll ut en tabell med kolonnene «Antall» og «Pris» for 1 til 5 ${many}. Hva må du betale for 5 ${many}?`,
+          solution: `1: ${p} kr, 2: ${2 * p} kr, 3: ${3 * p} kr, 4: ${4 * p} kr, 5: ${5 * p} kr. 5 · ${p} = ${5 * p}, så prisen er ${5 * p} kr for 5 ${many}.`,
+        }
+      }
+      const [k, q] = [vary(n, i, 3, 5), vary(n + 1, i, 8, 19)]
+      return {
+        text: `${k * q} klistremerker skal fordeles likt i ${k} album. Tegn en blokkmodell som er delt i ${k} like store deler. Hvor mange klistremerker blir det i hvert album?`,
+        solution: `${k * q} : ${k} = ${q}. Det blir ${q} klistremerker i hvert album.`,
+      }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      const variant = (i + n) % 3
+      if (variant === 0) {
+        const [bigDef, smallDef] = pick([['Sykkelen', 'hjelmen'], ['Gitaren', 'sekken'], ['Teltet', 'soveposen']], i + n)
+        const [k, u] = [vary(n, i, 2, 4), 10 * vary(n + 1, i, 3, 9)]
+        const total = (k + 1) * u
+        return {
+          text: `${bigDef} er ${k} ganger så dyr som ${smallDef}. Til sammen koster ${bigDef.toLowerCase()} og ${smallDef} ${total} kr. Bruk en blokkmodell til å finne prisen på hver av dem, og forklar hvordan modellen hjelper deg.`,
+          solution: `${smallDef.charAt(0).toUpperCase()}${smallDef.slice(1)} koster ${u} kr, og ${bigDef.toLowerCase()} koster ${k * u} kr. ${k} + 1 = ${k + 1} like blokker, og ${total} : ${k + 1} = ${u}. ${k} · ${u} = ${k * u}.`,
+        }
+      }
+      const [a, b, c] = [person(i + n), person(i + n + 4), person(i + n + 7)]
+      if (variant === 1) {
+        const beads = vary(n, i, 8, 19)
+        return {
+          text: `Oppgave: «${a} har 3 ganger så mange perler som ${b}. ${b} har ${beads} perler. Hvor mange perler har ${a}?»\n${c} tegner denne modellen:\n${b}: [ ${beads} ]\n${a}: [ ${beads} ][ ${beads} ]\nEr modellen riktig? Forklar og finn hvor mange perler ${a} har.`,
+          solution: `Nei. ${a} skal ha 3 blokker på ${beads}, ikke 2. 3 · ${beads} = ${3 * beads}. ${a} har ${3 * beads} perler.`,
+        }
+      }
+      const [part, extra] = [5 * vary(n, i, 2, 9), vary(n + 1, i, 3, 9)]
+      return {
+        text: `Blokkmodellen viser en mengde som er delt i fire blokker:\n\n[ ${part} ][ ${part} ][ ${part} ][ ${extra} ]\nHele mengden: ?\n\nSkriv en hverdagsfortelling som modellen kan vise, og et regneuttrykk som passer. Regn ut og forklar hva hver blokk betyr.`,
+        solution: `3 · ${part} + ${extra} = ${3 * part + extra}. Fortellingen må ha 3 like deler på ${part} og én del på ${extra}.`,
+      }
+    }),
+)
+
+/** Jenter og gutter deles i grupper (to steg uten synlig støtte). Nivå 2. */
+function groupTripTasks(n: number) {
+  return five((i): TextSpec => {
+    const d = pick([2, 3, 4], i + n)
+    const total = d * vary(n, i, 5, 8)
+    const girls = vary(n + 1, i, 4, total - 4)
+    return {
+      text: `En klasse har ${girls} jenter og ${total - girls} gutter. De deles i grupper på ${d}. Hvor mange grupper blir det?`,
+      solution: `${total / d} grupper  (${girls} + ${total - girls} = ${total}, ${total} : ${d} = ${total / d})`,
+    }
+  })
+}
+
+/** Flerstegsoppgaver (i økta og i repetisjon): synlige steg → to steg uten støtte → tolke svaret (avrunding oppover) og finne et glemt steg. */
+const multiStepTasks = byLevel(
+  (n) =>
+    five((i): TextSpec => {
+      const p = vary(n, i, 10, 20)
+      const m = pick([50, 100], i + n)
+      return {
+        text: `Ola har ${m} kr. Han kjøper 2 is som koster ${p} kr hver.\nSteg 1: Hva koster de 2 isene?\nSteg 2: Hvor mye har Ola igjen?`,
+        solution: `Steg 1: 2 · ${p} = ${2 * p} kr. Steg 2: ${m} − ${2 * p} = ${m - 2 * p} kr. Ola har ${m - 2 * p} kr igjen.`,
+      }
+    }),
+  (n) => groupTripTasks(n),
+  (n) =>
+    five((i): TextSpec => {
+      if ((i + n) % 2 === 0) {
+        const total = vary(n, i, 40, 90)
+        const seats = pick([8, 9, 12, 15], i + n)
+        let cycling = vary(n + 1, i, 5, 20)
+        if ((total - cycling) % seats === 0) cycling++
+        const bus = total - cycling
+        const [q, r] = [Math.floor(bus / seats), bus % seats]
+        return {
+          text: `${total} elever skal på tur. ${cycling} av dem sykler. Resten tar minibuss. Hver minibuss har plass til ${seats} elever. Hvor mange minibusser trengs? Forklar hvordan du tenker.`,
+          solution: `${total} − ${cycling} = ${bus} elever tar minibuss. ${bus} : ${seats} = ${q} rest ${r}. ${q} minibusser er for lite, fordi ${r} elever da ikke får plass. Det trengs ${q + 1} minibusser.`,
+        }
+      }
+      const [k, m] = [vary(n, i, 3, 5), vary(n + 1, i, 6, 10)]
+      const x = vary(n + 2, i, 2, m - 1)
+      const [a, b] = [person(i + n), person(i + n + 3)]
+      return {
+        text: `Oppgave: «${a} har ${k} poser med ${m} drops i hver. ${a} gir bort ${x} drops. Hvor mange drops er igjen?»\n${b} regner slik: ${m} − ${x} = ${m - x}. Hva har ${b} glemt? Løs oppgaven riktig og forklar.`,
+        solution: `${b} har glemt at det er ${k} poser. ${k} · ${m} = ${k * m}, og ${k * m} − ${x} = ${k * m - x}. Det er ${k * m - x} drops igjen.`,
+      }
+    }),
+)
+
+/** Flervalgsoppgaver: ett steg → to steg med begrunnelse → vurdere løsninger og påstander. Gale svar kommer av typiske tankefeil. */
+const choiceTasks = byLevel(
+  (n) =>
+    five((i): TextSpec => {
+      if ((i + n) % 2 === 0) {
+        let a = vary(n, i, 23, 48)
+        const b = vary(n + 1, i, 6, 9)
+        // Tierovergang, så «glemt tieren» er en tankefeil som gir et annet svar.
+        if ((a % 10) + b < 10) a = a - (a % 10) + 7
+        const sum = a + b
+        const who = person(i + n)
+        const { lines, letter } = choices(String(sum), [String(a - b), String(sum - 10), String(sum + 1)], i)
+        return { text: `I en boks ligger ${a} knapper. ${who} legger ${b} knapper til i boksen. Hvor mange knapper er det i boksen nå?\n${lines}`, solution: `${letter}) ${sum}. ${a} + ${b} = ${sum}.` }
+      }
+      const [rows, hooks] = [vary(n, i, 5, 9), vary(n + 1, i, 2, 4)]
+      const { lines, letter } = choices(`${rows} · ${hooks}`, [`${rows} + ${hooks}`, `${rows} − ${hooks}`], i)
+      return {
+        text: `I en garderobe er det ${rows} rader. Hver rad har ${hooks} knagger. Hvilket regneuttrykk viser hvor mange knagger det er i alt?\n${lines}`,
+        solution: `${letter}) ${rows} · ${hooks}. Det er ${rows * hooks} knagger.`,
+      }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      const who = person(i + n)
+      if ((i + n) % 2 === 0) {
+        const [k, m, x] = [vary(n, i, 3, 6), vary(n + 1, i, 6, 12), vary(n + 2, i, 3, 8)]
+        const left = k * m - x
+        const { lines, letter } = choices(String(left), [String(k * m), String(k * m + x), String(k + m - x)], i)
+        return {
+          text: `${who} har ${k} esker med ${m} kritt i hver. ${x} kritt er knekt og kastes. Hvor mange hele kritt er det igjen? Forklar hvordan du fant svaret.\n${lines}`,
+          solution: `${letter}) ${left}. ${k} · ${m} = ${k * m}, ${k * m} − ${x} = ${left}.`,
+        }
+      }
+      const [a, b] = [vary(n, i, 40, 90), vary(n + 1, i, 12, 35)]
+      const { lines, letter } = choices(
+        `${who} har ${a} kr og bruker ${b} kr på en bok. Hvor mange kroner har ${who} igjen?`,
+        [`${who} har ${b} kr og får ${a} kr til. Hvor mange kroner har ${who} nå?`, `Det er ${b} esker med ${a} kritt i hver. Hvor mange kritt er det?`],
+        i,
+      )
+      return {
+        text: `Hvilken fortelling passer til ${a} − ${b}? Forklar hvorfor.\n${lines}`,
+        solution: `${letter}. ${a} − ${b} = ${a - b}. Bare i ${letter} blir noe tatt bort fra ${a}. De andre fortellingene passer til pluss og gange.`,
+      }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      if ((i + n) % 2 === 0) {
+        const [perDay, days] = [vary(n, i, 5, 15), vary(n + 1, i, 3, 5)]
+        const length = perDay * days + vary(n + 2, i, 10, 60)
+        const who = person(i + n + 2)
+        const { lines, letter } = choices(
+          `Bo: ${perDay} · ${days} = ${perDay * days}, ${length} − ${perDay * days} = ${length - perDay * days}`,
+          [`Ali: ${length} − ${perDay} − ${days} = ${length - perDay - days}`, `Cem: ${length} − ${perDay} = ${length - perDay}, ${length - perDay} − ${days} = ${length - perDay - days}`],
+          i,
+        )
+        return {
+          text: `Oppgave: «Et puslespill har ${length} brikker. ${who} legger ${perDay} brikker hver kveld i ${days} kvelder. Hvor mange brikker er det igjen å legge?»\nHvem har riktig løsning? Forklar hva de andre har tenkt feil.\n${lines}`,
+          solution: `${letter}) Bo. ${who} har lagt ${perDay} · ${days} = ${perDay * days} brikker, så det er ${length - perDay * days} brikker igjen. De andre trekker fra ${days} som om det var brikker, men ${days} er antall kvelder.`,
+        }
+      }
+      const [rows, seats, broken] = [vary(n, i, 3, 6), vary(n + 1, i, 5, 9), vary(n + 2, i, 2, 6)]
+      const left = rows * seats - broken
+      return {
+        text: `Oppgave: «Det er ${rows} rader med ${seats} stoler i hver rad. ${broken} stoler er ødelagte. Hvor mange stoler kan brukes?»\nHvilke påstander er sanne? Det kan være mer enn én. Forklar.\nA) Oppgaven har to regnesteg.\nB) Svaret er ${left}.\nC) Oppgaven kan løses med ${rows} + ${seats} − ${broken}.\nD) Svaret er mindre enn ${rows * seats}.`,
+        solution: `A, B og D er sanne. ${rows} · ${seats} = ${rows * seats}, ${rows * seats} − ${broken} = ${left}. C er feil fordi ${rows} + ${seats} − ${broken} = ${rows + seats - broken}.`,
+      }
+    }),
+)
+
+// ---------------------------------------------------------------------------------------
 // Regler per undertema
 
 const skillTasks: Record<string, Generator> = {
@@ -657,81 +948,11 @@ const skillTasks: Record<string, Generator> = {
   },
   'geo.vinkler': (level, n, profile) => (profile?.taskVariant === 'klassifisere' ? angleTypeTasks(level, n) : angleSumTasks(level, n)),
 
-  // Problemløsing
-  'prob.regnefortellinger': byLevel(
-    (n) =>
-      five((i): TaskSpec => {
-        const [p, q] = [vary(n, i, 12, 45), vary(n + 1, i, 10, 35)]
-        return [H, p, '+', q, `Skriv et regneuttrykk og regn ut: En is koster ${p} kr og en brus koster ${q} kr. Hva koster de til sammen?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const p = vary(n, i, 23, 89)
-        return [H, 100, '-', p, `Skriv et regneuttrykk og regn ut: Du betaler med en 100-lapp for en vare som koster ${p} kr. Hvor mye får du igjen?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const [p, k] = [vary(n, i, 12, 49), vary(n + 2, i, 3, 8)]
-        return [H, k, '*', p, `Skriv et regneuttrykk og regn ut: Én bok koster ${p} kr. Hva koster ${k} bøker?`]
-      }),
-  ),
-  'prob.modeller': byLevel(
-    (n) =>
-      five((i): TaskSpec => {
-        const [a, b] = [vary(n, i, 12, 40), vary(n + 1, i, 3, 15)]
-        return [H, a, '+', b, `Tegn en modell: Ida har ${a} kort. Ola har ${b} flere enn Ida. Hvor mange kort har Ola?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const b = vary(n, i, 12, 40)
-        const a = b + vary(n + 1, i, 5, 30)
-        return [H, a, '-', b, `Tegn en modell: Emil har ${a} kort og Sara har ${b}. Hvor mange flere kort har Emil?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const d = pick([3, 4, 5, 6], i + n)
-        const total = d * vary(n, i, 6, 15)
-        return [H, total, '/', d, `Tegn en modell: ${total} kort deles likt på ${d} barn. Hvor mange får hver?`]
-      }),
-  ),
-  'prob.flersteg': byLevel(
-    (n) =>
-      five((i): TextSpec => {
-        const p = vary(n, i, 10, 20)
-        const m = pick([50, 100], i + n)
-        return { text: `Ola har ${m} kr. Han kjøper 2 is som koster ${p} kr hver. Hvor mye har han igjen?`, solution: `${m - 2 * p} kr  (2 · ${p} = ${2 * p}, ${m} − ${2 * p} = ${m - 2 * p})` }
-      }),
-    (n) =>
-      five((i): TextSpec => {
-        const d = pick([2, 3, 4], i + n)
-        const total = d * vary(n, i, 5, 8)
-        const girls = vary(n + 1, i, 4, total - 4)
-        return {
-          text: `En klasse har ${girls} jenter og ${total - girls} gutter. De deles i grupper på ${d}. Hvor mange grupper blir det?`,
-          solution: `${total / d} grupper  (${girls} + ${total - girls} = ${total}, ${total} : ${d} = ${total / d})`,
-        }
-      }),
-    (n) =>
-      five((i): TextSpec => {
-        const [p, d, x] = [vary(n, i, 5, 15), vary(n + 1, i, 3, 7), vary(n + 2, i, 4, 20)]
-        return {
-          text: `Mia leser ${p} sider hver dag i ${d} dager, og så ${x} sider til. Hvor mange sider har hun lest?`,
-          solution: `${p * d + x} sider  (${d} · ${p} = ${p * d}, ${p * d} + ${x} = ${p * d + x})`,
-        }
-      }),
-  ),
-  'prob.flervalg': (level, n) =>
-    five((i): TextSpec => {
-      const a = vary(n, i, level === 1 ? 12 : 25, level === 1 ? 48 : 89)
-      const b = vary(n + 1, i, level === 1 ? 11 : 3, level === 1 ? 39 : 9)
-      const [expression, correct] =
-        level === 1 ? [`${a} + ${b}`, a + b] : level === 2 ? [`${a + b} − ${b}`, a] : [`${b} · ${a}`, a * b]
-      const options = [correct, correct + 10, correct - 1]
-      const order = [i % 3, (i + 1) % 3, (i + 2) % 3]
-      const letters = ['A', 'B', 'C']
-      const shown = order.map((k, j) => `${letters[j]}: ${options[k]}`).join('   ')
-      return { text: `Hvilket svar er riktig?\n${expression} = ?\n${shown}`, solution: `${letters[order.indexOf(0)]}: ${correct}` }
-    }),
+  // Problemløsing. Repetisjonsøktene bruker de samme grunnoppgavene som øktene de repeterer.
+  'prob.regnefortellinger': storyTasks,
+  'prob.modeller': modelTasks,
+  'prob.flersteg': multiStepTasks,
+  'prob.flervalg': choiceTasks,
 
   // Tall og regning
   'tr.add-sub': byLevel(
@@ -1457,6 +1678,76 @@ const geometryProfile = (
   ) as Record<Level, LevelProfile>,
 })
 
+// ---------------------------------------------------------------------------------------
+// Problemløsing: fire fagområder i fire økter over to uker – regnefortellinger og regneuttrykk (økt 1),
+// bruke modeller (økt 2), flerstegsoppgaver (økt 3) og flervalgsoppgaver (økt 4). Nivåforskjellen
+// handler om støtte og resonnement, ikke bare større tall. Tallområdet følger referansebanken.
+
+const PROBLEM_SOLVING_SUPPORT: Record<Level, string> = {
+  1: 'Kort tekst, ett steg eller synlige mellomsteg, ferdig modell eller tydelig tegneinstruksjon.',
+  2: 'Eleven velger framgangsmåte selv: to steg uten synlig støtte og en enkel begrunnelse.',
+  3: 'Vurdere andres løsninger, finne feil, forklare, eller løse problemer der svaret må tolkes ut fra situasjonen.',
+}
+
+const PROBLEM_SOLVING_LEVELS: Record<ProblemSolvingArea, [LevelText, LevelText, LevelText]> = {
+  'regnefortelling-regneuttrykk': [
+    { title: 'Fra fortelling til uttrykk', subtitle: 'Ett regnesteg.', description: 'Skrive regneuttrykket til en kort fortelling med ett steg og regne ut.', numbers: 'Hele tall opptil 100, ett regnesteg' },
+    { title: 'Ett uttrykk for hele fortellingen', subtitle: 'To regnetegn.', description: 'Skrive ett regneuttrykk med to regnetegn som beskriver hele fortellingen.', numbers: 'Hele tall opptil 1000, to regnetegn i ett uttrykk' },
+    { title: 'Vurdere uttrykk', subtitle: 'Finne feil og forklare.', description: 'Vurdere om et regneuttrykk passer til fortellingen, finne feilen og forklare.', numbers: 'Hele tall opptil 1000' },
+  ],
+  'bruke-modeller': [
+    { title: 'Bruke en modell', subtitle: 'Ferdig modell eller tegneinstruksjon.', description: 'Lese en ferdig blokkmodell, eller tegne en tallinje eller like grupper etter en tydelig instruksjon.', numbers: 'Hele tall opptil 1000' },
+    { title: 'Tegne en modell', subtitle: 'Blokkmodell og tabell.', description: 'Tegne en blokkmodell eller lage en tabell selv og bruke den til å løse problemet.', numbers: 'Hele tall opptil 1000' },
+    { title: 'Tolke og vurdere modeller', subtitle: 'Forklare modellen.', description: 'Tolke en modell, vurdere om en modell er riktig og bruke modell til problemer med to ukjente.', numbers: 'Hele tall opptil 1000' },
+  ],
+  flerstegsoppgaver: [
+    { title: 'To steg med støtte', subtitle: 'Stegene står i oppgaven.', description: 'Løse oppgaver med to regnesteg når stegene er synlige.', numbers: 'Hele tall opptil 100' },
+    { title: 'To steg', subtitle: 'Finne stegene selv.', description: 'Finne stegene selv og vise hvert steg med et regnestykke.', numbers: 'Hele tall opptil 1000' },
+    { title: 'Flere steg – tolke og vurdere', subtitle: 'Svaret må tolkes.', description: 'Tolke svaret ut fra situasjonen, f.eks. runde opp når alle skal være med, og finne steg som mangler.', numbers: 'Hele tall opptil 1000' },
+  ],
+  'flervalg-begrunnelse': [
+    { title: 'Velge riktig svar', subtitle: 'Ett steg.', description: 'Løse et problem med ett steg og velge riktig svar eller regneuttrykk.', numbers: 'Hele tall opptil 100' },
+    { title: 'Velge og begrunne', subtitle: 'To steg eller tolke fortellinger.', description: 'Løse et problem med to steg eller velge fortellingen som passer, og forklare valget.', numbers: 'Hele tall opptil 1000' },
+    { title: 'Vurdere løsninger og påstander', subtitle: 'Forklare feilene.', description: 'Vurdere andres løsninger og påstander og forklare hva som er feil.', numbers: 'Hele tall opptil 1000' },
+  ],
+}
+
+const PROBLEM_SOLVING_FORMATS: Record<ProblemSolvingArea, string[]> = {
+  'regnefortelling-regneuttrykk': ['Korte tekstoppgaver der eleven skriver regneuttrykket og svaret, lager en fortelling til et uttrykk eller finner feilen i et uttrykk'],
+  'bruke-modeller': ['Korte tekstoppgaver med en blokkmodell, tallinje, tabell eller like grupper – modellen står i teksten, eller eleven får en nøyaktig tegneinstruksjon'],
+  flerstegsoppgaver: ['Tekstoppgaver med minst to regnesteg der fasiten viser hvert steg (nivå 1 med «Steg 1:» og «Steg 2:» i oppgaven)'],
+  'flervalg-begrunnelse': ['Flervalgsoppgaver med alternativene på egne linjer («A) …», «B) …») og nøyaktig ett riktig alternativ, med mindre teksten sier at flere kan være riktige'],
+}
+
+const PROBLEM_SOLVING_AVOID: Record<ProblemSolvingArea, string> = {
+  'regnefortelling-regneuttrykk': 'Regnearter som ikke passer handlingen i fortellingen',
+  'bruke-modeller': 'Oppgaver som bare nevner ordet «modell», eller som viser til en figur eller modell som ikke står i teksten',
+  flerstegsoppgaver: 'Oppgaver med bare ett regnesteg, manglende opplysninger eller et mellomsvar som endelig svar',
+  'flervalg-begrunnelse': 'Tilfeldige gale svar, like alternativer og flere riktige alternativer uten at teksten sier det',
+}
+
+/** Øktprofil i Problemløsing. */
+const problemSolvingProfile = (area: ProblemSolvingArea, focus: string): TaskProfile => ({
+  focus,
+  area,
+  operations: ['+', '-', '*', '/'],
+  formats: PROBLEM_SOLVING_FORMATS[area],
+  steps: 'Nivå 1: ett steg eller synlige mellomsteg. Nivå 2: to steg uten synlig støtte. Nivå 3: vurdere, finne feil eller forklare.',
+  avoid: [
+    PROBLEM_SOLVING_AVOID[area],
+    'Henvisninger til figurer eller bilder som ikke vises («se figuren under»)',
+    'Desimaltall, brøk og negative tall',
+    'Regnestykker uten situasjon (eleven skal selv finne regneuttrykket)',
+  ],
+  figures: false,
+  levels: Object.fromEntries(
+    PROBLEM_SOLVING_LEVELS[area].map((text, i) => {
+      const level = (i + 1) as Level
+      return [level, { ...text, support: PROBLEM_SOLVING_SUPPORT[level] }]
+    }),
+  ) as Record<Level, LevelProfile>,
+})
+
 /** Måleøkt. */
 const measureProfile = (
   focus: string,
@@ -1959,14 +2250,34 @@ export const unitSpecs: UnitSpec[] = [
     area: 'Problemløsing',
     description: 'Elevene lager regneuttrykk til regnefortellinger, bruker modeller, løser oppgaver med flere steg og vurderer svaralternativer.',
     weeks: [
-      { title: 'Uke 1 - fortellinger og modeller', sessions: [s('Regnefortellinger og regneuttrykk', 'prob.regnefortellinger'), s('Bruke modeller', 'prob.modeller')] },
-      { title: 'Uke 2 - flere steg og valg', sessions: [s('Flerstegsoppgaver', 'prob.flersteg'), s('Flervalgsoppgaver', 'prob.flervalg')] },
+      {
+        title: 'Uke 1 - fortellinger og modeller',
+        sessions: [
+          p(
+            'Regnefortellinger og regneuttrykk',
+            ['prob.regnefortellinger'],
+            problemSolvingProfile('regnefortelling-regneuttrykk', 'Oversette mellom hverdagssituasjoner og regneuttrykk, begge veier: noe kommer til (+), noe tas bort eller sammenlignes (−), like grupper (·).'),
+          ),
+          p('Bruke modeller', ['prob.modeller'], problemSolvingProfile('bruke-modeller', 'Bruke, tegne og tolke blokkmodell, tallinje, tabell og like grupper for å løse problemer.')),
+        ],
+      },
+      {
+        title: 'Uke 2 - flere steg og valg',
+        sessions: [
+          p('Flerstegsoppgaver', ['prob.flersteg'], problemSolvingProfile('flerstegsoppgaver', 'Løse problemer som krever to eller flere regnesteg, med gradvis mindre støtte, og tolke svaret ut fra situasjonen.')),
+          p('Flervalgsoppgaver', ['prob.flervalg'], problemSolvingProfile('flervalg-begrunnelse', 'Velge riktig svaralternativ, vurdere påstander og løsninger og begrunne valget.')),
+        ],
+      },
     ],
-    goals: ['Skrive regneuttrykk til regnefortellinger.', 'Bruke modeller til å løse oppgaver.', 'Løse oppgaver med flere steg og vurdere om svaret er rimelig.'],
+    goals: [
+      'Oversette mellom regnefortellinger og regneuttrykk.',
+      'Bruke modeller som blokkmodell, tallinje og tabell til å løse problemer.',
+      'Løse oppgaver med flere steg, velge riktig svaralternativ og begrunne valget.',
+    ],
     levels: [
-      { title: 'Ett steg', subtitle: 'Regnefortellinger med pluss.', description: 'Skrive regneuttrykket.' },
-      { title: 'Modeller', subtitle: 'Pluss, minus og modeller.', description: 'Tegne en modell før jeg regner.' },
-      { title: 'Flere steg', subtitle: 'Oppgaver med to steg.', description: 'Planlegge og sjekke svaret.' },
+      { title: 'Med støtte', subtitle: 'Ett steg eller synlige steg.', description: 'Bruke en ferdig modell eller følge stegene i oppgaven.' },
+      { title: 'Velge selv', subtitle: 'To steg uten støtte.', description: 'Velge framgangsmåte og begrunne kort.' },
+      { title: 'Vurdere og forklare', subtitle: 'Finne feil og tolke svaret.', description: 'Vurdere løsninger, finne feil og forklare.' },
     ],
   },
   {

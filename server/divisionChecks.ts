@@ -50,8 +50,8 @@ const DIVISION_BY_ZERO = new RegExp(
     /\b(del\w*|fordel\w*)\b[^.?!]{0,40}\b(på|mellom|i) 0\b|\b0 (like (store )?)?(grupper|deler|lag|barn|elever|poser|esker|bunker)\b/.source,
   'i',
 )
-const DECIMAL = /\d[,.]\d/
-const NEGATIVE = /(^|[\s(=])[-−]\d|minusgrad|kuldegrad|under null/i
+export const DECIMAL = /\d[,.]\d/
+export const NEGATIVE = /(^|[\s(=])[-−]\d|minusgrad|kuldegrad|under null/i
 const BLANK_PRODUCT = /(_+|□|\?)\s*[·x×*]\s*\d+\s*=\s*\d+|\d+\s*[·x×*]\s*(_+|□|\?)\s*=\s*\d+/
 const DIVISION_SIGNAL =
   /\d\s+[:/]\s+(\d|_)|\d[:/]\d|_+\s*[:/]|\b(del|dele|deler|deles|delt|delte)\b|\bfordel|\blikt\b|\bi hver\b|\bpå hver|\bved hvert?\b|\bmed \d+ (\p{L}+ )?i hver|til overs|\brest\b|divisjon|delestykk|\bgrupper?\b|\bhopp\w*|\brader\b|kolonner|blokk|plass til|regnefamili/iu
@@ -72,6 +72,23 @@ const ROUND_UP = /\btrengs\b|\btrenger\b|\bmå (de|vi|du|han|hun|man|klassen|sko
 /** Spørsmålet gjelder bare hele (fulle) grupper. */
 const FULL_GROUPS = /\b(fulle|hele|helt fulle)\b/i
 const ASKS_REMAINDER = /til overs|\bigjen\b|\brest(en)?\b|den siste/i
+
+/** Spørsmålet krever at alle får plass (hvor mange grupper som trengs) – ikke bare hvor mange hele grupper det blir. */
+export const asksRoundUp = (question: string) => !FULL_GROUPS.test(question) && ROUND_UP.test(question)
+
+/**
+ * Svaret når alle skal få plass: `total` fordelt i grupper på `divisor`. Går delingen opp, er svaret kvotienten.
+ * Blir det rest, er rest-svaret (antall hele grupper) ikke godt nok – svaret er én gruppe mer. Spør oppgaven
+ * også hva som blir til overs, må resten stå i fasiten. Brukes av Divisjon og Problemløsing (flerstegsoppgaver).
+ */
+export function roundUpProblem(total: number, divisor: number, stated: number, studentText: string, solution: string): 'wrongRemainder' | 'wrongSolution' | null {
+  const [q, r] = [Math.floor(total / divisor), total % divisor]
+  if (r === 0) return stated === q ? null : 'wrongSolution'
+  if (stated === q) return 'wrongRemainder'
+  if (stated !== q + 1) return 'wrongSolution'
+  if (ASKS_REMAINDER.test(studentText) && !numbersIn(solution).includes(r)) return 'wrongSolution'
+  return null
+}
 
 /** Konkrete representasjoner eleven bruker eller tolker. */
 const MODEL = /tallinje|rutenett|blokkmodell|\bblokk(en|a)?\b|\bhopp\w*|\brader?\b|\bkolonner?\b|\bruter\b|\[\s*[\d?]*\s*\]/i
@@ -115,7 +132,7 @@ export function statedAnswer(solution: string): number | null {
 }
 
 /** Det første spørsmålet med «hvor mange», fram til en betingelse («når», «hvis», «med», komma). */
-function mainQuestion(text: string) {
+export function mainQuestion(text: string) {
   const question = text.split(/(?<=[.?!])\s+/).find((s) => /hvor mange/i.test(s))
   return question ? question.split(/,|\bnår\b|\bhvis\b|\bmed\b|\bslik at\b/i)[0] : null
 }
@@ -229,16 +246,15 @@ export function divisionProblem(task: AiTaskDraft, { area, secondaryAreas = [], 
     if (stated === null) return 'wrongSolution'
     // Læreren ba om at alle skal få plass: en oppgave med rest må spørre hvor mange som trengs – ikke om
     // hele grupper og hva som blir til overs – og fasiten må runde opp.
-    if (roundUpRequired && r > 0 && (FULL_GROUPS.test(question) || !ROUND_UP.test(question) || stated !== q + 1)) return 'wrongRemainder'
+    if (roundUpRequired && r > 0 && (!asksRoundUp(question) || stated !== q + 1)) return 'wrongRemainder'
     if (stated === total * divisor && stated !== q) {
       // Gange i en situasjon med like grupper (godtatt over fordi oppgaven også deler).
     } else if (r === 0) {
       if (stated !== q) return 'wrongSolution'
-    } else if (!FULL_GROUPS.test(question) && ROUND_UP.test(question)) {
+    } else if (asksRoundUp(question)) {
       // Konteksten krever at alle får plass: rest-svaret (q) er ikke godt nok.
-      if (stated === q) return 'wrongRemainder'
-      if (stated !== q + 1) return 'wrongSolution'
-      if (ASKS_REMAINDER.test(task.studentText) && !numbersIn(task.solution).includes(r)) return 'wrongSolution'
+      const problem = roundUpProblem(total, divisor, stated, task.studentText, task.solution)
+      if (problem) return problem
     } else {
       // Hele grupper og rest: antall hele grupper og hvor mange som blir til overs.
       if (stated === q + 1) return 'wrongRemainder'

@@ -152,6 +152,7 @@ const bankReference = (ref: AiReferenceTask, i: number) =>
     `   Faglig hensikt: ${ref.purpose || 'Ikke oppgitt.'}`,
     `   Format: ${ref.taskType || 'Ikke oppgitt.'}`,
     ref.representation && `   Representasjon: Originalen har en figur som ikke er med her (${ref.representation}). Appen kan ikke vise figurer.`,
+    ref.support && `   Visuell støtte (beskrevet med ord, ingen figur): ${ref.support}`,
     `   Oppgavetekst: «${ref.studentText}»`,
     ref.solution && `   Fasit: «${ref.solution}»`,
   )
@@ -235,6 +236,22 @@ const AREA_GUIDANCE: Partial<Record<ReferenceArea, string[]>> = {
   vinkler: [
     'Under 90° er spiss, 90° er rett, mellom 90° og 180° er stump (butt), og 180° er en rett linje (halv omdreining) – ikke en stump vinkel. En kvart omdreining er 90°. Også vinkelberegninger lages som tekstoppgaver med en vinkel i feltet figur.',
   ],
+  'regnefortelling-regneuttrykk': [
+    'Oversett mellom en kort hverdagssituasjon og et regneuttrykk, begge veier. Regnearten må passe handlingen: noe kommer til gir addisjon, noe tas bort eller sammenlignes gir subtraksjon, like grupper gir multiplikasjon og likedeling gir divisjon.',
+    'Fasiten skal vise regneuttrykket og svaret, f.eks. «34 + 18 = 52. Ida har 52 klinkekuler.», og uttrykket må gi svaret. Skal eleven lage en fortelling selv, skal fasiten si hvilket regneuttrykk fortellingen skal passe til og hva uttrykket gir, f.eks. «45 − 12 = 33. Fortellingen må handle om at 12 tas bort fra 45.».',
+  ],
+  'bruke-modeller': [
+    'Eleven skal faktisk bruke, tegne eller tolke en representasjon: blokkmodell, tallinje, tabell eller like grupper. Å bare nevne ordet «modell» er ikke nok – si hvilken modell.',
+    'Appen kan ikke vise figurer eller bilder. Skal eleven tolke en modell, skriv modellen i oppgaveteksten som tekst, f.eks. «Til sammen: 120» på én linje og «[ Sara: 45 ][ Ali: ? ]» på neste. Skal eleven tegne selv, skriv nøyaktig hva som skal tegnes (f.eks. «Tegn en tallinje fra 0 til 700 med et merke for hver 100 meter.»). Vis aldri til en figur, et bilde eller en modell som ikke står i teksten.',
+  ],
+  flerstegsoppgaver: [
+    'Oppgaven skal kreve minst to regnesteg, og alle opplysningene som trengs, skal stå i oppgaven. Fasiten skal vise hvert steg med regnestykke, f.eks. «3 · 45 = 135 kr. 200 − 135 = 65 kr. Ane får 65 kr igjen.», og svaret er resultatet av det siste steget – ikke et mellomsvar.',
+    'Nivå 1 viser stegene i oppgaveteksten («Steg 1: … Steg 2: …»). Nivå 2 og 3 viser ikke stegene. Må svaret rundes opp fordi alle skal være med (f.eks. antall busser), skal fasiten runde opp: 78 elever i busser med plass til 20 trenger 4 busser – ikke «3 og 18 til overs».',
+  ],
+  'flervalg-begrunnelse': [
+    'Skriv alternativene i oppgaveteksten, hvert på sin linje: «A) …», «B) …», «C) …» (eventuelt «D) …»). Fasiten starter med bokstaven til det riktige alternativet, f.eks. «B) 32. 23 + 9 = 32.».',
+    'Nøyaktig ett alternativ er riktig, med mindre oppgaveteksten tydelig sier «Det kan være mer enn én.». Alternativene skal være ulike, og ingen gale alternativer kan også være riktige. De gale svarene skal komme av en typisk tankefeil – feil regneart, et glemt steg eller en tellefeil over tieren – ikke tilfeldige tall.',
+  ],
   modeller: [
     'Eleven skal faktisk bruke eller tolke en modell: like grupper, tallinje, rutenett eller blokkmodell. Appen kan ikke vise figurer, så beskriv modellen i teksten (f.eks. «En blokk med totalen 35 er delt i 5 like store deler») eller be eleven tegne en bestemt modell. Å bare nevne ordet «modell» er ikke nok.',
   ],
@@ -246,6 +263,7 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
   const multiplication = topic === 'multiplikasjon'
   const division = topic === 'divisjon'
   const geometry = topic === 'geometri'
+  const problemSolving = topic === 'problemlosing'
   const secondary = profile.secondaryAreas ?? []
   const allowsRemainder = area === 'divisjon-med-rest' || secondary.includes('divisjon-med-rest')
   // Todimensjonale figurer og vinkler: hver oppgave skal ha en figur appen tegner, og figurer finnes bare i tekstoppgaver.
@@ -266,7 +284,9 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
     '- Bruk referansene på samme nivå til å forstå faglig innhold, oppgaveformat, representasjon, nivå og faglig hensikt.',
     figureRequired
       ? '- Lengde, antall steg og svarform skal følge oppgavesettet og øktprofilen, ikke referansene. Alle oppgavene skal være tekstoppgaver (format «tekst») med figur – også når oppgavesettet har regnestykker.'
-      : '- Lengde, antall steg og svarform skal følge oppgavesettet og øktprofilen, ikke referansene. Består oppgavesettet av korte regnestykker, skal de nye også være korte regnestykker med format «regnestykke».',
+      : problemSolving
+        ? '- Lengde, antall steg og svarform skal følge oppgavesettet og øktprofilen. De nye oppgavene er mer øving i det eleven allerede arbeider med i økta – ikke et nytt deltema eller et annet oppgaveformat. Alle oppgavene skal være tekstoppgaver (format «tekst»).'
+        : '- Lengde, antall steg og svarform skal følge oppgavesettet og øktprofilen, ikke referansene. Består oppgavesettet av korte regnestykker, skal de nye også være korte regnestykker med format «regnestykke».',
     ...(AREA_GUIDANCE[area] ?? []).map((g) => `- ${g}`),
     profile.requiresCarry &&
       '- Alle oppgavene skal kreve addisjon med tierovergang: minst én nødvendig addisjon må ha veksling i en plassverdi (f.eks. 28 + 7 på nivå 1 og 48 + 37 på nivå 2). Nivå 1 blir lettere gjennom enkle tall og støtte som «Fyll først opp til nærmeste tier.», ikke ved å fjerne tierovergangen. På nivå 3 kan andre regnearter inngå i flere steg, men addisjonen med veksling skal være en sentral del av løsningen.',
@@ -284,12 +304,16 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
         : '- Byttede ledd i et plusstykke (f.eks. 243 + 126 og 126 + 243) regnes som samme oppgave.'),
     multiplication
       ? '- Bruk bare gangetabellene og tallområdet på nivået.'
-      : geometry
+      : problemSolving
+        ? '- Hold deg til fagområdet i økta og tallområdet i referansene på nivået. Bruk hele tall – ikke desimaltall, negative tall, brøk eller andre tema.'
+        : geometry
         ? '- Hold deg til geometriområdet i økta. Ikke ta inn areal, omkrets eller andre deltema, og ikke bytt til en annen regneart eller et annet tema – heller ikke når ønskene ber om det.'
         : division
         ? '- Hold deg til gangetabellen og tallområdet på nivået: divisor og antall hele grupper høyst 10. Bruk hele tall – ikke desimaltall, negative tall eller deling med 0.'
         : '- Hold deg til tallområdet og regneartene i økta, og ikke ta inn et nytt deltema (f.eks. avrunding) som læreren ikke har bedt om.',
-    geometry
+    problemSolving
+      ? '- Nivåforskjellen handler om støtte og resonnement, ikke bare større tall. Nivå 1: kort tekst, ett steg eller synlige mellomsteg, ferdig modell eller tydelig tegneinstruksjon. Nivå 2: eleven velger framgangsmåte selv, to steg uten synlig støtte, enkel begrunnelse. Nivå 3: vurdere andres løsninger, finne feil, forklare, eller løse problemer der svaret må tolkes ut fra situasjonen – oppgaveteksten ber eleven forklare, begrunne eller vurdere. Alle nivåene har samme faglige fokus.'
+      : geometry
       ? '- Nivå 1: gjenkjenne og beskrive – korte, konkrete spørsmål om navn, sider, hjørner, kanter, flater og enkle vinkeltyper. Nivå 2: sammenligne og bruke egenskaper – sortere, symmetri, flater og nett, enkle vinkelberegninger. Nivå 3: resonnere og forklare – vurdere påstander, begrunne, undersøke nett og trekke slutninger. Nivåforskjellen skal ikke bare være større tall eller lengre tekst.'
       : division
       ? '- Nivå 1: tydelig støtte, små tall og ett faglig steg. Nivå 2: mindre støtte, eleven skriver divisjonsstykket selv. Nivå 3: forklare, begrunne, kontrollere med gange eller tolke svaret – ikke bare større tall. Alle nivåene har samme faglige fokus.'
@@ -303,6 +327,8 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
     geometry && '- Eleven svarer i et tekstfelt og kan ikke tegne. Ikke be eleven tegne, skissere eller konstruere noe – vis heller figuren og la eleven telle, gjenkjenne, sammenligne eller forklare.',
     geometry
       ? figureRule(area)
+      : problemSolving
+      ? '- Du kan ikke lage figurer. Modeller skrives som tekst i oppgaveteksten, eller eleven får en nøyaktig tegneinstruksjon. Skriv aldri «se figuren», «se bildet» eller «modellen under» uten at modellen står i teksten.'
       : area === 'modeller'
       ? '- Du kan ikke lage figurer. Modellen må derfor beskrives i teksten eller tegnes av eleven.'
       : '- Du kan ikke lage figurer, så oppgavene må kunne løses uten figur.',
