@@ -27,3 +27,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Hemmeligheter (API-nøkler). .env.example skal være med i git.
+.env
+.env.*
+!.env.example
