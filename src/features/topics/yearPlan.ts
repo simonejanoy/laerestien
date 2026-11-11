@@ -1,4 +1,4 @@
-import { visualSignature, type AiVisual, type DivisionArea, type DivisionType, type GeometryArea, type PlaceValueArea, type ProblemSolvingArea } from '../../ai/contract.ts'
+import { visualSignature, type AiVisual, type DivisionArea, type DivisionType, type GeometryArea, type NumbersAndOperationsArea, type PlaceValueArea, type ProblemSolvingArea } from '../../ai/contract.ts'
 import type { Level, LevelGroup, LevelProfile, Operator, TaskProfile, TaskType, TopicDetails } from '../../types/index.ts'
 import { OPEN_STRATEGY, strategyInstruction } from './multiplicationStrategies.ts'
 import { columnTasks, fourDigitTasks, mentalStrategyTasks, negativeNumberTasks, type FourDigitVariant } from './placeValueTasks.ts'
@@ -789,6 +789,241 @@ const choiceTasks = byLevel(
 )
 
 // ---------------------------------------------------------------------------------------
+// Tall og regning: sammenhengen mellom regneartene (økt 1–2), desimaltall med tideler (økt 3–4) og desimaltall
+// i lengdemåling (økt 5–6). Nivå 1 har tydelig støtte, nivå 2 bruker sammenhengen selv, og nivå 3 vurderer,
+// forklarer eller finner feil. Repetisjon uten profil bruker de samme reglene som øktene den repeterer.
+
+/** «1 tidel», «3 tideler». */
+const tenths = (k: number) => `${k} ${k === 1 ? 'tidel' : 'tideler'}`
+
+/** Pluss og minus: bruke et pluss-stykke → ukjent ledd og kontroll → vurdere og forklare sammenhengen. */
+const addSubTasks = byLevel(
+  (n) =>
+    five((i): TaskSpec => {
+      const [a, b] = [vary(n, i, 12, 48), vary(n + 1, i, 11, 39)]
+      return [H, a + b, '-', b, `${a} + ${b} = ${a + b}. Bruk det til å finne ${a + b} − ${b}.`]
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      const variant = (i + n) % 3
+      if (variant === 0) {
+        const [b, x] = [vary(n, i, 24, 68), vary(n + 1, i, 27, 89)]
+        return { text: `Hvilket tall skal stå på den tomme plassen? __ + ${b} = ${x + b}. Vis hvilket minus-stykke som gir svaret.`, solution: `${x}. Minus-stykket er ${x + b} − ${b} = ${x}.` }
+      }
+      if (variant === 1) {
+        const [b, d] = [vary(n, i, 35, 79), vary(n + 1, i, 48, 160)]
+        return { text: `Hvilket tall skal stå på den tomme plassen? __ − ${b} = ${d}. Vis hvilket pluss-stykke som gir svaret.`, solution: `${d + b}. Pluss-stykket er ${d} + ${b} = ${d + b}.` }
+      }
+      const [c, b] = [vary(n, i, 201, 480), vary(n + 1, i, 112, 189)]
+      return { text: `Regn ut ${c} − ${b}, og sjekk svaret ved å legge sammen.`, solution: `${c} − ${b} = ${c - b}. Kontroll: ${c - b} + ${b} = ${c}.` }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      const who = person(i + n)
+      if ((i + n) % 2 === 0) {
+        const [b, d] = [vary(n, i, 18, 45), vary(n + 1, i, 50, 95)]
+        return {
+          text: `I regnestykket __ − ${b} = ${d} mangler et tall. ${who} mener at det er ${d - b}, fordi ${d} − ${b} = ${d - b}. Stemmer det? Forklar og finn det riktige tallet.`,
+          solution: `Nei. Tallet som mangler er helheten: ${d} + ${b} = ${d + b}, og ${d + b} − ${b} = ${d}.`,
+        }
+      }
+      const [a, b] = [10 * vary(n, i, 8, 19), 10 * vary(n + 1, i, 6, 14)]
+      return {
+        text: `Forklar hvorfor ${a + b} − ${b} = ${a} betyr at ${a} + ${b} = ${a + b}. Bruk ordene helhet og del.`,
+        solution: `Begge regnestykkene handler om helheten ${a + b} med delene ${a} og ${b}. Tar vi bort delen ${b} fra helheten, står ${a} igjen. Legger vi delene sammen, får vi ${a + b}.`,
+      }
+    }),
+)
+
+/** Gange og dele: bruke et gangestykke → tiere og ukjent tall → vurdere en påstand og finne feilen. */
+const multDivTasks = byLevel(
+  (n) =>
+    five((i): TaskSpec => {
+      const b = pick([2, 5, 10], i + n)
+      const a = vary(n, i, 2, 10)
+      return [H, a * b, '/', b, `${a} · ${b} = ${a * b}. Bruk det til å finne ${a * b} : ${b}.`]
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      if ((i + n) % 2 === 0) {
+        const [f, t] = [vary(n, i, 2, 6), 10 * vary(n + 1, i, 2, 9)]
+        return { text: `Du vet at ${f} · ${t} = ${f * t}. Hvilke to delestykker kan du løse med dette? Skriv dem med svar.`, solution: `${f * t} : ${f} = ${t} og ${f * t} : ${t} = ${f}.` }
+      }
+      const [q, d] = [vary(n, i, 3, 9), vary(n + 1, i, 3, 9)]
+      return { text: `Hvilket tall mangler? ${q * d} : __ = ${q}. Skriv gangestykket som viser svaret.`, solution: `${d}. Gangestykket er ${q} · ${d} = ${q * d}.` }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      const who = person(i + n + 2)
+      if ((i + n) % 2 === 0) {
+        const [f, t] = [vary(n, i, 3, 8), 10 * vary(n + 1, i, 2, 9)]
+        return {
+          text: `${who} påstår: «Siden ${f} · ${t} = ${f * t}, er ${f * t} : ${t} = ${f}.» Har ${who} rett? Forklar.`,
+          solution: `Ja. ${f} og ${t} er faktorer, og ${f * t} er produktet. Deler vi produktet på den ene faktoren, får vi den andre: ${f * t} : ${t} = ${f}.`,
+        }
+      }
+      const [a, q] = [vary(n, i, 6, 8), vary(n + 1, i, 6, 9)]
+      return {
+        text: `${who} mener at ${a * q} : ${a} = ${q + 1}. Som begrunnelse skriver ${who} at ${a} · ${q + 1} = ${a * q}. Hva er galt? Skriv riktig svar og forklar.`,
+        solution: `${a} · ${q + 1} = ${a * (q + 1)}, ikke ${a * q}. ${a} · ${q} = ${a * q}, så ${a * q} : ${a} = ${q}.`,
+      }
+    }),
+)
+
+/** Tideler: skrive tideler → addisjon over én hel og sammenligning → vurdere en misoppfatning og forklare. */
+const writeTenths = byLevel(
+  (n) =>
+    five((i): TextSpec => {
+      const t = vary(n, i, 1, 9)
+      return { text: `Skriv som desimaltall: ${tenths(t)}`, solution: `0,${t}` }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      if ((i + n) % 2 === 0) {
+        const x = vary(n, i, 4, 9)
+        const y = Math.max(vary(n + 1, i, 3, 9), 11 - x)
+        const sum = x + y
+        return {
+          text: `Legg sammen 0,${x} og 0,${y}. Hvor mange hele og tideler blir det? Skriv svaret som desimaltall.`,
+          solution: `${dec(sum / 10)}. 0,${x} + 0,${y} = ${dec(sum / 10)}. ${tenths(x)} + ${tenths(y)} = ${sum} tideler, som er 1 hel og ${tenths(sum - 10)}.`,
+        }
+      }
+      const x = vary(n, i, 1, 4)
+      const y = x + vary(n + 1, i, 3, 5)
+      return { text: `Hvilket tall er størst, 1,${x} eller 0,${y}? Forklar med tideler.`, solution: `1,${x} er størst. 1,${x} er ${10 + x} tideler, og 0,${y} er ${y} tideler.` }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      if ((i + n) % 2 === 0) {
+        const x = vary(n, i, 1, 4)
+        const y = x + vary(n + 1, i, 3, 5)
+        const who = person(i + n)
+        return {
+          text: `«0,${y} må være større enn 1,${x}, for ${y} er større enn ${x}», sier ${who}. Stemmer det? Forklar med tideler.`,
+          solution: `Nei. 1,${x} er større enn 0,${y}. 1,${x} er ${10 + x} tideler, og 0,${y} er bare ${y} tideler.`,
+        }
+      }
+      const [h, t] = [vary(n, i, 2, 9), vary(n + 1, i, 1, 9)]
+      return {
+        text: `Et tall har ${h} hele og ${tenths(t)}. Skriv tallet som desimaltall, og forklar hvor mange tideler det er i tallet til sammen.`,
+        solution: `${h},${t}. Det er ${10 * h + t} tideler, fordi ${h} hele er ${10 * h} tideler og ${tenths(t)} til gir ${10 * h + t} tideler.`,
+      }
+    }),
+)
+
+/** Tideler på tallinjen: hopp fra 0 → hopp fra et desimaltall → ordne og vurdere plassering. */
+const numberLineTenths = byLevel(
+  (n) =>
+    five((i): TextSpec => {
+      const k = vary(n, i, 1, 9)
+      return {
+        text: `Tenk deg en tallinje fra 0 til 1 med 10 like lange hopp. Hvilket desimaltall kommer du til etter ${k} hopp fra 0?`,
+        solution: `0,${k}. Hvert hopp er én tidel, og ${k} hopp er ${k} tideler.`,
+      }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      const start = 10 * vary(n, i, 0, 1) + vary(n + 1, i, 1, 9)
+      let k = vary(n + 2, i, 3, 8)
+      if ((start + k) % 10 === 0) k++
+      return {
+        text: `Du står på ${dec(start / 10)} på tallinjen og hopper ${k} tideler fremover. Hvilket desimaltall lander du på?`,
+        solution: `${dec((start + k) / 10)}. ${dec(start / 10)} + 0,${k} = ${dec((start + k) / 10)}.`,
+      }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      const x = vary(n, i, 1, 4)
+      if ((i + n) % 2 === 0) {
+        const y = x + vary(n + 1, i, 2, 5)
+        const w = y > 5 ? y - 4 : y + 2
+        const z = vary(n + 2, i, 5, 9) === x ? x + 4 : vary(n + 2, i, 5, 9)
+        const values = [10 + x, y, 10 + z, w]
+        return {
+          text: `Sett tallene i rekkefølge fra minst til størst, og forklar hvordan en tallinje fra 0 til 2 hjelper deg: ${values.map((v) => dec(v / 10)).join(' ')}`,
+          solution: `${[...values].sort((a, b) => a - b).map((v) => dec(v / 10)).join(' ')}. Tallene med 0 hele ligger mellom 0 og 1 på tallinjen, og tallene med 1 hel ligger mellom 1 og 2. Innenfor hver del ser vi på tidelene.`,
+        }
+      }
+      const who = person(i + n + 1)
+      return {
+        text: `${who} plasserer 1,${x} mellom 0 og 1 på tallinjen. Har ${who} rett? Forklar hvor tallet skal stå.`,
+        solution: `Nei. 1,${x} er større enn 1, så tallet skal stå mellom 1 og 2, ${x} tideler etter 1.`,
+      }
+    }),
+)
+
+/** Lengder: centimeter og millimeter → meter til desimeter → vurdere en omgjøring og regne på to måter. */
+const convertLengths = byLevel(
+  (n) =>
+    five((i): TextSpec => {
+      const [c, mm] = [vary(n, i, 2, 15), vary(n + 1, i, 1, 9)]
+      return { text: `En blyant er ${c} cm og ${mm} mm lang. Skriv lengden i centimeter med desimaltall.`, solution: `${c},${mm} cm` }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      const m = vary(n, i, 11, 49)
+      return { text: `Gjør om ${dec(m / 10)} m til desimeter.`, solution: `${m} dm` }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      const who = person(i + n)
+      if ((i + n) % 2 === 0) {
+        const [h, t] = [vary(n, i, 1, 4), vary(n + 1, i, 1, 9)]
+        return {
+          text: `«${h},${t} meter og ${10 * h + t} centimeter er like langt», sier ${who}. Stemmer det? Forklar ved å gjøre om til samme enhet.`,
+          solution: `Nei. ${h},${t} m er ${10 * h + t} dm, som er ${100 * h + 10 * t} cm. ${10 * h + t} cm er mye kortere.`,
+        }
+      }
+      const length = vary(n, i, 2, 5)
+      const cut = 10 * vary(n + 1, i, 1, length - 1) + vary(n + 2, i, 1, 9)
+      const left = 10 * length - cut
+      return {
+        text: `${who} har et bånd på ${length} m og bruker ${dec(cut / 10)} m til en sløyfe. Regn ut hvor mye bånd som er igjen, først i meter og så i desimeter. Forklar hvorfor svarene viser samme lengde.`,
+        solution: `${dec(left / 10)} m, som er ${left} dm. Meter: ${length} − ${dec(cut / 10)} = ${dec(left / 10)}. Desimeter: ${10 * length} dm − ${cut} dm = ${left} dm. 1 m er 10 dm, så begge svarene viser samme lengde.`,
+      }
+    }),
+)
+
+/** Skrive og sammenligne lengder: meter og desimeter → sammenligne to enheter → ordne tre enheter. */
+const writeLengths = byLevel(
+  (n) =>
+    five((i): TextSpec => {
+      const [m, d] = [vary(n, i, 1, 3), vary(n + 1, i, 1, 9)]
+      return { text: `En hylle måler ${m} m og ${d} dm. Hvor lang er hylla i meter? Skriv svaret som desimaltall.`, solution: `${m},${d} m` }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      const [c, mm] = [vary(n, i, 3, 8), vary(n + 1, i, 1, 9)]
+      const inMm = 10 * c + mm
+      const other = inMm + pick([-6, -4, -3, 3, 4, 6], i + n)
+      const [first, second] = [person(i + n), person(i + n + 5)]
+      const longest = inMm > other ? `${c},${mm} cm` : `${other} mm`
+      const order = inMm > other ? `${inMm} mm er mer enn ${other} mm` : `${other} mm er mer enn ${inMm} mm`
+      return {
+        text: `${first} har en blyant på ${c},${mm} cm, og ${second} har en på ${other} mm. Hvilken blyant er lengst? Gjør om til samme enhet og forklar.`,
+        solution: `Blyanten på ${longest} er lengst. ${c},${mm} cm er ${inMm} mm, og ${order}.`,
+      }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      const dm = vary(n, i, 11, 19)
+      const m = vary(n + 1, i, 1, 3)
+      let cm = vary(n + 2, i, 8, 24)
+      while (cm === dm || cm === 10 * m) cm++
+      const items = [
+        { label: `${dec(dm / 10)} dm`, cm: dm },
+        { label: `${cm} cm`, cm },
+        { label: `${dec(m / 10)} m`, cm: 10 * m },
+      ]
+      const sorted = [...items].sort((a, b) => a.cm - b.cm)
+      return {
+        text: `Ordne disse lengdene fra kortest til lengst: ${items.map((x) => x.label).join(', ')}. Gjør dem om til samme enhet først, og begrunn rekkefølgen.`,
+        solution: `${sorted.map((x) => x.label).join(', ')}. ${dec(dm / 10)} dm = ${dm} cm og ${dec(m / 10)} m = ${10 * m} cm, så ${sorted.map((x) => `${x.cm} cm`).join(' < ')}.`,
+      }
+    }),
+)
+
+// ---------------------------------------------------------------------------------------
 // Regler per undertema
 
 const skillTasks: Record<string, Generator> = {
@@ -954,64 +1189,11 @@ const skillTasks: Record<string, Generator> = {
   'prob.flersteg': multiStepTasks,
   'prob.flervalg': choiceTasks,
 
-  // Tall og regning
-  'tr.add-sub': byLevel(
-    (n) =>
-      five((i): TaskSpec => {
-        const [a, b] = [vary(n, i, 12, 48), vary(n + 1, i, 11, 39)]
-        return [H, a + b, '-', b, `${a} + ${b} = ${a + b}. Bruk det til å finne ${a + b} − ${b}.`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const [a, b] = [vary(n, i, 120, 480), vary(n + 1, i, 110, 390)]
-        return [H, a + b, '-', b, `${a} + ${b} = ${a + b}. Bruk det til å finne ${a + b} − ${b}.`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const [a, b] = [vary(n, i, 1200, 4800), vary(n + 1, i, 1100, 3900)]
-        return [H, a + b, '-', a, `${a} + ${b} = ${a + b}. Bruk det til å finne ${a + b} − ${a}.`]
-      }),
-  ),
-  'tr.mult-div': (level, n) =>
-    five((i): TaskSpec => {
-      const b = pick(level === 1 ? [2, 5, 10] : level === 2 ? [3, 4, 6] : [7, 8, 9], i + n)
-      const a = vary(n, i, 2, 10)
-      return [H, a * b, '/', b, `${a} · ${b} = ${a * b}. Bruk det til å finne ${a * b} : ${b}.`]
-    }),
-  'tr.tideler': byLevel(
-    (n) =>
-      five((i): TextSpec => {
-        const t = vary(n, i, 1, 9)
-        return { text: `Skriv som desimaltall: ${t} tideler`, solution: `0,${t}` }
-      }),
-    (n) =>
-      five((i): TextSpec => {
-        const [h, t] = [vary(n, i, 1, 9), vary(n + 1, i, 1, 9)]
-        return { text: `Skriv som desimaltall: ${h} hele og ${t} tideler`, solution: `${h},${t}` }
-      }),
-    (n) =>
-      five((i): TextSpec => {
-        const [a, b] = [vary(n, i, 11, 49), vary(n + 1, i, 1, 9)]
-        return { text: `Regn ut.\n${dec(a / 10)} + ${dec(b / 10)} = ___`, solution: dec((a + b) / 10) }
-      }),
-  ),
-  'tr.desimal-lengde': byLevel(
-    (n) =>
-      five((i): TextSpec => {
-        const [c, mm] = [vary(n, i, 2, 15), vary(n + 1, i, 1, 9)]
-        return { text: `En blyant er ${c} cm og ${mm} mm lang. Skriv lengden i centimeter med desimaltall.`, solution: `${c},${mm} cm` }
-      }),
-    (n) =>
-      five((i): TextSpec => {
-        const m = vary(n, i, 11, 49)
-        return { text: `${dec(m / 10)} m er hvor mange centimeter?`, solution: `${m * 10} cm` }
-      }),
-    (n) =>
-      five((i): TextSpec => {
-        const [c, mm] = [vary(n, i, 2, 25), vary(n + 1, i, 1, 9)]
-        return { text: `Hvor mange millimeter er ${c},${mm} cm?`, solution: `${c * 10 + mm} mm` }
-      }),
-  ),
+  // Tall og regning. Repetisjon uten profil bruker de samme reglene (tideler: uten tallinjevarianten).
+  'tr.add-sub': addSubTasks,
+  'tr.mult-div': multDivTasks,
+  'tr.tideler': (level, n, profile) => (profile?.taskVariant === 'tallinje' ? numberLineTenths : writeTenths)(level, n),
+  'tr.desimal-lengde': (level, n, profile) => (profile?.taskVariant === 'skrive' ? writeLengths : convertLengths)(level, n),
 
   // Strategier i divisjon
   'sdiv.hte': byLevel(
@@ -1748,6 +1930,72 @@ const problemSolvingProfile = (area: ProblemSolvingArea, focus: string): TaskPro
   ) as Record<Level, LevelProfile>,
 })
 
+// ---------------------------------------------------------------------------------------
+// Tall og regning: fire fagområder i seks økter over tre uker – sammenhengen mellom addisjon og subtraksjon
+// (økt 1), mellom multiplikasjon og divisjon (økt 2), desimaltall med tideler (økt 3–4) og desimaltall i
+// lengdemåling (økt 5–6). Tallområdet følger referansebanken.
+
+const NUMBERS_SUPPORT: Record<Level, string> = {
+  1: 'Tydelig støtte og ett faglig steg: bruke et oppgitt regnestykke, skrive tideler eller gjøre om med hjelp.',
+  2: 'Eleven bruker sammenhengen selv: ukjent tall, kontroll, sammenligning, omgjøring eller addisjon over én hel.',
+  3: 'Vurdere en påstand, finne feil, forklare eller løse på to måter – ikke bare større tall.',
+}
+
+const NUMBERS_LEVELS: Record<NumbersAndOperationsArea, [LevelText, LevelText, LevelText]> = {
+  'sammenheng-addisjon-subtraksjon': [
+    { title: 'Pluss og minus hører sammen', subtitle: 'Bruke et pluss-stykke.', description: 'Bruke et kjent pluss-stykke til å finne et minus-stykke, og skrive tallfamilier.', numbers: 'Hele tall opptil 100' },
+    { title: 'Ukjent ledd og kontroll', subtitle: 'Motsatt regneart.', description: 'Finne et ukjent tall med motsatt regneart og kontrollere et minus-stykke med pluss.', numbers: 'Hele tall opptil 1000' },
+    { title: 'Forklare sammenhengen', subtitle: 'Vurdere og forklare.', description: 'Vurdere om noen har brukt riktig regneart, og forklare sammenhengen med helhet og deler.', numbers: 'Hele tall opptil 1000' },
+  ],
+  'sammenheng-multiplikasjon-divisjon': [
+    { title: 'Gange og dele hører sammen', subtitle: 'Bruke et gangestykke.', description: 'Bruke et kjent gangestykke til å finne et delestykke.', numbers: 'Gangetabellen, svar opptil 100' },
+    { title: 'Tiere og ukjent tall', subtitle: 'Bruke sammenhengen.', description: 'Bruke gangestykker med hele tiere og finne et ukjent tall i et delestykke.', numbers: 'Hele tall opptil 1000, delingen går opp' },
+    { title: 'Vurdere og finne feil', subtitle: 'Påstander og forklaringer.', description: 'Vurdere påstander om regnefamilier og finne feil i bruken av et gangestykke.', numbers: 'Hele tall opptil 1000, delingen går opp' },
+  ],
+  'desimaltall-tideler': [
+    { title: 'Tideler', subtitle: 'Skrive tideler.', description: 'Skrive tideler som desimaltall og finne tideler på tallinjen.', numbers: 'Desimaltall med én desimal fra 0,1 til 1' },
+    { title: 'Regne og sammenligne', subtitle: 'Ti tideler er én hel.', description: 'Legge sammen tideler over én hel og sammenligne desimaltall.', numbers: 'Desimaltall med én desimal opptil 2' },
+    { title: 'Forklare tideler', subtitle: 'Misoppfatninger.', description: 'Vurdere påstander om desimaltall og forklare med tideler.', numbers: 'Desimaltall med én desimal opptil 10' },
+  ],
+  'desimaltall-lengde': [
+    { title: 'Lengder med desimaltall', subtitle: 'Meter, desimeter, centimeter.', description: 'Skrive en lengde med to enheter som desimaltall i én enhet.', numbers: 'Lengder med én desimal, m, dm, cm og mm' },
+    { title: 'Gjøre om og sammenligne', subtitle: 'Samme enhet.', description: 'Gjøre om mellom enheter og sammenligne lengder i ulike enheter.', numbers: 'Lengder med én desimal, tall opptil 100' },
+    { title: 'Vurdere og forklare', subtitle: 'To måter.', description: 'Vurdere omgjøringer, ordne lengder i ulike enheter og regne på to måter.', numbers: 'Lengder med én desimal' },
+  ],
+}
+
+const NUMBERS_FORMATS: Record<NumbersAndOperationsArea, string[]> = {
+  'sammenheng-addisjon-subtraksjon': ['Hoderegning (regnestykke) der instruksjonen viser til pluss-stykket', 'Korte tekstoppgaver med tallfamilie, ukjent ledd, kontroll eller forklaring'],
+  'sammenheng-multiplikasjon-divisjon': ['Hoderegning (regnestykke) der instruksjonen viser til gangestykket', 'Korte tekstoppgaver med tiere, ukjent tall, påstander eller feilfinning'],
+  'desimaltall-tideler': ['Korte tekstoppgaver med tideler: skrive, legge sammen, sammenligne, ordne og forklare'],
+  'desimaltall-lengde': ['Korte tekstoppgaver med lengder i m, dm, cm og mm, med enhet i både oppgave og fasit'],
+}
+
+const NUMBERS_AVOID: Record<NumbersAndOperationsArea, string> = {
+  'sammenheng-addisjon-subtraksjon': 'Rene pluss- eller minusstykker uten sammenheng mellom regneartene',
+  'sammenheng-multiplikasjon-divisjon': 'Rene gangestykker eller delestykker uten sammenheng, og divisjon med rest',
+  'desimaltall-tideler': 'Hundredeler, penger med øre og desimaltall med punktum',
+  'desimaltall-lengde': 'Lengder som krever hundredeler (f.eks. 1,25 m) og svar uten enhet',
+}
+
+/** Øktprofil i Tall og regning. */
+const numbersProfile = (area: NumbersAndOperationsArea, focus: string, { taskVariant }: { taskVariant?: 'tallinje' | 'skrive' } = {}): TaskProfile => ({
+  focus,
+  area,
+  ...(taskVariant && { taskVariant }),
+  operations: area === 'sammenheng-multiplikasjon-divisjon' ? ['*', '/'] : ['+', '-'],
+  formats: NUMBERS_FORMATS[area],
+  steps: 'Ett faglig steg på nivå 1. Nivå 2 kan ha to steg (f.eks. regne og kontrollere), og nivå 3 ber om forklaring eller begrunnelse.',
+  avoid: [NUMBERS_AVOID[area], 'Negative tall', 'Henvisninger til figurer eller bilder som ikke vises («se figuren under»)', 'Andre tema enn økta'],
+  figures: false,
+  levels: Object.fromEntries(
+    NUMBERS_LEVELS[area].map((text, i) => {
+      const level = (i + 1) as Level
+      return [level, { ...text, support: NUMBERS_SUPPORT[level] }]
+    }),
+  ) as Record<Level, LevelProfile>,
+})
+
 /** Måleøkt. */
 const measureProfile = (
   focus: string,
@@ -2287,15 +2535,45 @@ export const unitSpecs: UnitSpec[] = [
     area: 'Tall og algebra',
     description: 'Elevene bruker sammenhengen mellom regneartene, og blir kjent med desimaltall med tideler og i lengdemåling.',
     weeks: [
-      { title: 'Uke 1 - sammenhenger', sessions: [s('Sammenhengen mellom addisjon og subtraksjon', 'tr.add-sub'), s('Sammenhengen mellom multiplikasjon og divisjon', 'tr.mult-div')] },
-      { title: 'Uke 2 - tideler', sessions: [s('Desimaltall med tideler', 'tr.tideler'), s('Tideler på tallinjen', 'tr.tideler')] },
-      { title: 'Uke 3 - desimaltall i måling', sessions: [s('Desimaltall i lengdemåling', 'tr.desimal-lengde'), s('Måle og skrive lengder med desimaltall', 'tr.desimal-lengde')] },
+      {
+        title: 'Uke 1 - sammenhenger',
+        sessions: [
+          p(
+            'Sammenhengen mellom addisjon og subtraksjon',
+            ['tr.add-sub'],
+            numbersProfile('sammenheng-addisjon-subtraksjon', 'Tallfamilier, ukjent ledd og kontroll med motsatt regneart: 25 + 13 = 38, så er 38 − 13 = 25 og 38 − 25 = 13.'),
+          ),
+          p(
+            'Sammenhengen mellom multiplikasjon og divisjon',
+            ['tr.mult-div'],
+            numbersProfile('sammenheng-multiplikasjon-divisjon', 'Bruke gangestykker til å dele, også med hele tiere (4 · 30 = 120, så 120 : 4 = 30), finne ukjente tall og kontrollere svar.'),
+          ),
+        ],
+      },
+      {
+        title: 'Uke 2 - tideler',
+        sessions: [
+          p('Desimaltall med tideler', ['tr.tideler'], numbersProfile('desimaltall-tideler', 'Tideler som deler av en hel, desimaltall med én desimal, sammenligning og addisjon der ti tideler blir én hel.')),
+          p('Tideler på tallinjen', ['tr.tideler'], numbersProfile('desimaltall-tideler', 'Tideler på tallinjen: finne, plassere og ordne desimaltall med én desimal mellom 0 og 2.', { taskVariant: 'tallinje' })),
+        ],
+      },
+      {
+        title: 'Uke 3 - desimaltall i måling',
+        sessions: [
+          p('Desimaltall i lengdemåling', ['tr.desimal-lengde'], numbersProfile('desimaltall-lengde', 'Gjøre om mellom meter, desimeter, centimeter og millimeter med én desimal: 1 m = 10 dm = 100 cm, 1 cm = 10 mm.')),
+          p(
+            'Måle og skrive lengder med desimaltall',
+            ['tr.desimal-lengde'],
+            numbersProfile('desimaltall-lengde', 'Skrive lengder med desimaltall og sammenligne og ordne lengder gitt i ulike enheter.', { taskVariant: 'skrive' }),
+          ),
+        ],
+      },
     ],
     goals: ['Bruke sammenhengen mellom regneartene til å sjekke svar.', 'Forstå og skrive desimaltall med tideler.', 'Bruke desimaltall i lengdemåling.'],
     levels: [
-      { title: 'Sammenhenger', subtitle: 'Pluss og minus, gange og dele.', description: 'Bruke ett regnestykke til å finne et annet.' },
-      { title: 'Tideler', subtitle: 'Hele og tideler.', description: 'Skrive desimaltall.' },
-      { title: 'Desimaltall i bruk', subtitle: 'Regne og måle med desimaltall.', description: 'Bytte mellom enheter.' },
+      { title: 'Med støtte', subtitle: 'Ett faglig steg.', description: 'Bruke et kjent regnestykke, skrive tideler og gjøre om lengder.' },
+      { title: 'Bruke sammenhengen', subtitle: 'Ukjent tall og sammenligning.', description: 'Finne ukjente tall, kontrollere og sammenligne.' },
+      { title: 'Vurdere og forklare', subtitle: 'Påstander og feil.', description: 'Vurdere påstander, finne feil og forklare.' },
     ],
   },
   {

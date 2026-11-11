@@ -9,12 +9,14 @@ import {
   type TaskRequest,
   type TaskResult,
 } from '../src/ai/contract.ts'
-import { isReferenceArea, topicOfArea, type DivisionArea, type GeometryArea, type ProblemSolvingArea, type ReferenceArea } from '../src/ai/contract.ts'
+import { isReferenceArea, topicOfArea, type DivisionArea, type GeometryArea, type NumbersAndOperationsArea, type ProblemSolvingArea, type ReferenceArea } from '../src/ai/contract.ts'
 import { strategyProblem } from '../src/features/topics/multiplicationStrategies.ts'
 import { divisionProblem, wishRequiresRoundUp } from './divisionChecks.ts'
 import { geometryProblem } from './geometryChecks.ts'
+import { numbersProblem } from './numbersAndOperationsChecks.ts'
 import { problemSolvingProblem } from './problemSolvingChecks.ts'
 import { visualProblem } from './visualChecks.ts'
+import { divisionReferences } from './references/division.ts'
 import { checkEquations, checkReferenceMath } from './references/validate.ts'
 
 // Kontroller av generelle oppgaver etter at AI-en har svart. Stiltreff styres av
@@ -90,6 +92,10 @@ export type RemovalReason =
   | 'invalidOptions'
   | 'outsideRange'
   | 'revealedSolution'
+  | 'decimalFormat'
+  | 'tooManyDecimals'
+  | 'wrongConversion'
+  | 'missingUnit'
 
 export interface GeneralCheck {
   result: TaskResult
@@ -242,6 +248,10 @@ const REMOVAL_TEXT: Record<RemovalReason, string> = {
   invalidOptions: 'hadde ugyldige svaralternativer (ikke nøyaktig ett riktig, like alternativer, tilfeldige gale svar eller en fasit som ikke stemte med alternativene)',
   outsideRange: 'brukte tall utenfor tallområdet på nivået',
   revealedSolution: 'avslørte svaret i oppgaveteksten',
+  decimalFormat: 'skrev desimaltall med punktum i stedet for komma',
+  tooManyDecimals: 'brukte hundredeler eller flere desimaler',
+  wrongConversion: 'hadde feil omgjøring mellom måleenheter, eller sammenlignet lengder uten å gjøre dem om til samme enhet',
+  missingUnit: 'manglet enhet i fasiten',
 }
 
 const emptyRemoved = (): Record<RemovalReason, number> => ({
@@ -281,6 +291,10 @@ const emptyRemoved = (): Record<RemovalReason, number> => ({
   invalidOptions: 0,
   outsideRange: 0,
   revealedSolution: 0,
+  decimalFormat: 0,
+  tooManyDecimals: 0,
+  wrongConversion: 0,
+  missingUnit: 0,
 })
 
 /** «Tatt bort: 2 som var like …, 1 som …» – eller tom streng. */
@@ -404,9 +418,9 @@ export function requiresCarry(task: AiTaskDraft): boolean {
 // Intern systemtekst: hører hjemme i serverloggen, aldri i synlige felt.
 
 const INTERNAL_TEXT =
-  /reserve\s?(kandidat|oppgave)\w*|utfyllings?(forsøk|runde)\w*|\brefill\w*|\bfallback\w*|reservemodell\w*|\bprompt\w*|referanse[- ]?(id|oppgave)\w*|\b[MTDGP]\d-N\d-\d{2}\b|\bkandidat(en|er|ene|nummer|nr)?\b/i
+  /reserve\s?(kandidat|oppgave)\w*|utfyllings?(forsøk|runde)\w*|\brefill\w*|\bfallback\w*|reservemodell\w*|\bprompt\w*|referanse[- ]?(id|oppgave)\w*|\b(?:[MTDGP]|TR)\d-N\d-\d{2}\b|\bkandidat(en|er|ene|nummer|nr)?\b/i
 
-/** Om teksten inneholder interne ord eller ID-er (reservekandidat, utfyllingsforsøk, prompt, M4-N2-01, D3-N2-01, P2-N1-03 …). */
+/** Om teksten inneholder interne ord eller ID-er (reservekandidat, utfyllingsforsøk, prompt, M4-N2-01, D3-N2-01, P2-N1-03, TR2-N2-01 …). */
 export const containsInternalText = (text: string) => INTERNAL_TEXT.test(text)
 
 /** Teksten uten setningene som inneholder interne ord. */
@@ -423,15 +437,26 @@ export function stripInternalText(text: string) {
 // Løsningsforslaget må gi én entydig, riktig konklusjon og riktig utregning.
 
 /** Eleven skal vurdere en påstand: «Har Jonas rett?», «Stemmer det?», «Er regnestykket riktig?» … */
-const ASSESSMENT = /har \p{L}+ rett|stemmer (det|dette|svaret|utregningen|påstanden)|\ber\b[^.?!]{0,40}\briktig\b/iu
+const ASSESSMENT = /har \p{L}+ rett|stemmer (det|dette|svaret|utregningen|påstanden)|\ber\b[^.?!]{0,40}\briktig\b(?=[^.!]*\?)/iu
 /** Synlig nøling eller selvkorrigering fra modellen. */
 const HESITATION = /\b(vent|hmm|oi|unnskyld|jeg mente|jeg regner på nytt|rettelse|korrigering)\b/i
 /** Navnealternativer som «Mina/Jonas». */
 const NAME_ALTERNATIVE = /\b\p{Lu}\p{Ll}+\s?\/\s?\p{Lu}\p{Ll}+/u
 
-/** Påstanden «a op b = c» i oppgaveteksten (mellomrom i tall slått sammen), eller null. */
+/**
+ * Påstanden i oppgaveteksten (mellomrom i tall slått sammen), eller null: tallet noen mener mangler i et regnestykke
+ * med et tomt felt («__ − 27 = 40 … sier at tallet er 13»), ellers det første «a op b = c».
+ */
 function claimIn(text: string) {
   const normalized = mergeThousands(text).replace(/[×x·*]/g, '*')
+  const blank = /(?:_{2,}|□)\s*([+\-*:/])\s*(\d+)\s*=\s*(\d+)/.exec(normalized)
+  const said = /\b(?:tallet|svaret|det) er (\d+)/i.exec(normalized)
+  if (blank && said) {
+    // __ op b = c: tallet som mangler er c + b, c − b, c : b eller c · b.
+    const [op, b, c] = [blank[1], Number(blank[2]), Number(blank[3])]
+    const value = op === '+' ? c - b : op === '-' ? c + b : op === '*' ? (b === 0 ? NaN : c / b) : c * b
+    return { value, claimed: Number(said[1]) }
+  }
   const m = /(\d+)\s*([+\-*:/])\s*(\d+)\s*=\s*(\d+)/.exec(normalized)
   if (!m) return null
   const [a, op, b, claimed] = [Number(m[1]), m[2], Number(m[3]), Number(m[4])]
@@ -498,6 +523,9 @@ export interface CandidateCheck {
  *     sammenheng med gange og modeller (se divisionChecks.ts)
  *   - Problemløsing: regneuttrykk og regneart, modeller, flere steg og manglende opplysninger, avrunding
  *     oppover, svaralternativer, tallområdet og nivået (se problemSolvingChecks.ts)
+ *   - Tall og regning: sammenhengen mellom regneartene og regnefamilier (samme kontroll som i Divisjon), rest,
+ *     desimaltall med komma og én desimal, tideler, sammenligninger, lengder og enheter (se numbersAndOperationsChecks.ts).
+ *     Sammenhengen mellom gange og dele sammenlignes også med referansene i divisjonsbanken (kopier).
  * - uten fagområde logges gangestykker utenfor øktas tabeller (som før)
  * Kontrollene er de samme for første generering og for utfylling.
  */
@@ -540,8 +568,9 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
     return !problem || remove(t, problem)
   })
   // Løsningsforslaget må være entydig, og ja/nei i vurderingsoppgaver må stemme (alle økter).
-  // Geometri og Problemløsing har påstander i ord («Er modellen riktig?»): da kreves én entydig ja/nei-konklusjon.
-  const verbalClaims = !!profile?.area && ['geometri', 'problemlosing'].includes(topicOfArea(profile.area))
+  // Geometri, Problemløsing og Tall og regning har påstander i ord («Er modellen riktig?», «1,3 er mindre enn 0,9»):
+  // da kreves én entydig ja/nei-konklusjon (påstander om desimaltall og lengder kontrolleres i numbersAndOperationsChecks.ts).
+  const verbalClaims = !!profile?.area && ['geometri', 'problemlosing', 'tall-og-regning'].includes(topicOfArea(profile.area))
   tasks = tasks.filter((t) => {
     const problem = assessmentProblem(t, { verbalClaims })
     return !problem || remove(t, problem)
@@ -574,6 +603,13 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
     const division = topic === 'divisjon'
     const geometry = topic === 'geometri'
     const problemSolving = topic === 'problemlosing'
+    const numbersAndOperations = topic === 'tall-og-regning'
+    const numbersContext = numbersAndOperations
+      ? {
+          area: area as NumbersAndOperationsArea,
+          secondaryAreas: (profile?.secondaryAreas ?? []).filter((a): a is NumbersAndOperationsArea => isReferenceArea(a) && topicOfArea(a) === 'tall-og-regning'),
+        }
+      : null
     const problemSolvingContext = problemSolving
       ? {
           area: area as ProblemSolvingArea,
@@ -639,13 +675,25 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
         const problem = problemSolvingProblem(task, problemSolvingContext)
         if (problem) return remove(task, problem)
       }
+      // Tall og regning: sammenhengen mellom regneartene, regnefamilier, rest, desimaltall med komma og én desimal,
+      // tideler, sammenligninger, omgjøring av lengder og enheter (se numbersAndOperationsChecks.ts).
+      if (numbersContext) {
+        if (!isMathDraft(task) && HESITATION.test(task.studentText)) return remove(task, 'unclearSolution')
+        const problem = numbersProblem(task, numbersContext)
+        if (problem) return remove(task, problem)
+      }
       // Økter der tierovergang er det uttrykkelige målet: minst én addisjon med veksling.
       if (profile?.requiresCarry && !requiresCarry(task)) return remove(task, 'missingCarry')
       if (!hasWishes && outsideTables(task, factorsOf(task.level))) return remove(task, 'outsideTables')
       // En strategi i instruksjonen må passe akkurat dette regnestykket – også når læreren har ønsker.
       if (isMathDraft(task) && strategyProblem(task.instruction, task.a, task.b)) return remove(task, 'invalidStrategy')
       if (solutionProblem(task, problemSolving)) return remove(task, 'wrongSolution')
-      const references = levelInfo(task.level)?.referenceTasks ?? []
+      // Sammenhengen mellom gange og dele i Tall og regning overlapper med Divisjon: kandidaten må heller ikke kopiere
+      // en referanse om multiplikasjon og divisjon i divisjonsbanken.
+      const references = [
+        ...(levelInfo(task.level)?.referenceTasks ?? []),
+        ...(area === 'sammenheng-multiplikasjon-divisjon' ? divisionReferences.filter((r) => r.area === 'multiplikasjon-divisjon') : []),
+      ]
       // Figuroppgaver som spør om «figuren» eller «vinkelen» har innholdet i figuren appen tegner, ikke i teksten:
       // et kort spørsmål som «Hvor mange sider har figuren?» er ikke en kopi av en referanse uten figur.
       const figureCarriesContent = !isMathDraft(task) && !!task.figure && /\b(figuren|vinkelen)\b/i.test(task.studentText)
@@ -659,7 +707,7 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
         }
         // Divisjon og Problemløsing: de samme tallene som en referanse og lignende formulering er samme oppgave
         // (samme gangefakta i et annet format, f.eks. «__ · 8 = 56» og «Regn ut 56 : 8», er lov).
-        if ((division || problemSolving) && references.some((r) => numbersIn(task.studentText) === numbersIn(r.studentText) && textSimilarity(task.studentText, r.studentText) >= SAME_NUMBERS_SIMILARITY)) {
+        if ((division || problemSolving || numbersAndOperations) && references.some((r) => numbersIn(task.studentText) === numbersIn(r.studentText) && textSimilarity(task.studentText, r.studentText) >= SAME_NUMBERS_SIMILARITY)) {
           return remove(task, 'copiedReference')
         }
       } else if (placeValue) {

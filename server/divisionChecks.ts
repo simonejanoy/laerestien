@@ -45,7 +45,7 @@ const merge = (text: string) => text.replace(/(\d) (?=\d{3}\b)/g, '$1')
 const DIV = String.raw`(?:\s+[:/]\s+|[:/])`
 const numbersIn = (text: string) => (merge(text).match(/\d+/g) ?? []).map(Number)
 
-const DIVISION_BY_ZERO = new RegExp(
+export const DIVISION_BY_ZERO = new RegExp(
   String.raw`\d${DIV}0(?!\d)|` +
     /\b(del\w*|fordel\w*)\b[^.?!]{0,40}\b(på|mellom|i) 0\b|\b0 (like (store )?)?(grupper|deler|lag|barn|elever|poser|esker|bunker)\b/.source,
   'i',
@@ -58,7 +58,7 @@ const DIVISION_SIGNAL =
 const MULTIPLICATION_WORD = /\d\s*[·x×*]\s*(\d|_)|_+\s*[·x×*]|gange|multiplik/i
 const DIVISION_WORD = /\d\s+[:/]\s+(\d|_)|\d[:/]\d|_+\s*[:/]|\bdel(e|er|es|t|estykke\w*)?\b|divisjon/i
 /** Rest med tall («3 rest 2», «2 epler til overs», «de 2 som blir igjen») eller et spørsmål om hva som blir til overs. */
-const REMAINDER_WORD = /\brest\s+[1-9]|\b[1-9]\d*\s+(\p{L}+\s+){0,2}(til overs|igjen)\b|hvor mange (\p{L}+ ){0,3}(blir )?(til overs|igjen)/iu
+export const REMAINDER_WORD = /\brest\s+[1-9]|\b[1-9]\d*\s+(\p{L}+\s+){0,2}(til overs|igjen)\b|hvor mange (\p{L}+ ){0,3}(blir )?(til overs|igjen)/iu
 /** Et ukjent tall i et delestykke («__ : 8 = 9», «72 : __ = 8»). */
 const BLANK_DIVISION = /(_+|□)\s*[:/]|[:/]\s*(_+|□)/
 /** Et ferdig delestykke med svar i oppgaveteksten («Vis 32 : 4 = 8 …») – da er det ikke noe svar å regne ut. */
@@ -98,11 +98,11 @@ const EXPLAIN = /\bforklar\w*\b[^.?!]*\b(betyr|viser)\b/i
 const DRAWABLE = /\b(prikker|kryss|ringer?|sirkler?|streker|klosser|like grupper|bunker|figur)\b/i
 
 /** Delestykkene som står i teksten: «a : b» (ikke «Fyll inn: 28», der kolon følger et ord). */
-function explicitDivisions(text: string): [number, number][] {
+export function explicitDivisions(text: string): [number, number][] {
   return [...merge(text).matchAll(new RegExp(String.raw`(\d+)${DIV}(\d+)`, 'g'))].map(([, a, b]) => [Number(a), Number(b)])
 }
 
-function explicitProducts(text: string): [number, number][] {
+export function explicitProducts(text: string): [number, number][] {
   return [...merge(text).matchAll(/(\d+)\s*[·x×*]\s*(\d+)/g)].map(([, a, b]) => [Number(a), Number(b)])
 }
 
@@ -158,8 +158,30 @@ function namedType(text: string): DivisionType | null {
 export const usesModel = (text: string) =>
   MODEL.test(text) || (DRAW.test(text) && DRAWABLE.test(text)) || (/\b(tegn|vis)\w*\b/i.test(text) && /modell/i.test(text) && EXPLAIN.test(text))
 
-/** Om oppgaven viser sammenhengen mellom gange og dele. */
-function showsRelation(task: AiTaskDraft) {
+/**
+ * Regneartene som hører sammen: gange og dele (Divisjon, Tall og regning) eller pluss og minus (Tall og regning).
+ * Standard er gange og dele, som før.
+ */
+export type OperationPair = 'multiplication' | 'addition'
+
+const ADDITION_WORD = /\d\s*\+\s*(\d|_)|_+\s*\+|pluss|addisjon|legg\w* sammen/i
+const SUBTRACTION_WORD = /\d\s*[-−]\s*(\d|_)|_+\s*[-−]|minus|subtraksjon|trekk\w* fra/i
+/** Et ukjent ledd i et pluss- eller minusstykke («__ + 36 = 91», «__ − 48 = 125»). */
+const BLANK_SUM = /(_+|□|\?)\s*[+\-−]\s*\d+\s*=\s*\d+|\d+\s*[+\-−]\s*(_+|□|\?)\s*=\s*\d+/
+
+const explicitSums = (text: string): [number, number][] => [...merge(text).matchAll(/(\d+)\s*[+\-−]\s*(\d+)/g)].map(([, a, b]) => [Number(a), Number(b)])
+
+/** Om oppgaven viser sammenhengen mellom gange og dele (eller pluss og minus). */
+export function showsRelation(task: AiTaskDraft, pair: OperationPair = 'multiplication') {
+  if (pair === 'addition') {
+    if (isMathDraft(task)) {
+      if (task.operator === '-') return /pluss|addisjon|\+|motsatt/i.test(task.instruction)
+      if (task.operator === '+') return /minus|subtraksjon|−|motsatt/i.test(task.instruction)
+      return false
+    }
+    const all = `${task.studentText} ${task.solution}`
+    return BLANK_SUM.test(task.studentText) || FAMILY.test(task.studentText) || (ADDITION_WORD.test(all) && SUBTRACTION_WORD.test(all))
+  }
   if (isMathDraft(task)) {
     if (task.operator === '/') return /gange|gangestykk|multiplik|·|motsatt/i.test(task.instruction)
     if (task.operator === '*') return /\bdel|delestykk|divisjon|:/i.test(task.instruction)
@@ -172,14 +194,18 @@ function showsRelation(task: AiTaskDraft) {
 /** Regnefamilie: «Bruk tallene 6, 9 og 54». */
 const FAMILY = /tallene (\d+), (\d+) og (\d+)/i
 
-/** Regnefamilie: tallene må høre sammen (a · b = c), og fasiten må bare bruke dem. */
-function familyProblem(studentText: string, solution: string) {
+/**
+ * Regnefamilie: tallene må høre sammen (a · b = c, eller a + b = c i en tallfamilie med pluss og minus), og
+ * fasiten må bare bruke dem.
+ */
+export function familyProblem(studentText: string, solution: string, pair: OperationPair = 'multiplication') {
   const m = FAMILY.exec(merge(studentText))
   if (!m) return false
   const [x, y, z] = [Number(m[1]), Number(m[2]), Number(m[3])].sort((a, b) => a - b)
-  if (x * y !== z) return true
+  if (pair === 'addition' ? x + y !== z : x * y !== z) return true
   const allowed = new Set([x, y, z])
-  return [...explicitDivisions(solution), ...explicitProducts(solution)].some(([a, b]) => !allowed.has(a) || !allowed.has(b))
+  const used = pair === 'addition' ? explicitSums(solution) : [...explicitDivisions(solution), ...explicitProducts(solution)]
+  return used.some(([a, b]) => !allowed.has(a) || !allowed.has(b))
 }
 
 /**

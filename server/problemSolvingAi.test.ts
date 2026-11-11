@@ -248,7 +248,8 @@ describe('grunnoppgavene i Problemløsing', () => {
     for (const s of repetitions) {
       const tasks = buildTasks(s)
       assert.equal(tasks.length, 15, s.id)
-      const problemTasks = tasks.filter((t) => t.kind === 'text')
+      // Oppgave nr. i (1–5) på hvert nivå kommer fra undertema nr. (i − 1) i økta (repetisjon bytter på undertemaene).
+      const problemTasks = tasks.filter((t) => s.skills[(Number(t.id.split('-').at(-1)) - 1) % s.skills.length] === 'prob.flersteg')
       assert.equal(problemTasks.length, 6, s.id)
       for (const t of problemTasks) {
         if (t.kind !== 'text') continue
@@ -512,25 +513,27 @@ describe('13. andre temaer og referansebanker er uendret', () => {
     assert.equal(hash(file('tall_og_plassverdi')), '21ba85a512aeffed')
     assert.equal(hash(file('divisjon')), '137f3e1f03a7d25f')
     assert.equal(hash(file('geometri')), 'f5051a7c950ae47c')
-    assert.equal(referenceBanks.filter((r) => r.topic !== 'problemlosing').length, 54 + 45 + 36 + 36)
+    assert.equal(referenceBanks.filter((r) => !['problemlosing', 'tall-og-regning'].includes(r.topic)).length, 54 + 45 + 36 + 36)
     for (const [area, level, own] of [['tabell-6-7-8-9', 2, multiplicationReferences], ['modeller', 3, divisionReferences]] as const) {
       assert.deepEqual(selectReferences(referenceBanks, { area, level, seed: 11 }).map((r) => r.id), selectReferences(own, { area, level, seed: 11 }).map((r) => r.id))
     }
   })
 
-  it('alle økter i de andre temaene og arbeidsarkene er uendret – i repetisjon bare flerstegsoppgavene', () => {
-    const repetitions = ['repetisjon-vinter-3', 'repetisjon-var-4']
-    const all = unitSpecs.filter((u) => u.unitId !== 'problemlosing').flatMap((u) => planned(u.unitId))
+  it('alle økter i de andre temaene og arbeidsarkene er uendret – i repetisjon bare oppgavene fra Problemløsing og Tall og regning', () => {
+    // Tall og regning og repetisjonsøkter med undertema derfra er endret senere (se numbersAndOperationsAi.test.ts).
+    const touched = (s: Planned) => s.skills.some((k) => k.startsWith('prob.') || k.startsWith('tr.'))
+    const all = unitSpecs.filter((u) => !['problemlosing', 'tall-og-regning'].includes(u.unitId)).flatMap((u) => planned(u.unitId))
     const others = all
-      .filter((s) => !repetitions.includes(s.id))
+      .filter((s) => !touched(s))
       .map((s) => ({ id: s.id, heading: s.heading, skills: s.skills, profile: s.profile ?? null, levels: levelsFor(s, 5, 6), tasks: buildTasks(s) }))
-    assert.equal(others.length, 78)
-    assert.equal(hash(JSON.stringify(others)), '17b9ab3873faad6d')
-    // Repetisjonsøktene: samme overskrift, undertema, nivåer, oppgave-ID-er (antall og rekkefølge) og de samme regnestykkene fra de andre temaene.
+    assert.equal(others.length, 71)
+    assert.equal(hash(JSON.stringify(others)), '07c638fb37b77cd9')
+    assert.deepEqual(all.filter(touched).map((s) => s.id), ['repetisjon-vinter-3', 'repetisjon-vinter-4', 'repetisjon-var-4'])
+    // «Dette mestrer jeg» (bare Problemløsing): samme overskrift, undertema, nivåer, oppgave-ID-er og regnestykker fra Regning.
     const kept = all
-      .filter((s) => repetitions.includes(s.id))
+      .filter((s) => s.id === 'repetisjon-var-4')
       .map((s) => ({ id: s.id, heading: s.heading, skills: s.skills, levels: levelsFor(s, 5, 6), ids: buildTasks(s).map((t) => t.id), math: buildTasks(s).filter((t) => t.kind !== 'text') }))
-    assert.equal(hash(JSON.stringify(kept)), '772d982a3d043c93')
+    assert.equal(hash(JSON.stringify(kept)), '95e64256a9bda463')
     assert.equal(hash(JSON.stringify(worksheetTasks)), 'd20a8f714743442c')
   })
 

@@ -252,6 +252,20 @@ const AREA_GUIDANCE: Partial<Record<ReferenceArea, string[]>> = {
     'Skriv alternativene i oppgaveteksten, hvert på sin linje: «A) …», «B) …», «C) …» (eventuelt «D) …»). Fasiten starter med bokstaven til det riktige alternativet, f.eks. «B) 32. 23 + 9 = 32.».',
     'Nøyaktig ett alternativ er riktig, med mindre oppgaveteksten tydelig sier «Det kan være mer enn én.». Alternativene skal være ulike, og ingen gale alternativer kan også være riktige. De gale svarene skal komme av en typisk tankefeil – feil regneart, et glemt steg eller en tellefeil over tieren – ikke tilfeldige tall.',
   ],
+  'sammenheng-addisjon-subtraksjon': [
+    'Hver oppgave skal vise sammenhengen mellom addisjon og subtraksjon: tallfamilie (25 + 13 = 38, 38 − 13 = 25 og 38 − 25 = 13), ukjent ledd («__ + 36 = 91») eller kontroll med motsatt regneart. En tallfamilie bruker de samme tre tallene i alle regnestykkene. Fyll inn: tallet i fasiten må passe i det opprinnelige regnestykket.',
+  ],
+  'sammenheng-multiplikasjon-divisjon': [
+    'Hver oppgave skal vise sammenhengen mellom multiplikasjon og divisjon: gangestykke og divisjonsstykke med de samme tre tallene, ukjent tall, kontroll med motsatt regneart eller forklaring – også med hele tiere (4 · 30 = 120, 120 : 4 = 30). Alle divisjonene skal gå opp. Ikke lag rest eller divisjon med 0. Et regnestykke (format «regnestykke») må ha en instruksjon som viser til gangestykket.',
+  ],
+  'desimaltall-tideler': [
+    'Bruk bare desimaltall med én desimal (tideler), skrevet med komma (0,7 – aldri 0.7). Ingen hundredeler eller penger med øre. Ti tideler er én hel: 0,6 + 0,7 = 1,3 (13 tideler), ikke 0,13. Sammenligninger og rekkefølger må være riktige: 1,2 er større enn 0,9.',
+    'Appen kan ikke vise figurer: beskriv en tallinje eller en oppdelt hel med ord.',
+  ],
+  'desimaltall-lengde': [
+    'Bruk lengder i m, dm, cm og mm med høyst én desimal i enheten svaret oppgis i: 1 m = 10 dm = 100 cm, 1 dm = 10 cm, 1 cm = 10 mm. Ikke lag oppgaver som krever hundredeler (f.eks. 1,25 m).',
+    'Enheten skal stå både i oppgaven og i fasiten. Sammenlignes lengder i ulike enheter, skal fasiten gjøre dem om til samme enhet, f.eks. «4,5 cm er 45 mm, og 45 mm er mer enn 42 mm.».',
+  ],
   modeller: [
     'Eleven skal faktisk bruke eller tolke en modell: like grupper, tallinje, rutenett eller blokkmodell. Appen kan ikke vise figurer, så beskriv modellen i teksten (f.eks. «En blokk med totalen 35 er delt i 5 like store deler») eller be eleven tegne en bestemt modell. Å bare nevne ordet «modell» er ikke nok.',
   ],
@@ -264,6 +278,7 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
   const division = topic === 'divisjon'
   const geometry = topic === 'geometri'
   const problemSolving = topic === 'problemlosing'
+  const numbersAndOperations = topic === 'tall-og-regning'
   const secondary = profile.secondaryAreas ?? []
   const allowsRemainder = area === 'divisjon-med-rest' || secondary.includes('divisjon-med-rest')
   // Todimensjonale figurer og vinkler: hver oppgave skal ha en figur appen tegner, og figurer finnes bare i tekstoppgaver.
@@ -297,7 +312,7 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
     division && !allowsRemainder && '- Alle delestykkene skal gå opp. Ikke lag oppgaver med rest.',
     '- Ikke lag en oppgave som er lik en oppgave som allerede finnes på nivået.',
     !geometry &&
-      (multiplication || division
+      (multiplication || division || area === 'sammenheng-multiplikasjon-divisjon'
         ? profile.allowSwappedFactors
           ? '- Byttede faktorer (f.eks. 3 · 7 og 7 · 3) er ulike oppgaver i denne økta, fordi den handler om at faktorene kan bytte plass.'
           : '- Byttede faktorer (f.eks. 3 · 7 og 7 · 3) regnes som samme oppgave.'
@@ -306,12 +321,16 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
       ? '- Bruk bare gangetabellene og tallområdet på nivået.'
       : problemSolving
         ? '- Hold deg til fagområdet i økta og tallområdet i referansene på nivået. Bruk hele tall – ikke desimaltall, negative tall, brøk eller andre tema.'
+        : numbersAndOperations
+        ? '- Hold deg til fagområdet i økta og tallområdet i referansene på nivået. Ikke negative tall, ikke hundredeler, og ikke et nytt deltema – heller ikke når ønskene ber om det (f.eks. gir «bruk penger» ikke kroner og øre i en økt om tideler).'
         : geometry
         ? '- Hold deg til geometriområdet i økta. Ikke ta inn areal, omkrets eller andre deltema, og ikke bytt til en annen regneart eller et annet tema – heller ikke når ønskene ber om det.'
         : division
         ? '- Hold deg til gangetabellen og tallområdet på nivået: divisor og antall hele grupper høyst 10. Bruk hele tall – ikke desimaltall, negative tall eller deling med 0.'
         : '- Hold deg til tallområdet og regneartene i økta, og ikke ta inn et nytt deltema (f.eks. avrunding) som læreren ikke har bedt om.',
-    problemSolving
+    numbersAndOperations
+      ? '- Nivå 1: tydelig støtte, ett faglig steg (fyll inn, skriv tallet, gjør om med hjelp). Nivå 2: eleven bruker sammenhengen selv – ukjent tall, sammenligning, omgjøring eller addisjon over én hel. Nivå 3: vurdere en påstand, finne feil, forklare eller løse på to måter – oppgaveteksten ber eleven forklare eller begrunne. Nivåforskjellen skal ikke bare være større tall. Alle nivåene har samme faglige fokus.'
+      : problemSolving
       ? '- Nivåforskjellen handler om støtte og resonnement, ikke bare større tall. Nivå 1: kort tekst, ett steg eller synlige mellomsteg, ferdig modell eller tydelig tegneinstruksjon. Nivå 2: eleven velger framgangsmåte selv, to steg uten synlig støtte, enkel begrunnelse. Nivå 3: vurdere andres løsninger, finne feil, forklare, eller løse problemer der svaret må tolkes ut fra situasjonen – oppgaveteksten ber eleven forklare, begrunne eller vurdere. Alle nivåene har samme faglige fokus.'
       : geometry
       ? '- Nivå 1: gjenkjenne og beskrive – korte, konkrete spørsmål om navn, sider, hjørner, kanter, flater og enkle vinkeltyper. Nivå 2: sammenligne og bruke egenskaper – sortere, symmetri, flater og nett, enkle vinkelberegninger. Nivå 3: resonnere og forklare – vurdere påstander, begrunne, undersøke nett og trekke slutninger. Nivåforskjellen skal ikke bare være større tall eller lengre tekst.'

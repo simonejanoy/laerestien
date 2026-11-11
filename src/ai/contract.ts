@@ -256,6 +256,13 @@ export type GeometryArea = (typeof GEOMETRY_AREAS)[number]
 export const PROBLEM_SOLVING_AREAS = ['regnefortelling-regneuttrykk', 'bruke-modeller', 'flerstegsoppgaver', 'flervalg-begrunnelse'] as const
 export type ProblemSolvingArea = (typeof PROBLEM_SOLVING_AREAS)[number]
 
+/**
+ * Fagområdene i Tall og regning, i progresjonsrekkefølge. «addisjon-subtraksjon» og «multiplikasjon-divisjon» i
+ * referansefilen finnes allerede i Tall og plassverdi og Divisjon, så de to sammenhengsområdene har egne ID-er.
+ */
+export const NUMBERS_AND_OPERATIONS_AREAS = ['sammenheng-addisjon-subtraksjon', 'sammenheng-multiplikasjon-divisjon', 'desimaltall-tideler', 'desimaltall-lengde'] as const
+export type NumbersAndOperationsArea = (typeof NUMBERS_AND_OPERATIONS_AREAS)[number]
+
 /** Temaene som har en referansebank på serveren, med fagområdene sine. */
 export const REFERENCE_TOPICS = {
   multiplikasjon: MULTIPLICATION_AREAS,
@@ -263,10 +270,11 @@ export const REFERENCE_TOPICS = {
   divisjon: DIVISION_AREAS,
   geometri: GEOMETRY_AREAS,
   problemlosing: PROBLEM_SOLVING_AREAS,
+  'tall-og-regning': NUMBERS_AND_OPERATIONS_AREAS,
 } as const
 export type ReferenceTopic = keyof typeof REFERENCE_TOPICS
 /** Et fagområde i en av referansebankene. Områdene har unike ID-er på tvers av temaene. */
-export type ReferenceArea = MultiplicationArea | PlaceValueArea | DivisionArea | GeometryArea | ProblemSolvingArea
+export type ReferenceArea = MultiplicationArea | PlaceValueArea | DivisionArea | GeometryArea | ProblemSolvingArea | NumbersAndOperationsArea
 
 export const TOPIC_TITLES: Record<ReferenceTopic, string> = {
   multiplikasjon: 'Multiplikasjon',
@@ -274,6 +282,7 @@ export const TOPIC_TITLES: Record<ReferenceTopic, string> = {
   divisjon: 'Divisjon',
   geometri: 'Geometri',
   problemlosing: 'Problemløsing',
+  'tall-og-regning': 'Tall og regning',
 }
 
 export const AREA_TITLES: Record<ReferenceArea, string> = {
@@ -300,6 +309,10 @@ export const AREA_TITLES: Record<ReferenceArea, string> = {
   'bruke-modeller': 'Bruke modeller',
   flerstegsoppgaver: 'Flerstegsoppgaver',
   'flervalg-begrunnelse': 'Flervalgsoppgaver',
+  'sammenheng-addisjon-subtraksjon': 'Sammenhengen mellom addisjon og subtraksjon',
+  'sammenheng-multiplikasjon-divisjon': 'Sammenhengen mellom multiplikasjon og divisjon',
+  'desimaltall-tideler': 'Desimaltall med tideler',
+  'desimaltall-lengde': 'Desimaltall i lengdemåling',
 }
 
 export const isMultiplicationArea = (value: unknown): value is MultiplicationArea =>

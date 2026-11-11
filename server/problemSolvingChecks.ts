@@ -1,4 +1,4 @@
-import { isMathDraft, type AiLevel, type AiTaskDraft, type ProblemSolvingArea } from '../src/ai/contract.ts'
+import { isMathDraft, type AiLevel, type AiTaskDraft, type ProblemSolvingArea, type ReferenceArea } from '../src/ai/contract.ts'
 import { DECIMAL, NEGATIVE, asksRoundUp, mainQuestion, roundUpProblem, usesModel } from './divisionChecks.ts'
 import { CLAIM, MISSING_FIGURE } from './geometryChecks.ts'
 import { problemSolvingReferences } from './references/problemSolving.ts'
@@ -42,8 +42,9 @@ const digitsIn = (text: string) => (merge(text).match(/\d+/g) ?? []).map(Number)
 /**
  * Største tall eleven kan møte på nivået i området: den minste tierpotensen over det største tallet i
  * referansene i området på dette og lavere nivåer (nivå 1 i Regnefortellinger: 52 → 100; nivå 2: 200 → 1000).
+ * Brukes også av Tall og regning (med den banken).
  */
-export function numberLimit(area: ProblemSolvingArea, level: AiLevel, bank: readonly ReferenceTask[] = problemSolvingReferences): number {
+export function numberLimit(area: ReferenceArea, level: AiLevel, bank: readonly ReferenceTask[] = problemSolvingReferences): number {
   const numbers = bank
     .filter((r) => r.area === area && r.level <= level)
     .flatMap((r) => digitsIn(`${r.studentText} ${r.solution}`))
@@ -160,7 +161,7 @@ const ASSESSMENT = new RegExp(
   'iu',
 )
 /** Nivå 3: vurdere, finne feil, forklare eller tolke svaret ut fra situasjonen. */
-const REASONING =
+export const REASONING =
   /forklar|begrunn|hvorfor|vis (alle )?(steg|utregning)|hvordan (du )?(tenk|vet|fant)|finn feil|gjort feil|har (\p{L}+ )?glemt|hvem har|tenkt (riktig|feil)|stemmer|vurder|rimelig|\btrengs\b|nok til|\blag (en|ei|et)\b|er modellen riktig|påstand|mer enn én|til sammen\b[^]*\bganger så|ganger så\b[^]*\btil sammen/iu
 /** Synlige steg i oppgaveteksten (nivå 1). */
 const STEP_LINES = /\bsteg\s*1\b[\s\S]*\bsteg\s*2\b|(^|\n)\s*a\)[\s\S]*\n\s*b\)/i

@@ -112,11 +112,11 @@ export function selectReferences(bank: readonly ReferenceTask[], { area, seconda
 
 /**
  * Referansen slik AI-en får den: ID, format, hensikt, eventuell representasjon, tekst og fasit.
- * I Problemløsing er den visuelle støtten beskrevet med ord (f.eks. en tekstbasert blokkmodell) – ikke en figur som mangler.
+ * I Problemløsing og Tall og regning er den visuelle støtten beskrevet med ord (f.eks. en tekstbasert blokkmodell) – ikke en figur som mangler.
  * Løsningsforslaget, lærernotatet og flervalgsmetadataene sendes ikke (alternativene står i elevteksten).
  */
 export function toAiReference(ref: ReferenceTask): AiReferenceTask {
-  const inText = ref.topic === 'problemlosing'
+  const inText = ref.topic === 'problemlosing' || ref.topic === 'tall-og-regning'
   return {
     id: ref.id,
     taskType: ref.format,

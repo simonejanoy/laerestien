@@ -1,8 +1,8 @@
-import { DIVISION_AREAS, GEOMETRY_AREAS, MULTIPLICATION_AREAS, PLACE_VALUE_AREAS, PROBLEM_SOLVING_AREAS } from '../../src/ai/contract.ts'
+import { DIVISION_AREAS, GEOMETRY_AREAS, MULTIPLICATION_AREAS, NUMBERS_AND_OPERATIONS_AREAS, PLACE_VALUE_AREAS, PROBLEM_SOLVING_AREAS } from '../../src/ai/contract.ts'
 import type { ReferenceBank, ReferenceTask } from './types.ts'
 
 // Kontroll av referansebankene. Kjøres når serveren starter (multiplication.ts, placeValue.ts, division.ts, geometry.ts,
-// problemSolving.ts) og i testene.
+// problemSolving.ts, numbersAndOperations.ts) og i testene.
 
 /** Hva en bank skal inneholde: tema, ID-prefiks (M1-N1-01, T1-N1-01) og fagområdene i rekkefølge. */
 export interface BankSpec {
@@ -16,6 +16,7 @@ export const PLACE_VALUE_BANK: BankSpec = { topic: 'tall-og-plassverdi', idPrefi
 export const DIVISION_BANK: BankSpec = { topic: 'divisjon', idPrefix: 'D', areas: DIVISION_AREAS }
 export const GEOMETRY_BANK: BankSpec = { topic: 'geometri', idPrefix: 'G', areas: GEOMETRY_AREAS }
 export const PROBLEM_SOLVING_BANK: BankSpec = { topic: 'problemlosing', idPrefix: 'P', areas: PROBLEM_SOLVING_AREAS }
+export const NUMBERS_AND_OPERATIONS_BANK: BankSpec = { topic: 'tall-og-regning', idPrefix: 'TR', areas: NUMBERS_AND_OPERATIONS_AREAS }
 const REQUIRED_TEXT = ['id', 'topic', 'area', 'areaTitle', 'title', 'format', 'purpose', 'studentText', 'solution'] as const
 
 export interface BankCheck {
@@ -33,9 +34,9 @@ function tokenize(expression: string): Token[] | null {
   const tokens: Token[] = []
   const source = expression.replace(/\s+/g, '')
   for (let i = 0; i < source.length; ) {
-    const digits = /^\d+/.exec(source.slice(i))
+    const digits = /^\d+(?:,\d+)?/.exec(source.slice(i))
     if (digits) {
-      tokens.push(Number(digits[0]))
+      tokens.push(Number(digits[0].replace(',', '.')))
       i += digits[0].length
       continue
     }
@@ -98,7 +99,7 @@ export function evaluate(expression: string): number | null {
  * Regnerekker med «=»: starter og slutter med et tall eller en parentes. Et minustegn rett foran
  * det første tallet hører med (−6 + 9 = 3). Mellomrom i tall (1 004) slås sammen ved utregningen.
  */
-const ARITHMETIC_RUN = /(?:(?<![\w)])[-−])?[\d(][\d\s()x·*:/+\-−=]*[\d)]/g
+const ARITHMETIC_RUN = /(?:(?<![\w)])[-−])?[\d(](?:[\d\s()x·*:/+\-−=]|,(?=\d))*[\d)]/g
 const OPERATOR = /[+\-−x·*:/]/
 const UNIT_WORD = /^\s*(tiere|tier|hundrere|hundrer|enere|ener)\b/i
 /** Rest etter en divisjon: «14 : 4 = 3 rest 2», «… = 3 med 2 til overs» eller «… = 3, og 2 til overs». */
@@ -148,7 +149,8 @@ export function checkEquations(text: string): { checked: number; errors: string[
     const values = sides.filter(Boolean).map(evaluate)
     if (values.length < 2 || values.some((v) => v === null)) continue
     checked++
-    if (!values.every((v) => v === values[0])) errors.push(`«${run.trim()}» stemmer ikke`)
+    // Desimaltall: 0,6 + 0,7 er 1,3 (ikke 1,2999…).
+    if (!values.every((v) => Math.abs(v! - values[0]!) < 1e-9)) errors.push(`«${run.trim()}» stemmer ikke`)
   }
   return { checked, errors }
 }
@@ -164,7 +166,7 @@ function numberList(solution: string): number[] | null {
  * - regnerekker i fasiten
  * - tomme felt («__») fylt med fasiten, når fasiten er én verdi per felt
  * - «Regn ut …: a x b, c x d …» og «Still opp og regn ut: a + b» mot en fasit med like mange tall
- * - regnerekker i oppgaveteksten – ikke i feilanalyser, der feilen er meningen
+ * - regnerekker i oppgaveteksten – ikke i feilanalyser og feilvurderinger, der feilen er meningen
  */
 export function checkReferenceMath(
   ref: Pick<ReferenceTask, 'studentText' | 'solution' | 'format'> & { teacherNote?: string | null; workedSolution?: string },
@@ -179,7 +181,7 @@ export function checkReferenceMath(
   if (blanks > 0 && answers && answers.length === blanks) {
     let i = 0
     results.push(checkEquations(ref.studentText.replace(/__+/g, () => String(answers[i++]))))
-  } else if (!/feilanalyse/i.test(ref.format)) {
+  } else if (!/feilanalyse|feilvurdering/i.test(ref.format)) {
     results.push(checkEquations(ref.studentText))
   }
 

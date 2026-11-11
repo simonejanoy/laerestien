@@ -18,6 +18,8 @@ export interface ReferenceTask {
   topic: ReferenceTopic
   /** Fagområde. */
   area: ReferenceArea
+  /** Tall og regning: områdets ID i referansefilen, når den er en annen enn `area` (ID-en finnes i en annen bank). */
+  sourceArea?: string
   areaTitle: string
   level: AiLevel
   title: string
