@@ -107,6 +107,16 @@ export interface AiTextDraft extends AiDraftBase {
   invalidFigure?: true
   /** Satt av serveren når AI-en uttrykkelig svarte «ingen figur» (betyr noe ved justering av en oppgave med figur). */
   noFigure?: true
+  /**
+   * Mønster og algoritmer, satt av serveren etter kontrollene: antall prikker i figur 1, 2, 3 … slik teksten oppgir
+   * dem (appen tegner prikkene), og at tallrekka med tomme felt skal vises med inputbokser.
+   */
+  dotCounts?: number[]
+  answerBoxes?: true
+  /** Mønster og algoritmer: fargerekka i teksten, som appen tegner som sirkler (satt av serveren etter kontrollene). */
+  colorItems?: string[]
+  /** Mønster og algoritmer: det korte svaret kontrollen selv regnet ut og fant i fasiten – appen retter det automatisk. */
+  expected?: { kind: string; value?: number | string; values?: (number | string)[] }
 }
 
 /** Kort regnestykke (tall – regneart – tall), vist som de vanlige hoderegningsoppgavene. Appen retter svaret selv. */
@@ -726,7 +736,11 @@ export function isTaskResult(value: unknown): value is TaskResult {
             t.studentText.length > 0 &&
             typeof t.solution === 'string' &&
             t.solution.length > 0 &&
-            (t.figure === undefined || readStoredVisual(t.figure) !== null),
+            (t.figure === undefined || readStoredVisual(t.figure) !== null) &&
+            (t.dotCounts === undefined || (Array.isArray(t.dotCounts) && t.dotCounts.length > 0 && t.dotCounts.every((c) => Number.isInteger(c) && c > 0))) &&
+            (t.answerBoxes === undefined || t.answerBoxes === true) &&
+            (t.colorItems === undefined || (Array.isArray(t.colorItems) && t.colorItems.every((c) => typeof c === 'string'))) &&
+            (t.expected === undefined || (typeof t.expected === 'object' && t.expected !== null && typeof t.expected.kind === 'string')),
     )
   )
 }

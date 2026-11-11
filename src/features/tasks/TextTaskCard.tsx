@@ -9,6 +9,7 @@ import { levelStyles } from '../../components/ui/levelStyles'
 import type { TextTask } from '../../types'
 import { AiReviseForm } from './AiReviseForm'
 import { DiscardChangesDialog } from './DiscardChangesDialog'
+import { keepPatternDisplay } from '../../ai/drafts'
 
 interface TextTaskCardProps {
   task: TextTask
@@ -39,7 +40,9 @@ export function TextTaskCard({ task, number, topic, className, onChange, onDelet
 
   const save = () => {
     if (!editing?.text.trim() || !editing.solution.trim()) return
-    onChange({ ...task, text: editing.text.trim(), solution: editing.solution.trim() })
+    // Mønster og algoritmer: figurer og bokser følger den nye teksten, og svaret som rettes automatisk fjernes.
+    const edited = { ...task, text: editing.text.trim(), solution: editing.solution.trim() }
+    onChange(edited.text === task.text && edited.solution === task.solution ? task : keepPatternDisplay(edited, task))
     close()
   }
 

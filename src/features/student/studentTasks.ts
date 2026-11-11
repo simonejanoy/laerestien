@@ -1,5 +1,6 @@
 import { readStoredVisual } from '../../ai/contract.ts'
-import type { Operator, SessionTask, Task } from '../../types/index.ts'
+import { answerStatus, blankRowIn, dotLayout, drawableColors } from '../../ai/patternDisplay.ts'
+import type { Operator, SessionTask, Task, TextTask } from '../../types/index.ts'
 import { answerOf, answerProblem, expressionOf, formatNumber } from '../tasks/taskUtils.ts'
 
 // Felles regler for elevvisningen – brukes både av eleven og av lærerens forhåndsvisning.
@@ -26,6 +27,7 @@ const CLOCK_TIME = /^([01]?\d|2[0-3]):[0-5]\d$/
 export function previewProblem(task: SessionTask): string | null {
   if (task.kind === 'text') {
     if (!task.text.trim()) return 'Oppgaveteksten er tom, så eleven ser ingen oppgave.'
+    if (task.answerBoxes && !blankRowIn(task.text)) return 'Oppgaven skal ha inputbokser, men teksten har ingen tallrekke med tomme felt (___).'
     const figure = task.figure
     if (!figure) return null
     if (figure.kind === 'grid') {
@@ -36,6 +38,8 @@ export function previewProblem(task: SessionTask): string | null {
     }
     if (figure.kind === 'shape') return readStoredVisual(figure) ? null : 'Figuren er en type elevvisningen ikke kan tegne.'
     if (figure.kind === 'angle') return readStoredVisual(figure) ? null : 'Vinkeltypen passer ikke gradtallet, så vinkelen kan ikke tegnes riktig.'
+    if (figure.kind === 'colors') return drawableColors(figure.items) ? null : 'Fargemønsteret har farger appen ikke kan tegne, eller er for langt.'
+    if (figure.kind === 'dots') return dotLayout(figure.counts) ? null : 'Prikkene følger ikke lik økning, kvadrattall eller trekanttall, eller er for mange til å tegnes.'
     return 'Figuren har et format elevvisningen ikke kan vise.'
   }
 
@@ -73,6 +77,14 @@ export interface MathTaskState {
 export interface TextTaskState {
   answer: string
   submitted: boolean
+  /**
+   * Bare oppgaver med et svar som rettes automatisk (Mønster og algoritmer): «retry» etter første feil svar,
+   * «correct» eller «revealed» (riktig svar vist etter andre feil) når oppgaven er ferdig, og «several» når svaret har
+   * flere ulike svar («14 eller 15») – da bes eleven skrive ett svar, uten at det teller som et forsøk.
+   */
+  result?: 'correct' | 'retry' | 'revealed' | 'several'
+  /** Antall feil svar så langt. */
+  wrongTries?: number
 }
 
 export type TaskAnswerState = MathTaskState | TextTaskState
@@ -113,5 +125,27 @@ export function hasAnswerState(state: TaskAnswerState | undefined) {
   if (isMathState(state)) {
     return state.answer !== '' || state.phase !== 'answering' || state.attemptsLeft !== MAX_ATTEMPTS || state.showHint || state.dialogOpen
   }
-  return state.answer !== '' || state.submitted
+  return state.answer !== '' || state.submitted || state.result !== undefined || (state.wrongTries ?? 0) > 0
 }
+
+/** Tekstoppgaver som rettes automatisk: eleven får ett nytt forsøk etter første feil svar. */
+export const TEXT_ATTEMPTS = 2
+
+/** «Sjekk svaret mitt» på en oppgave med et svar som rettes automatisk: riktig, ett forsøk til, eller riktig svar vises. */
+export function checkTextAnswer(state: TextTaskState, task: TextTask): TextTaskState {
+  if (!task.expected) return { ...state, submitted: true }
+  const status = answerStatus(task.expected, state.answer, task.text)
+  if (status === 'correct') return { ...state, submitted: true, result: 'correct' }
+  if (status === 'several') return { ...state, result: 'several' }
+  const wrongTries = (state.wrongTries ?? 0) + 1
+  return wrongTries >= TEXT_ATTEMPTS ? { ...state, wrongTries, submitted: true, result: 'revealed' } : { ...state, wrongTries, result: 'retry' }
+}
+
+/**
+ * Om eleven får se løsningsforslaget etter rettingen. Fasiten til AI-oppgaver læreren ikke har gått gjennom, vises ikke
+ * (bare riktig svar) – den er skrevet for læreren og ikke kontrollert av et menneske.
+ */
+export const showsSolution = (task: TextTask) => !task.aiGenerated || task.reviewed
+
+/** Overskriften over løsningsforslaget: et eksempel på en forklaring når oppgaven ber eleven forklare. */
+export const solutionHeading = (task: TextTask) => (/\b(forklar|begrunn)/i.test(task.text) ? 'Eksempel på en forklaring' : 'Løsningsforslag')

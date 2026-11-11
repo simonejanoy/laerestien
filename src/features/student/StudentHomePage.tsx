@@ -84,7 +84,7 @@ export function StudentHomePage() {
       ) : !session ? (
         <MessageCard title="Venter på læreren" text="Oppgavene dukker opp her når læreren starter økta." />
       ) : (
-        <StudentTaskFlow tasks={tasks} index={index} onNext={() => setIndex(index + 1)} />
+        <StudentTaskFlow tasks={tasks} index={index} onNext={() => setIndex(index + 1)} topicId={session.topicId} />
       )}
     </StudentLayout>
   )

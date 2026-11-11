@@ -1,5 +1,6 @@
 import { visualSignature, type AiVisual, type DivisionArea, type DivisionType, type GeometryArea, type MeasurementArea, type NumbersAndOperationsArea, type PatternArea, type PlaceValueArea, type ProblemSolvingArea } from '../../ai/contract.ts'
 import type { Level, LevelGroup, LevelProfile, Operator, TaskProfile, TaskType, TopicDetails } from '../../types/index.ts'
+import type { ColorsFigure, DotsFigure, ExpectedAnswer } from '../../ai/patternDisplay.ts'
 import { OPEN_STRATEGY, strategyInstruction } from './multiplicationStrategies.ts'
 import { columnTasks, fourDigitTasks, mentalStrategyTasks, negativeNumberTasks, type FourDigitVariant } from './placeValueTasks.ts'
 
@@ -17,8 +18,12 @@ export type TaskSpec = [TaskType, number, Operator, number, string]
 export interface TextSpec {
   text: string
   solution: string
-  /** Geometri: plan figur eller vinkel som appen tegner til oppgaven. */
-  figure?: AiVisual
+  /** Geometri: plan figur eller vinkel som appen tegner til oppgaven. Mønster og algoritmer: figurtall med prikker. */
+  figure?: AiVisual | DotsFigure | ColorsFigure
+  /** Mønster og algoritmer: tallrekka med tomme felt vises med inputbokser. */
+  answerBoxes?: true
+  /** Mønster og algoritmer: det korte svaret appen retter automatisk (brukes bare i øktene i temaet). */
+  expected?: ExpectedAnswer
 }
 
 export type GeneratedTask = TaskSpec | TextSpec
@@ -1401,7 +1406,10 @@ const skillTasks: Record<string, Generator> = {
       // Gjentakende mønstre med ●, ■ og ▲ eller fargeord. Gjentakelsen vises minst to ganger, og fasiten regnes ut.
       const unit = PATTERN_UNITS[level][(i + n) % 5]
       const p = unit.length
-      const line = patternLine(Array.from({ length: p === 2 ? 6 : p === 3 ? 6 : 8 }, (_, j) => unit[j % p]))
+      const shown = Array.from({ length: p === 2 ? 6 : p === 3 ? 6 : 8 }, (_, j) => unit[j % p])
+      const line = patternLine(shown)
+      // Fargemønstre tegnes som sirkler med fargenavnet under (plassen det spørres etter er alltid etter rekka).
+      const colors = isColor(unit[0]) ? { figure: { kind: 'colors' as const, items: shown } } : {}
       const word = isColor(unit[0]) ? 'farge' : 'figur'
       const at = (k: number) => unit[(k - 1) % p]
       if (level === 2 && i % 2 === 1 && !isColor(unit[0])) {
@@ -1411,6 +1419,7 @@ const skillTasks: Record<string, Generator> = {
         return {
           text: `Ola legger figurer i dette mønsteret:\n${line}\nHan fortsetter til han har lagt ${total} figurer. Hvor mange ${item} har han lagt?`,
           solution: `${(total / p) * each} ${item}. ${total} : ${p} = ${total / p} gjentakelser med ${each} ${item} i hver.`,
+          expected: { kind: 'number', value: (total / p) * each },
         }
       }
       if (level === 3) {
@@ -1419,6 +1428,8 @@ const skillTasks: Record<string, Generator> = {
         return {
           text: `Mønsteret fortsetter likt hele veien:\n${line}\nFinn ${word}en på plass ${k} uten å skrive hele mønsteret. Forklar hvordan du tenker.`,
           solution: `${at(k)}. Gjentakelsen har ${p} ${word}r, og ${m} er i ${p === 4 ? 'fire' : 'tre'}gangen. Plass ${m} er den siste i en gjentakelse, så plass ${k} er nr. ${k - m} i neste.`,
+          expected: { kind: 'item', value: at(k) },
+          ...colors,
         }
       }
       // Ulik plass i hver oppgave på nivået (7–12 på nivå 1, 13–24 på nivå 2).
@@ -1426,6 +1437,8 @@ const skillTasks: Record<string, Generator> = {
       return {
         text: `Her gjentar ${word === 'farge' ? 'fargene' : 'figurene'} seg:\n${line}\nHvilken ${word} står på plass ${k}?${level === 2 ? ' Forklar.' : ''}`,
         solution: `${at(k)}. Gjentakelsen er ${patternLine(unit)}.`,
+        expected: { kind: 'item', value: at(k) },
+        ...colors,
       }
     }),
   'mon.figurtall': (level, n) =>
@@ -1433,9 +1446,12 @@ const skillTasks: Record<string, Generator> = {
       const [s, d] = [vary(n, i, 1, 5), vary(n + 1, i, 2, 4)]
       const k = level === 1 ? 4 : level === 2 ? 6 : 10
       // Egen formulering – «Figur 1 har 2 prikker. Figur 2 har 4 prikker …» er referanseoppgaven MO2-N1-01.
+      // Appen tegner figur 1–3 som prikker (ikke figuren det spørres etter).
       return {
         text: `Et figurtall vokser med like mange prikker hver gang.\nFigur 1: ${s} prikker. Figur 2: ${s + d} prikker. Figur 3: ${s + 2 * d} prikker.\nHvor mange prikker blir det i figur ${k}?`,
         solution: `${s + (k - 1) * d} prikker. Det kommer ${d} nye prikker hver gang.`,
+        figure: { kind: 'dots', counts: [s, s + d, s + 2 * d] },
+        expected: { kind: 'number', value: s + (k - 1) * d },
       }
     }),
   // Tekstoppgaver: et regnestykke under teksten («16 + 4 = ___») ville vist regelen eleven skal finne.
@@ -1444,21 +1460,21 @@ const skillTasks: Record<string, Generator> = {
       five((i): TextSpec => {
         const d = vary(n, i, 2, 9)
         const k = vary(n + 2, i, 6, 10)
-        return { text: `Tallfølgen er ${d}, ${2 * d}, ${3 * d}, ${4 * d} … Hva er tall nummer ${k}?`, solution: `${k * d}. Regelen er +${d}.` }
+        return { text: `Tallfølgen er ${d}, ${2 * d}, ${3 * d}, ${4 * d} … Hva er tall nummer ${k}?`, solution: `${k * d}. Regelen er +${d}.`, expected: { kind: 'number', value: k * d } }
       }),
     (n) =>
       five((i): TextSpec => {
         const d = vary(n, i, 2, 9)
         const start = vary(n, i, 60, 100)
         const seq = [start, start - d, start - 2 * d, start - 3 * d]
-        return { text: `Fortsett tallfølgen: ${seq.join(', ')}, __, __`, solution: `${start - 4 * d} og ${start - 5 * d}. Regelen er −${d}.` }
+        return { text: `Fortsett tallfølgen: ${seq.join(', ')}, __, __`, solution: `${start - 4 * d} og ${start - 5 * d}. Regelen er −${d}.`, answerBoxes: true, expected: { kind: 'numbers', values: [start - 4 * d, start - 5 * d] } }
       }),
     (n) =>
       five((i): TextSpec => {
         // Ikke 4: «4, 8, 16, 32» står allerede i arbeidsarket i økta.
         const start = pick([1, 2, 3, 5, 6], i + n)
         const seq = [start, start * 2, start * 4, start * 8]
-        return { text: `Finn regelen og neste tall: ${seq.join(', ')}, ___`, solution: `${start * 16}  (tallet dobles hver gang)` }
+        return { text: `Finn regelen og neste tall: ${seq.join(', ')}, ___`, solution: `${start * 16}  (tallet dobles hver gang)`, answerBoxes: true, expected: { kind: 'numbers', values: [start * 16] } }
       }),
   ),
   // Pseudokode i kodeformatet: én kommando per linje og fire mellomrom innrykk inne i løkker og vilkår.
@@ -1469,6 +1485,7 @@ const skillTasks: Record<string, Generator> = {
         return {
           text: `En robot følger programmet:\ngjenta ${r} ganger:\n    gå ${st} steg fram\nHvor mange steg går roboten til sammen?`,
           solution: `${r * st} steg. ${r} · ${st} = ${r * st}.`,
+          expected: { kind: 'number', value: r * st },
         }
       }),
     (n) =>
@@ -1477,6 +1494,7 @@ const skillTasks: Record<string, Generator> = {
         return {
           text: `Start med ${s}.\ngjenta ${r} ganger:\n    legg til ${a}\n    trekk fra ${b}\nHvilket tall ender programmet på?`,
           solution: `${s + r * (a - b)}. Hver runde gir ${a} − ${b} = ${a - b} mer: ${s} + ${r} · ${a - b} = ${s + r * (a - b)}.`,
+          expected: { kind: 'number', value: s + r * (a - b) },
         }
       }),
     (n) =>
@@ -1486,6 +1504,7 @@ const skillTasks: Record<string, Generator> = {
         return {
           text: `Start med 100.\ngjenta ${r} ganger:\n    trekk fra ${st}\nSkriv tallet etter hver runde. Hvilket tall ender du på?`,
           solution: `${rounds.join(', ')}. Tallet til slutt er ${rounds[r - 1]}.`,
+          expected: { kind: 'numbers', values: rounds },
         }
       }),
   ),
@@ -1497,6 +1516,7 @@ const skillTasks: Record<string, Generator> = {
         return {
           text: `Start med ${x}.\nhvis tallet er et partall:\n    legg til 10\nellers:\n    legg til 1\nHvilket tall får du?`,
           solution: `${even ? x + 10 : x + 1}. ${x} er et ${even ? 'partall, så programmet legger til 10' : 'oddetall, så programmet går til «ellers» og legger til 1'}.`,
+          expected: { kind: 'number', value: even ? x + 10 : x + 1 },
         }
       }),
     (n) =>
@@ -1509,6 +1529,7 @@ const skillTasks: Record<string, Generator> = {
         return {
           text: `Start med ${x}.\nhvis tallet er større enn ${g}:\n    trekk fra ${a}\nellers:\n    legg til ${b}\nHvilket tall får du?`,
           solution: `${bigger ? x - a : x + b}. ${x} er ${bigger ? '' : 'ikke '}større enn ${g}, så programmet ${bigger ? `trekker fra ${a}` : `går til «ellers» og legger til ${b}`}.`,
+          expected: { kind: 'number', value: bigger ? x - a : x + b },
         }
       }),
     (n) =>
@@ -1519,6 +1540,7 @@ const skillTasks: Record<string, Generator> = {
         return {
           text: `Start med ${x}.\ngjenta 4 ganger:\n    hvis tallet er større enn 20:\n        trekk fra 6\n    ellers:\n        legg til 5\nHvilket tall har du etter hver runde?`,
           solution: `${rounds.join(', ')}. Tallet til slutt er ${rounds[3]}. Vilkåret sjekkes på nytt i hver runde.`,
+          expected: { kind: 'numbers', values: rounds },
         }
       }),
   ),
@@ -1576,7 +1598,8 @@ const skillTasks: Record<string, Generator> = {
 }
 
 /** To oppgaver er like når teksten, eller regnestykket, er det samme. */
-export const taskKey = (task: GeneratedTask) => (isTextSpec(task) ? `${task.text}${task.figure ? `|${visualSignature(task.figure)}` : ''}` : `${task[1]} ${task[2]} ${task[3]}`)
+export const taskKey = (task: GeneratedTask) =>
+  isTextSpec(task) ? `${task.text}${task.figure && task.figure.kind !== 'dots' && task.figure.kind !== 'colors' ? `|${visualSignature(task.figure)}` : ''}` : `${task[1]} ${task[2]} ${task[3]}`
 
 function round(skills: string[], level: Level, n: number, profile?: TaskProfile): GeneratedTask[] {
   if (skills.length === 1) return skillTasks[skills[0]](level, n, profile)

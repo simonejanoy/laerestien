@@ -168,7 +168,12 @@ function numberLineTask(id: string, level: Level, [start, step, count, shown]: (
   const values = Array.from({ length: count }, (_, i) => start + i * step)
   const line = values.map((v, i) => (shown.includes(i) ? String(v) : '___')).join(', ')
   const missingValues = values.filter((_, i) => !shown.includes(i))
-  return textTask(id, level, `Fyll inn tallene som mangler på tallinjen.\n${line}`, missingValues.join(', '))
+  // Hvert tomme felt vises som en inputboks i rekka (Mønster og algoritmer).
+  return {
+    ...textTask(id, level, `Fyll inn tallene som mangler på tallinjen.\n${line}`, missingValues.join(', ')),
+    answerBoxes: true as const,
+    expected: { kind: 'numbers' as const, values: missingValues },
+  }
 }
 
 /** «Hva blir de neste tallene?» (tallrekker) – uten eksempelet 0, 2, 0, 2. */
@@ -192,12 +197,13 @@ export function continueSequence(start: number[], next: (seq: number[]) => numbe
 }
 
 function sequenceTask(id: string, level: Level, { start, rule, next, count = 4 }: (typeof numberSequences)[number]) {
-  return textTask(
+  const task = textTask(
     id,
     level,
     `Hva blir de ${count === 4 ? 'fire' : 'to'} neste tallene?\n${start.join(', ')}, ${Array(count).fill('___').join(', ')}`,
     `${continueSequence(start, next, count).join(', ')}  (${rule})`,
   )
+  return { ...task, answerBoxes: true as const, expected: { kind: 'numbers' as const, values: continueSequence(start, next, count) } }
 }
 
 /** Tall, økt 11–14 (okt-5 til okt-8): seks oppgaver per nivå i hver økt. */

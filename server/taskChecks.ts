@@ -15,7 +15,8 @@ import { divisionProblem, wishRequiresRoundUp } from './divisionChecks.ts'
 import { geometryProblem } from './geometryChecks.ts'
 import { measurementProblem } from './measurementChecks.ts'
 import { numbersProblem } from './numbersAndOperationsChecks.ts'
-import { patternProblem } from './patternChecks.ts'
+import { patternProblem, withPatternDisplay } from './patternChecks.ts'
+import type { ExpectedAnswer } from '../src/ai/patternDisplay.ts'
 import { problemSolvingProblem } from './problemSolvingChecks.ts'
 import { visualProblem } from './visualChecks.ts'
 import { divisionReferences } from './references/division.ts'
@@ -645,6 +646,8 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
     const numbersAndOperations = topic === 'tall-og-regning'
     const measurement = topic === 'maling'
     const patterns = topic === 'monster-og-algoritmer'
+    // Mønster og algoritmer: det korte svaret kontrollen regnet ut, per godkjent oppgave (appen retter det automatisk).
+    const expectedOf = new Map<AiTaskDraft, ExpectedAnswer>()
     const patternContext = patterns
       ? {
           area: area as PatternArea,
@@ -743,8 +746,10 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
       // Synlig nøling i oppgaveteksten avvises også.
       if (patternContext) {
         if (!isMathDraft(task) && HESITATION.test(task.studentText)) return remove(task, 'unclearSolution')
-        const problem = patternProblem(task, { ...patternContext, existingMax: existingMax(task.level) })
+        const found: { expected?: ExpectedAnswer } = {}
+        const problem = patternProblem(task, { ...patternContext, existingMax: existingMax(task.level), found })
         if (problem) return remove(task, problem)
+        if (found.expected) expectedOf.set(task, found.expected)
       }
       // Økter der tierovergang er det uttrykkelige målet: minst én addisjon med veksling.
       if (profile?.requiresCarry && !requiresCarry(task)) return remove(task, 'missingCarry')
@@ -801,6 +806,8 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
       if (!isMathDraft(task)) addText(task.level, task.studentText, visualSignature(task.figure))
       return true
     })
+    // Mønster og algoritmer: godkjente oppgaver får prikkantallene appen tegner og inputbokser i tallrekka.
+    if (patterns) tasks = tasks.map((t) => (isMathDraft(t) ? t : { ...withPatternDisplay(t), ...(expectedOf.has(t) && { expected: expectedOf.get(t) }) }))
   } else {
     const outside = tasks.filter((t) => outsideTables(t, factorsOf(t.level))).length
     if (outside) issues.push(`${outside} gangestykker utenfor øktas gangetabeller`)

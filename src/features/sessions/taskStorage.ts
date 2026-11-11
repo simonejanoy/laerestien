@@ -1,4 +1,5 @@
 import { readStoredVisual, type AiTaskMeta } from '../../ai/contract.ts'
+import { dotLayout, drawableColors, readExpected } from '../../ai/patternDisplay.ts'
 import type { Operator, SessionTask, TaskFigure, TaskSource, TaskType } from '../../types/index.ts'
 
 // Varig lagring av øktenes oppgavesett i nettleseren (prototype – ingen backend).
@@ -55,6 +56,14 @@ function readFigure(value: unknown): TaskFigure | undefined {
   if (!isObject(value)) return undefined
   if (value.kind === 'grid' && Array.isArray(value.rows) && value.rows.every(isString)) return { kind: 'grid', rows: value.rows }
   if (value.kind === 'clock' && isString(value.time)) return { kind: 'clock', time: value.time }
+  // Figurtall med prikker (Mønster og algoritmer): bare antall som kan tegnes.
+  if (value.kind === 'dots' && Array.isArray(value.counts) && value.counts.every((c) => Number.isInteger(c)) && dotLayout(value.counts as number[])) {
+    return { kind: 'dots', counts: value.counts as number[] }
+  }
+  // Fargemønstre (Mønster og algoritmer): bare farger appen kan tegne.
+  if (value.kind === 'colors' && Array.isArray(value.items) && value.items.every(isString) && drawableColors(value.items as string[])) {
+    return { kind: 'colors', items: value.items as string[] }
+  }
   // Plane figurer og vinkler (geometri). En ukjent figur leses ikke inn – oppgaven beholdes uten figur.
   return readStoredVisual(value) ?? undefined
 }
@@ -81,6 +90,8 @@ export function readStoredTask(value: unknown): SessionTask | null {
       aiGenerated: aiGenerated === true,
       reviewed: reviewed === true,
       ...(figure && { figure }),
+      ...(value.answerBoxes === true && { answerBoxes: true as const }),
+      ...(readExpected(value.expected) && { expected: readExpected(value.expected) }),
       ...source,
       ...meta,
     }

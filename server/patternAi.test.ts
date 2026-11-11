@@ -8,14 +8,17 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { describe, it } from 'node:test'
 import { aiConfig } from '../src/ai/config.ts'
-import { AREA_TITLES, PATTERN_AREAS, parseTaskResult, topicOfArea, type AiLevel, type AiTaskDraft, type TaskRequest } from '../src/ai/contract.ts'
-import { toSessionTask } from '../src/ai/drafts.ts'
+import { AREA_TITLES, PATTERN_AREAS, parseTaskResult, topicOfArea, type AiLevel, type AiTaskDraft, type AiTextDraft, type TaskRequest } from '../src/ai/contract.ts'
+import { applyRevision, toSessionTask } from '../src/ai/drafts.ts'
+import { PATTERN_COLORS, SYMBOL_NAMES, answerStatus, blankRowIn, boxesComplete, colorOptions, colorRowsIn, dotCountsIn, dotLayout, formatExpected, isCorrect, itemOptions, joinBoxAnswers, readExpected, splitBoxAnswers, symbolRowIn, withoutColorRow, withoutDotSentences, type ExpectedAnswer } from '../src/ai/patternDisplay.ts'
+import { readStoredTask } from '../src/features/sessions/taskStorage.ts'
+import { TEXT_ATTEMPTS, checkTextAnswer, hasAnswerState, initialTextState, previewProblem, showsSolution, solutionHeading } from '../src/features/student/studentTasks.ts'
 import { buildLevelContexts, summarizeExisting, toAiProfile } from '../src/ai/referenceTasks.ts'
 import { buildTasks, levelsFor, planned, type Planned } from '../src/features/sessions/sessionTasks.ts'
 import { worksheetTasks } from '../src/features/sessions/worksheetTasks.ts'
 import { unitSpecs } from '../src/features/topics/yearPlan.ts'
 import type { AiLogEntry, GenerateResult } from './gemini.ts'
-import { codeBlocks, parseProgram, patternProblem, runProgram } from './patternChecks.ts'
+import { codeBlocks, parseProgram, patternProblem, runProgram, withPatternDisplay } from './patternChecks.ts'
 import { taskPrompt } from './prompts.ts'
 import { referenceBanks } from './references/banks.ts'
 import { PATTERN_REFERENCE_COUNT, patternBankFile, patternCodeFormat, patternReferences } from './references/patterns.ts'
@@ -202,7 +205,7 @@ describe('3. øktene i Mønster og algoritmer og de fem fagområdene', () => {
     assert.ok(!explore.includes('Kodeformat:'))
     assert.ok(explore.includes('Tilgrensende område (bare som støtte – hovedfokus er Utforske mønster): Figurtall'))
     assert.ok(explore.includes('●, ■ og ▲'))
-    assert.ok(explore.includes('Oppgi minst tre figurer'))
+    assert.ok(explore.includes('Figur 1: 5 prikker. Figur 2: 8 prikker. Figur 3: 11 prikker.') && explore.includes('Appen tegner prikkene'))
     const sequences = await promptFor(session(SEQUENCES))
     assert.ok(!sequences.includes('Kodeformat:'))
     assert.ok([...sequences.matchAll(/ID: (MO\d-N\d-\d{2})/g)].every((m) => m[1].startsWith('MO3-')))
@@ -468,7 +471,9 @@ describe('11. visning: kodelinjer og mønsterfigurer vises med linjeskift og inn
 
   it('elevvisningen og lærervisningen beholder linjeskift og mellomrom i oppgaveteksten', () => {
     // whitespace-pre-wrap bevarer både linjeskift og innrykket på fire mellomrom (og bryter lange linjer).
-    assert.match(read('src/features/student/TextTaskScreen.tsx'), /<h2 className="[^"]*whitespace-pre-wrap[^"]*">\{task\.text\}<\/h2>/)
+    assert.match(read('src/features/student/TextTaskScreen.tsx'), /<h2 className="[^"]*whitespace-pre-wrap[^"]*">\{text\}<\/h2>/)
+    // Teksten eleven ser er oppgaveteksten – bare uten fargelinja når fargene vises som sirkler.
+    assert.match(read('src/features/student/TextTaskScreen.tsx'), /task\.figure\?\.kind === 'colors' \? withoutColorRow\(task\.text, task\.figure\.items\) : task\.figure\?\.kind === 'dots' \? withoutDotSentences\(task\.text\) : task\.text/)
     assert.match(read('src/features/tasks/TextTaskCard.tsx'), /<p className="[^"]*whitespace-pre-wrap[^"]*">\{task\.text\}<\/p>/)
     assert.match(read('src/features/tasks/TextTaskCard.tsx'), /<p className="[^"]*whitespace-pre-wrap[^"]*">\{task\.solution\}<\/p>/)
   })
@@ -603,5 +608,431 @@ describe('14. andre temaer og referansebanker er uendret', () => {
     assert.equal(aiConfig.primaryModel, 'gemini-3.8-flash')
     assert.equal(aiConfig.fallbackModel, 'gemini-3.5-flash-lite')
     assert.deepEqual(aiConfig.timeoutMsByUse.tasks, { primary: 4000 })
+  })
+})
+
+describe('15. figurtall med prikker', () => {
+  it('antallene leses fra den faste linja – også «har», rader og regnestykker – men ikke fra påstander', () => {
+    assert.deepEqual(dotCountsIn('Figur 1: 5 prikker. Figur 2: 8 prikker. Figur 3: 11 prikker.\nHvor mange prikker blir det i figur 4?'), [5, 8, 11])
+    assert.deepEqual(dotCountsIn('Figur 1 er 1 prikk. Figur 2 har 2 rader med 2 prikker. Figur 3 har 3 rader med 3 prikker.'), [1, 4, 9])
+    assert.deepEqual(dotCountsIn('Figur 1 har 1 prikk. Figur 2 har 1 + 2 = 3 prikker. Figur 3 har 1 + 2 + 3 = 6 prikker.'), [1, 3, 6])
+    assert.deepEqual(dotCountsIn('Figur 1: 3 prikker. Figur 2: 5 prikker. Ola sier at figur 3 har 9 prikker.'), [3, 5])
+    // Hull eller motsigelser: kan ikke tegnes riktig.
+    assert.equal(dotCountsIn('Figur 1: 5 prikker. Figur 3: 11 prikker.'), null)
+    assert.equal(dotCountsIn('Figur 1: 5 prikker. Figur 2: 8 prikker. Figur 2 har 9 prikker.'), null)
+  })
+
+  it('plasseringen: de gamle prikkene ligger på samme sted, og bare de nye er markert (lik økning, kvadrattall og trekanttall)', () => {
+    for (const counts of [[5, 8, 11], [2, 4, 6, 8], [1, 4, 9, 16], [1, 3, 6, 10], [3, 4, 5]]) {
+      const layout = dotLayout(counts)!
+      assert.ok(layout, counts.join(','))
+      layout.forEach((dots, i) => {
+        assert.equal(dots.length, counts[i], `${counts} figur ${i + 1}`)
+        const key = (d: { col: number; row: number }) => `${d.col},${d.row}`
+        assert.equal(new Set(dots.map(key)).size, dots.length)
+        if (i === 0) return assert.ok(dots.every((d) => !d.isNew))
+        const before = new Set(layout[i - 1].map(key))
+        assert.deepEqual(dots.filter((d) => !d.isNew).map(key).sort(), [...before].sort(), `${counts} figur ${i + 1}`)
+        assert.equal(dots.filter((d) => d.isNew).length, counts[i] - counts[i - 1])
+      })
+    }
+    // Lik økning: de nye prikkene er én kolonne helt til høyre. Kvadrattall: en vinkel. Trekanttall: en ny rad nederst.
+    const plus = dotLayout([5, 8, 11])![2]
+    assert.ok(plus.filter((d) => d.isNew).every((d) => d.col === Math.max(...plus.map((x) => x.col))))
+    const square = dotLayout([1, 4, 9])![2]
+    assert.ok(square.filter((d) => d.isNew).every((d) => d.col === 2 || d.row === 2))
+    const triangle = dotLayout([1, 3, 6])![2]
+    assert.ok(triangle.filter((d) => d.isNew).every((d) => d.row === 2))
+    // Ingen regel, eller for store figurer: tegnes ikke.
+    assert.equal(dotLayout([2, 5, 7]), null)
+    assert.equal(dotLayout([10, 40, 70]), null)
+  })
+
+  it('grunnoppgavene i økt 1 tegner figur 1–3 som prikker, aldri figuren det spørres etter', () => {
+    const withDots = buildTasks(session(EXPLORE)).filter((t) => t.kind === 'text' && t.figure?.kind === 'dots')
+    assert.ok(withDots.length >= 5)
+    for (const t of withDots) {
+      if (t.kind !== 'text' || t.figure?.kind !== 'dots') continue
+      assert.deepEqual(t.figure.counts, dotCountsIn(t.text))
+      assert.ok(dotLayout(t.figure.counts))
+      const asked = Number(/i figur (\d+)\?/.exec(t.text)![1])
+      assert.ok(asked > t.figure.counts.length)
+      assert.equal(previewProblem(t), null)
+    }
+    // Mønsteroppgavene har ingen prikker (fargemønstrene har fargesirkler, se 17).
+    assert.ok(buildTasks(session(EXPLORE)).filter((t) => t.kind === 'text' && /[●■▲]|gul|rød|blå/.test(t.text)).every((t) => t.kind === 'text' && t.figure?.kind !== 'dots'))
+  })
+
+  it('AI-oppgaver: appen får antallene fra teksten, og figuren må stemme med tekst, regel og fasit', () => {
+    const task = text(1, 'Et figurtall vokser likt hver gang.\nFigur 1: 4 prikker. Figur 2: 7 prikker. Figur 3: 10 prikker.\nHvor mange prikker blir det i figur 4?', '13 prikker. Det kommer 3 nye hver gang.')
+    const checked = checkCandidates([task], serverRequest(session(EXPLORE)))
+    assert.equal(checked.rejected.length, 0)
+    const accepted = checked.accepted[0]
+    assert.ok(accepted && 'dotCounts' in accepted)
+    assert.deepEqual((accepted as { dotCounts?: number[] }).dotCounts, [4, 7, 10])
+    const stored = toSessionTask(accepted, 'ai-1')
+    assert.deepEqual(stored.kind === 'text' && stored.figure, { kind: 'dots', counts: [4, 7, 10] })
+    assert.ok(stored.aiGenerated && !stored.reviewed)
+    // Hull i figurene, figuren det spørres etter blant de tegnede, regel som ikke passer og feil fasit avvises.
+    assert.equal(reason(EXPLORE, text(1, 'Et figurtall vokser likt.\nFigur 1: 4 prikker. Figur 3: 10 prikker. Figur 4: 13 prikker.\nHvor mange prikker blir det i figur 5?', '16 prikker.')), 'missingInfo')
+    assert.equal(reason(EXPLORE, text(1, 'Et figurtall vokser likt.\nFigur 1: 4 prikker. Figur 2: 7 prikker. Figur 3: 10 prikker.\nHvor mange prikker har figur 2?', '7 prikker.')), 'revealedSolution')
+    assert.equal(reason(EXPLORE, text(1, 'Et figurtall vokser likt.\nFigur 1: 4 prikker. Figur 2: 7 prikker. Figur 3: 11 prikker.\nHvor mange prikker blir det i figur 4?', '14 prikker.')), 'wrongPattern')
+    assert.equal(reason(EXPLORE, text(1, 'Et figurtall vokser likt hver gang.\nFigur 1: 4 prikker. Figur 2: 7 prikker. Figur 3: 10 prikker.\nHvor mange prikker blir det i figur 4?', '14 prikker.')), 'wrongSolution')
+    // Figurtall med fyrstikker eller klosser, og oppgaver der eleven lager selv, får ingen prikker.
+    const sticks = checkCandidates([text(2, 'Ola bygger hus av pinner. Figur 1: 5 pinner. Figur 2: 9 pinner. Figur 3: 13 pinner.\nHvor mange pinner blir det i figur 6?', '25 pinner.')], serverRequest(session(EXPLORE))).accepted[0]
+    assert.ok(sticks && !('dotCounts' in sticks))
+  })
+
+  it('prikkene lagres og leses inn igjen, og justering med AI regner dem ut fra den nye teksten', () => {
+    const task = toSessionTask({ ...(text(1, 'Figur 1: 1 prikk. Figur 2: 4 prikker. Figur 3: 9 prikker.\nHvor mange prikker har figur 4?', '16 prikker.') as AiTextDraft), dotCounts: [1, 4, 9] }, 't1')
+    assert.deepEqual(readStoredTask(JSON.parse(JSON.stringify(task))), task)
+    // Ugyldige antall leses ikke inn som figur.
+    const broken = readStoredTask({ ...JSON.parse(JSON.stringify(task)), figure: { kind: 'dots' as const, counts: [2, 5, 7] } })
+    assert.ok(broken && broken.kind === 'text' && !broken.figure)
+    assert.equal(task.kind, 'text')
+    if (task.kind !== 'text') return
+    const revised = applyRevision(task, { message: '', tasks: [text(1, 'Figur 1: 1 prikk. Figur 2: 3 prikker. Figur 3: 6 prikker.\nHvor mange prikker har figur 5?', '15 prikker.')] }).task!
+    assert.deepEqual(revised.figure, { kind: 'dots', counts: [1, 3, 6] })
+    const withoutDots = applyRevision(task, { message: '', tasks: [text(1, 'Hva er et kvadrattall? Forklar med rader.', 'Like mange rader som prikker i hver rad.')] }).task!
+    assert.equal(withoutDots.figure, undefined)
+    assert.match(previewProblem({ ...task, figure: { kind: 'dots' as const, counts: [2, 5, 7] } }) ?? '', /Prikkene/)
+  })
+
+  it('tegnes i elevvisningen, på lærerkortet og i forhåndsvisningen (samme figurkomponent), side om side og med antall under', () => {
+    const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
+    assert.match(read('src/components/ui/TaskFigure.tsx'), /figure\.kind === 'dots'\) return <DotFigure/)
+    assert.match(read('src/components/ui/DotFigure.tsx'), /flex-wrap/)
+    assert.match(read('src/components/ui/DotFigure.tsx'), /\{count\} \{count === 1 \? 'prikk' : 'prikker'\}/)
+    assert.match(read('src/features/student/TextTaskScreen.tsx'), /<TaskFigure figure=\{task\.figure\} \/>/)
+    assert.match(read('src/features/tasks/TextTaskCard.tsx'), /<TaskFigure/)
+  })
+})
+
+describe('16. tallrekker med inputbokser', () => {
+  it('rekka deles i tall og bokser, og svarene lagres som én tekst', () => {
+    const row = blankRowIn('Fyll inn tallene som mangler på tallinjen.\n21, ___, ___, 24, ___, …')!
+    assert.equal(row.before, 'Fyll inn tallene som mangler på tallinjen.\n')
+    assert.equal(row.blanks, 3)
+    assert.deepEqual(row.items.map((i) => i.kind), ['number', 'blank', 'blank', 'number', 'blank', 'more'])
+    assert.equal(blankRowIn('Skriv de to neste tallene: 5, 10, 15, 20, __, __')!.blanks, 2)
+    assert.equal(blankRowIn('Finn tallene som mangler: 7, 12, __, 22, __, 32')!.items.length, 6)
+    assert.equal(blankRowIn('Regn ut: 56 + ___ = 99'), null)
+    assert.equal(joinBoxAnswers(['22', '', '24']), '22, , 24')
+    assert.deepEqual(splitBoxAnswers('22, , 24', 3), ['22', '', '24'])
+    assert.equal(joinBoxAnswers(['', '', '']), '')
+    assert.equal(boxesComplete('22, , 24', 3), false)
+    assert.equal(boxesComplete('22, 23, 24', 3), true)
+  })
+
+  it('alle rekker med tomme felt i Mønster og algoritmer har bokser – også i repetisjon-var-3, men ikke tabell- og diagramoppgavene', () => {
+    const own = sessions.flatMap((s) => [...(worksheetTasks[s.id] ?? []), ...buildTasks(s)])
+    const withRow = own.filter((t) => t.kind === 'text' && blankRowIn(t.text))
+    assert.ok(withRow.length >= 20)
+    assert.ok(withRow.every((t) => t.kind === 'text' && t.answerBoxes && previewProblem(t) === null))
+    assert.ok(own.filter((t) => t.kind === 'text' && !blankRowIn(t.text)).every((t) => t.kind === 'text' && !t.answerBoxes))
+    const repetition = unitSpecs.flatMap((u) => planned(u.unitId)).find((s) => s.id === 'repetisjon-var-3')!
+    const tasks = buildTasks(repetition)
+    assert.ok(tasks.some((t) => t.kind === 'text' && t.answerBoxes))
+    assert.ok(tasks.filter((t) => t.kind === 'text' && t.answerBoxes).every((t) => t.kind === 'text' && blankRowIn(t.text)))
+    // Ingen oppgaver i andre temaer har bokser, heller ikke «___» i regnestykker.
+    const others = unitSpecs.filter((u) => u.unitId !== 'monster-og-algoritmer').flatMap((u) => planned(u.unitId)).filter((s) => !s.skills.some((k) => k.startsWith('mon.')))
+    assert.ok(others.flatMap((s) => [...(worksheetTasks[s.id] ?? []), ...buildTasks(s)]).every((t) => t.kind !== 'text' || !t.answerBoxes))
+  })
+
+  it('AI-oppgaver med en tallrekke får bokser; kodeoppgaver og andre temaer får det ikke', () => {
+    const seq = checkCandidates([text(1, 'Fortsett tallfølgen med to tall: 9, 16, 23, 30, ___, ___', '37 og 44.')], serverRequest(session(SEQUENCES))).accepted[0]
+    const stored = toSessionTask(seq, 'ai-2')
+    assert.ok(stored.kind === 'text' && stored.answerBoxes)
+    assert.deepEqual(readStoredTask(JSON.parse(JSON.stringify(stored))), stored)
+    // Tomme felt i kode («gjenta __ ganger:») er ikke en tallrekke.
+    const code = withPatternDisplay(text(2, 'Fyll inn tallene, så roboten går rundt et kvadrat med sider på 5 steg:\ngjenta __ ganger:\n    gå __ steg fram\n    snu til høyre', 'gjenta 4 ganger:\n    gå 5 steg fram\n    snu til høyre') as AiTextDraft)
+    assert.ok(!('answerBoxes' in code))
+    // Andre temaer: kandidatkontrollen gir ingen bokser, selv med «___» i teksten.
+    const measure = planned('maling')[0]
+    const other = checkCandidates(
+      [text(2, 'En bøtte rommer 7 L. Fyll inn: 7 L = ___ dL.', '70 dL. 7 · 10 = 70.')],
+      { ...appRequest(measure), lesson: { ...appRequest(measure).lesson, topic: 'Måling' } },
+    ).accepted[0]
+    assert.ok(!other || !('answerBoxes' in other))
+  })
+
+  it('elevvisningen viser rekka med inputbokser som brytes på smal skjerm, i stedet for én tekstboks under', () => {
+    const screen = readFileSync(new URL('../src/features/student/TextTaskScreen.tsx', import.meta.url), 'utf8')
+    assert.match(screen, /const row = task\.answerBoxes \? blankRowIn\(text\) : null/)
+    assert.match(screen, /<ol className="flex flex-wrap/)
+    assert.match(screen, /inputMode="numeric"/)
+    assert.match(screen, /\{!row && !choices && \(/)
+    assert.match(screen, /disabled=\{!submitted && !ready\}/)
+  })
+})
+
+describe('17. fargemønstre som sirkler', () => {
+  const colorTask = 'Her gjentar fargene seg:\nblå, oransje, oransje, blå, oransje, oransje\nHvilken farge står på plass 11?'
+
+  it('fargerekka leses fra én egen linje, og fargesettet er fast', () => {
+    assert.deepEqual(Object.keys(PATTERN_COLORS), ['rød', 'blå', 'gul', 'grønn', 'oransje', 'lilla', 'svart'])
+    assert.deepEqual(colorRowsIn(colorTask), [['blå', 'oransje', 'oransje', 'blå', 'oransje', 'oransje']])
+    assert.deepEqual(colorRowsIn('Her gjentar fargene seg:\nGul, grønn, gul, grønn, gul, grønn.'), [['gul', 'grønn', 'gul', 'grønn', 'gul', 'grønn']])
+    // Ukjente farger leses med, så kontrollen kan avvise dem; vanlige ordlister er ikke fargerekker.
+    assert.deepEqual(colorRowsIn('rosa, turkis, rosa, turkis'), [['rosa', 'turkis', 'rosa', 'turkis']])
+    assert.deepEqual(colorRowsIn('Sorter: epler, pærer, bananer'), [])
+  })
+
+  it('grunnoppgavene med farger i økt 1 tegner rekka som sirkler, uten plassen det spørres etter', () => {
+    const tasks = buildTasks(session(EXPLORE)).filter((t) => t.kind === 'text' && t.figure?.kind === 'colors')
+    assert.ok(tasks.length >= 2)
+    for (const t of tasks) {
+      if (t.kind !== 'text' || t.figure?.kind !== 'colors') continue
+      assert.deepEqual(t.figure.items, colorRowsIn(t.text)[0])
+      assert.ok(t.figure.items.every((c) => c in PATTERN_COLORS))
+      assert.ok(Number(/plass (\d+)/.exec(t.text)![1]) > t.figure.items.length)
+      assert.equal(previewProblem(t), null)
+    }
+    // Figurmønstre (●, ■, ▲) har ingen fargesirkler.
+    assert.ok(buildTasks(session(EXPLORE)).filter((t) => t.kind === 'text' && /[●■▲]/.test(t.text)).every((t) => t.kind === 'text' && !t.figure))
+  })
+
+  it('AI-oppgaver: appen får fargerekka fra teksten; ukjente farger, rekker i løpende tekst og vist plass avvises', () => {
+    const checked = checkCandidates([text(1, colorTask, 'Oransje. Gjentakelsen er blå, oransje, oransje.')], serverRequest(session(EXPLORE)))
+    assert.equal(checked.rejected.length, 0)
+    const stored = toSessionTask(checked.accepted[0], 'ai-c')
+    assert.deepEqual(stored.kind === 'text' && stored.figure, { kind: 'colors', items: ['blå', 'oransje', 'oransje', 'blå', 'oransje', 'oransje'] })
+    assert.deepEqual(readStoredTask(JSON.parse(JSON.stringify(stored))), stored)
+    // Feil fasit, ukjent farge, rekka i en setning, og en plass som vises i rekka.
+    assert.equal(reason(EXPLORE, text(1, colorTask, 'Blå.')), 'wrongSolution')
+    assert.equal(reason(EXPLORE, text(1, 'Her gjentar fargene seg:\nrosa, blå, rosa, blå, rosa, blå\nHvilken farge står på plass 9?', 'Rosa.')), 'invalidVisual')
+    assert.equal(reason(EXPLORE, text(1, 'Perlene ligger slik: gul, rød, gul, rød, gul, rød. Hvilken farge har perle nummer 9?', 'Gul.')), 'format')
+    assert.equal(reason(EXPLORE, text(1, 'Her gjentar fargene seg:\nblå, oransje, oransje, blå, oransje, oransje\nHvilken farge står på plass 5?', 'Oransje.')), 'revealedSolution')
+    // Ugyldige farger leses ikke inn som figur fra lagringen.
+    const broken = readStoredTask({ ...JSON.parse(JSON.stringify(stored)), figure: { kind: 'colors', items: ['rosa', 'blå', 'rosa'] } })
+    assert.ok(broken && broken.kind === 'text' && !broken.figure)
+  })
+
+  it('justering med AI regner sirklene ut fra den nye teksten', () => {
+    const task = toSessionTask({ ...(text(1, colorTask, 'Oransje.') as AiTextDraft), colorItems: ['blå', 'oransje', 'oransje', 'blå', 'oransje', 'oransje'] }, 't2')
+    assert.ok(task.kind === 'text')
+    if (task.kind !== 'text') return
+    const revised = applyRevision(task, { message: '', tasks: [text(1, 'Her gjentar fargene seg:\nlilla, gul, lilla, gul, lilla, gul\nHvilken farge står på plass 10?', 'Gul.')] }).task!
+    assert.deepEqual(revised.figure, { kind: 'colors', items: ['lilla', 'gul', 'lilla', 'gul', 'lilla', 'gul'] })
+  })
+
+  it('tegnes som fylte sirkler med navnet under, i elevvisningen, på lærerkortet og i forhåndsvisningen, og brytes på smal skjerm', () => {
+    const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
+    assert.match(read('src/components/ui/TaskFigure.tsx'), /figure\.kind === 'colors'\) return <ColorFigure/)
+    const figure = read('src/components/ui/ColorFigure.tsx')
+    assert.match(figure, /flex-wrap/)
+    assert.match(figure, /backgroundColor: PATTERN_COLORS\[color\]/)
+    assert.match(figure, /<span className="text-small text-primary">\{color\}<\/span>/)
+  })
+})
+
+describe('18. fargemønstre: ingen dobbel fargelinje, og svaralternativer fra rekka', () => {
+  it('fargelinja tas ut av teksten eleven ser, men står i den lagrede teksten og på lærerkortet', () => {
+    const t = buildTasks(session(EXPLORE)).find((x) => x.kind === 'text' && x.figure?.kind === 'colors')!
+    assert.ok(t.kind === 'text' && t.figure?.kind === 'colors')
+    if (t.kind !== 'text' || t.figure?.kind !== 'colors') return
+    const shown = withoutColorRow(t.text, t.figure.items)
+    assert.equal(colorRowsIn(shown).length, 0)
+    assert.equal(colorRowsIn(t.text).length, 1)
+    assert.ok(shown.includes('Her gjentar fargene seg:') || shown.includes('Mønsteret fortsetter'))
+    assert.match(shown, /plass \d+/)
+    // En linje som ikke er fargerekka, står urørt.
+    assert.equal(withoutColorRow('Hei\nrød, blå, rød\nHvilken?', ['gul', 'blå', 'gul']), 'Hei\nrød, blå, rød\nHvilken?')
+  })
+
+  it('alternativene er fargene i rekka – to farger gir to, tre gir tre – og valget rettes automatisk', () => {
+    assert.deepEqual(colorOptions(['gul', 'grønn', 'gul', 'grønn', 'gul', 'grønn']), ['gul', 'grønn'])
+    assert.deepEqual(colorOptions(['blå', 'rød', 'rød', 'gul', 'blå', 'rød', 'rød', 'gul']), ['blå', 'rød', 'gul'])
+    for (const t of buildTasks(session(EXPLORE)).filter((x) => x.kind === 'text' && x.figure?.kind === 'colors')) {
+      if (t.kind !== 'text' || t.figure?.kind !== 'colors' || t.expected?.kind !== 'item') continue
+      const right = t.expected.value
+      assert.ok(colorOptions(t.figure.items).includes(right))
+      const wrong = colorOptions(t.figure.items).find((c) => c !== right)!
+      assert.equal(checkTextAnswer({ answer: right, submitted: false }, t).result, 'correct')
+      assert.equal(checkTextAnswer({ answer: wrong, submitted: false }, t).result, 'retry')
+    }
+    const screen = readFileSync(new URL('../src/features/student/TextTaskScreen.tsx', import.meta.url), 'utf8')
+    assert.match(screen, /task\.figure\?\.kind === 'colors' && task\.expected\.value in PATTERN_COLORS\s*\? colorOptions\(task\.figure\.items\)/)
+    assert.match(screen, /role="radiogroup"/)
+  })
+})
+
+describe('19. automatisk tilbakemelding i Mønster og algoritmer', () => {
+  it('rettingen tåler store og små bokstaver, mellomrom, enhet, desimaltegn, figurnavn og en forklaring etter svaret', () => {
+    const n = (value: number): ExpectedAnswer => ({ kind: 'number', value })
+    assert.ok(isCorrect(n(14), '14'))
+    assert.ok(isCorrect(n(14), ' 14 prikker. '))
+    // En forklaring med et regnestykke er greit; et annet tall utenfor regnestykket er et ekstra svar.
+    assert.ok(isCorrect(n(31), '31. 4 + 9 · 3 = 31'))
+    assert.equal(answerStatus(n(14), '14 eller 15'), 'several')
+    assert.equal(answerStatus(n(14), '14, fordi det kommer 3 nye hver gang'), 'several')
+    assert.ok(isCorrect(n(2.5), '2,5') && isCorrect(n(2.5), '2.5'))
+    // Tall fra oppgaven foran svaret hoppes over.
+    assert.ok(isCorrect(n(31), 'Figur 10 har 31 klosser', 'Hvor mange klosser har figur 10?'))
+    assert.ok(!isCorrect(n(14), '15'))
+    assert.ok(!isCorrect(n(14), 'fjorten?'))
+    const list: ExpectedAnswer = { kind: 'numbers', values: [37, 44] }
+    assert.ok(isCorrect(list, '37, 44') && isCorrect(list, '37 og 44') && isCorrect(list, '37 44'))
+    assert.ok(isCorrect(list, '9, 16, 23, 30, 37, 44', '9, 16, 23, 30, ___, ___'))
+    assert.ok(!isCorrect(list, '44, 37') && !isCorrect(list, '37'))
+    const rounds: ExpectedAnswer = { kind: 'numbers', values: [6, 12, 24] }
+    assert.ok(isCorrect(rounds, '6, 12, 24. Til slutt 24'))
+    const item: ExpectedAnswer = { kind: 'item', value: '▲' }
+    assert.ok(isCorrect(item, '▲') && isCorrect(item, 'Trekant') && isCorrect(item, 'en trekant, fordi …'))
+    assert.ok(!isCorrect(item, 'sirkel'))
+    assert.ok(isCorrect({ kind: 'item', value: 'gul' }, 'GUL.'))
+    assert.ok(isCorrect({ kind: 'items', values: ['blå', 'blå', 'rød'] }, 'Blå, blå, rød'))
+    assert.equal(formatExpected(list), '37, 44')
+    assert.equal(formatExpected({ kind: 'items', values: ['●', '■'] }), '● ■')
+  })
+
+  it('riktig svar gir «Riktig!», feil gir ett nytt forsøk og deretter riktig svar', () => {
+    const task = buildTasks(session(LOOPS)).find((t) => t.kind === 'text' && t.expected?.kind === 'number')!
+    assert.ok(task.kind === 'text' && task.expected?.kind === 'number')
+    if (task.kind !== 'text' || task.expected?.kind !== 'number') return
+    const right = String(task.expected.value)
+    assert.deepEqual(checkTextAnswer({ answer: right, submitted: false }, task), { answer: right, submitted: true, result: 'correct' })
+    const first = checkTextAnswer({ answer: '999', submitted: false }, task)
+    assert.deepEqual(first, { answer: '999', submitted: false, result: 'retry', wrongTries: 1 })
+    assert.equal(TEXT_ATTEMPTS, 2)
+    const second = checkTextAnswer({ ...first, answer: '998' }, task)
+    assert.deepEqual(second, { answer: '998', submitted: true, result: 'revealed', wrongTries: 2 })
+    assert.equal(checkTextAnswer({ ...first, answer: right }, task).result, 'correct')
+    // «Tøm» i forhåndsvisningen ser også forsøkene.
+    assert.ok(hasAnswerState({ ...initialTextState(), wrongTries: 1 }))
+    // Oppgaver uten svar som kan rettes, leveres som før.
+    const { expected: _e, ...plain } = task
+    assert.deepEqual(checkTextAnswer({ answer: 'noe', submitted: false }, plain), { answer: 'noe', submitted: true })
+  })
+
+  it('løsningsforslaget vises for grunnoppgaver og gjennomgåtte AI-oppgaver – ikke for AI-oppgaver som ikke er gjennomgått', () => {
+    const base = buildTasks(session(EXPLORE)).find((t) => t.kind === 'text' && /Forklar/.test(t.text))!
+    assert.ok(base.kind === 'text')
+    if (base.kind !== 'text') return
+    assert.equal(showsSolution(base), true)
+    assert.equal(solutionHeading(base), 'Eksempel på en forklaring')
+    assert.equal(showsSolution({ ...base, aiGenerated: true, reviewed: false }), false)
+    assert.equal(showsSolution({ ...base, aiGenerated: true, reviewed: true }), true)
+    assert.equal(solutionHeading({ ...base, text: 'Hvor mange prikker har figur 4?' }), 'Løsningsforslag')
+    const screen = readFileSync(new URL('../src/features/student/TextTaskScreen.tsx', import.meta.url), 'utf8')
+    assert.match(screen, /\{showsSolution\(task\) && \(/)
+    assert.match(screen, /result === 'correct' \? 'Riktig!' : `Riktig svar: \$\{formatExpected\(task\.expected\)\}`/)
+  })
+
+  it('grunnoppgavene i øktene har svar som rettes, og svaret stemmer med fasiten', () => {
+    let counted = 0
+    for (const s of sessions) {
+      for (const t of [...(worksheetTasks[s.id] ?? []), ...buildTasks(s)]) {
+        if (t.kind !== 'text' || !t.expected) continue
+        counted++
+        // Fasiten starter med svaret (deretter kommer forklaringen).
+        const start = t.expected.kind === 'number' || t.expected.kind === 'numbers' ? (t.solution.match(/\d+/g) ?? []).slice(0, t.expected.kind === 'number' ? 1 : t.expected.values.length).join(', ') : t.solution.split('.')[0]
+        assert.ok(isCorrect(t.expected, start, t.text), `${t.id}: ${formatExpected(t.expected)} / ${t.solution}`)
+        assert.ok(isCorrect(t.expected, formatExpected(t.expected), t.text), t.id)
+      }
+    }
+    assert.ok(counted >= 60, String(counted))
+    // Bare Mønster og algoritmer: repetisjonsøkta og andre temaer har ingen automatisk retting.
+    const others = unitSpecs.flatMap((u) => planned(u.unitId)).filter((s) => s.spec.unitId !== 'monster-og-algoritmer')
+    assert.ok(others.flatMap((s) => [...(worksheetTasks[s.id] ?? []), ...buildTasks(s)]).every((t) => t.kind !== 'text' || !t.expected))
+  })
+
+  it('AI-oppgaver får svaret bare når kontrollen regnet det ut – ikke når eleven lager, vurderer eller retter', () => {
+    const accepted = (s: string, t: AiTaskDraft) => checkCandidates([t], serverRequest(session(s))).accepted[0] as { expected?: ExpectedAnswer } | undefined
+    assert.deepEqual(accepted(EXPLORE, text(2, 'Mønsteret gjentar seg:\n■ ▲ ▲ ■ ▲ ▲\nHvilken figur står på plass 16?', '■. Gjentakelsen ■ ▲ ▲ har 3 figurer.'))?.expected, { kind: 'item', value: '■' })
+    assert.deepEqual(accepted(SEQUENCES, text(2, 'Hvilke tall mangler? 8, 14, __, 26, __, 38', '20 og 32.'))?.expected, { kind: 'numbers', values: [20, 32] })
+    assert.deepEqual(accepted(LOOPS, text(1, 'Ali lager et program:\nStart med 5.\ngjenta 4 ganger:\n    legg til 3\nHvilket tall står igjen når programmet er ferdig?', '17. 5 + 4 · 3 = 17.'))?.expected, { kind: 'number', value: 17 })
+    assert.deepEqual(accepted(CONDITIONS, text(3, 'Noah tester et program med en løkke og et vilkår:\nStart med 4.\ngjenta 3 ganger:\n    hvis tallet er et partall:\n        legg til 3\n    ellers:\n        legg til 2\nHvilket tall har du etter hver runde?', '7, 9, 11. Tallet til slutt er 11.'))?.expected, { kind: 'numbers', values: [7, 9, 11] })
+    // Påstander, «lag selv» og vilkår med flere inndata får ikke svar.
+    assert.equal(accepted(SEQUENCES, text(3, 'Ola ser på tallfølgen 4, 9, 14, 19, … som fortsetter med +5. Han mener at alle tallene i følgen blir oddetall. Stemmer det? Forklar.', 'Nei. 4 og 14 er partall.'))?.expected, undefined)
+    assert.equal(accepted(LOOPS, text(3, 'Lag et program med «gjenta» og «legg til» som starter på 6 og ender på 30. Forklar hvor mange ganger løkka gjentas.', 'For eksempel gjenta 4 ganger: legg til 6. 30 − 6 = 24, og 4 · 6 = 24.'))?.expected, undefined)
+    assert.equal(accepted(CONDITIONS, text(1, 'Et spill bruker dette programmet:\nhvis tallet er større enn 12:\n    si «høyt»\nellers:\n    si «lavt»\nSpilleren får tallene 20, 12 og 4. Hva sier programmet for hvert av dem?', '20: «høyt». 12: «lavt». 4: «lavt».'))?.expected, undefined)
+    // Svaret følger med til oppgaven, lagres og leses inn igjen; ukjente former avvises.
+    const t = toSessionTask(checkCandidates([text(2, 'Hvilke tall mangler? 8, 14, __, 26, __, 38', '20 og 32.')], serverRequest(session(SEQUENCES))).accepted[0], 'ai-e')
+    assert.deepEqual(t.kind === 'text' && t.expected, { kind: 'numbers', values: [20, 32] })
+    assert.deepEqual(readStoredTask(JSON.parse(JSON.stringify(t))), t)
+    assert.equal(readExpected({ kind: 'item', value: 'rosa' }), undefined)
+    assert.equal(readExpected({ kind: 'tekst', value: 'hei' }), undefined)
+  })
+
+  it('svaret som rettes, fjernes når læreren redigerer teksten eller fasiten, og ved «Juster med AI»', () => {
+    const task = buildTasks(session(LOOPS)).find((t) => t.kind === 'text' && t.expected)!
+    assert.ok(task.kind === 'text')
+    if (task.kind !== 'text') return
+    const revised = applyRevision(task, { message: '', tasks: [text(task.level, `${task.text} Forklar.`, task.solution)] }).task!
+    assert.equal(revised.expected, undefined)
+    const card = readFileSync(new URL('../src/features/tasks/TextTaskCard.tsx', import.meta.url), 'utf8')
+    assert.match(card, /edited\.text === task\.text && edited\.solution === task\.solution \? task : keepPatternDisplay\(edited, task\)/)
+  })
+})
+
+describe('20. figurmønstre med svaralternativer, skjult prikklinje, ett svar og melding uten retting', () => {
+  const screen = () => readFileSync(new URL('../src/features/student/TextTaskScreen.tsx', import.meta.url), 'utf8')
+
+  it('figurmønstre: alternativene er figurene i rekka med navn – to figurer gir to, tre gir tre – og valget rettes', () => {
+    assert.deepEqual(symbolRowIn('Her gjentar figurene seg:\n▲ ▲ ● ▲ ▲ ●\nHvilken figur står på plass 11?'), ['▲', '▲', '●', '▲', '▲', '●'])
+    assert.deepEqual(itemOptions(['▲', '▲', '●', '▲', '▲', '●']), ['▲', '●'])
+    assert.deepEqual(itemOptions(['●', '■', '■', '▲']), ['●', '■', '▲'])
+    assert.deepEqual(SYMBOL_NAMES, { '●': 'sirkel', '■': 'kvadrat', '▲': 'trekant' })
+    const tasks = buildTasks(session(EXPLORE)).filter((t) => t.kind === 'text' && t.expected?.kind === 'item' && symbolRowIn(t.text))
+    assert.ok(tasks.length >= 3)
+    for (const t of tasks) {
+      if (t.kind !== 'text' || t.expected?.kind !== 'item') continue
+      const options = itemOptions(symbolRowIn(t.text)!)
+      const right = t.expected.value
+      assert.ok(options.includes(right))
+      assert.equal(checkTextAnswer({ answer: right, submitted: false }, t).result, 'correct')
+      assert.equal(checkTextAnswer({ answer: options.find((o) => o !== right)!, submitted: false }, t).result, 'retry')
+    }
+    // AI-oppgaver får det samme: svaret er figuren kontrollen regnet ut, og alternativene lages av appen fra rekka.
+    const ai = checkCandidates([text(1, 'Her gjentar figurene seg:\n■ ▲ ■ ▲ ■ ▲\nHvilken figur står på plass 9?', '■. Oddetallsplassene er ■.')], serverRequest(session(EXPLORE))).accepted[0] as { expected?: ExpectedAnswer }
+    assert.deepEqual(ai.expected, { kind: 'item', value: '■' })
+    assert.match(screen(), /symbols && symbols\.includes\(task\.expected\.value\)\s*\? itemOptions\(symbols\)/)
+    // Knappene viser bare figuren eller fargesirkelen; navnet er skjult tekst for skjermlesere.
+    assert.match(screen(), /aria-label=\{colors \? color : SYMBOL_NAMES\[color\]\}/)
+    assert.ok(!/\{colors \? color : SYMBOL_NAMES\[color\]\}\s*<\/button>/.test(screen()))
+    assert.match(screen(), /role="radiogroup"[^>]*gap-4/)
+  })
+
+  it('prikklinja vises ikke for eleven når prikkene tegnes; resten av teksten står, og den lagrede teksten er uendret', () => {
+    const t = buildTasks(session(EXPLORE)).find((x) => x.kind === 'text' && x.figure?.kind === 'dots')!
+    assert.ok(t.kind === 'text')
+    if (t.kind !== 'text') return
+    const shown = withoutDotSentences(t.text)
+    assert.equal(dotCountsIn(shown), null)
+    assert.ok(dotCountsIn(t.text))
+    assert.match(shown, /^Et figurtall vokser med like mange prikker hver gang\.\nHvor mange prikker blir det i figur \d+\?$/)
+    // Også når antallene står i samme linje som spørsmålet, og påstander står.
+    assert.equal(withoutDotSentences('Figur 1 har 2 prikker. Figur 2 har 4 prikker. Figur 3 har 6 prikker. Hvor mange prikker har figur 4?'), 'Hvor mange prikker har figur 4?')
+    assert.equal(withoutDotSentences('Figur 1: 3 prikker. Figur 2: 5 prikker.\nOla sier at figur 3 har 9 prikker. Stemmer det?'), 'Ola sier at figur 3 har 9 prikker. Stemmer det?')
+    assert.match(screen(), /task\.figure\?\.kind === 'dots' \? withoutDotSentences\(task\.text\)/)
+  })
+
+  it('flere ulike svar godtas ikke: eleven bes skrive ett svar, uten at det teller som et forsøk', () => {
+    const task = buildTasks(session(LOOPS)).find((t) => t.kind === 'text' && t.expected?.kind === 'number')!
+    assert.ok(task.kind === 'text' && task.expected?.kind === 'number')
+    if (task.kind !== 'text' || task.expected?.kind !== 'number') return
+    const v = task.expected.value
+    const several = checkTextAnswer({ answer: `${v} eller ${v + 1}`, submitted: false }, task)
+    assert.deepEqual(several, { answer: `${v} eller ${v + 1}`, submitted: false, result: 'several' })
+    assert.equal(several.wrongTries, undefined)
+    assert.equal(checkTextAnswer({ ...several, answer: String(v) }, task).result, 'correct')
+    assert.equal(answerStatus({ kind: 'item', value: '▲' }, 'trekant eller sirkel'), 'several')
+    assert.equal(answerStatus({ kind: 'item', value: 'gul' }, 'gul eller grønn'), 'several')
+    // Tall fra oppgaven er fortsatt greit.
+    assert.equal(answerStatus({ kind: 'number', value: 31 }, 'Figur 10 har 31 klosser', 'Hvor mange klosser har figur 10?'), 'correct')
+    assert.match(screen(), /Skriv bare ett svar\./)
+  })
+
+  it('oppgaver som ikke rettes automatisk: ny melding og knapp bare i Mønster og algoritmer', () => {
+    const s = screen()
+    assert.match(s, /patternTopic \? 'Ferdig! Fortell læreren hva du svarte\.' : 'Svaret ditt er levert\. Læreren ser på det\.'/)
+    assert.match(s, /patternTopic \? 'Ferdig med oppgaven' : 'Lever svaret'/)
+    const flow = readFileSync(new URL('../src/features/student/StudentTaskFlow.tsx', import.meta.url), 'utf8')
+    assert.match(flow, /patternTopic=\{topicId === 'monster-og-algoritmer'\}/)
+    const preview = readFileSync(new URL('../src/features/tasks/StudentPreviewDialog.tsx', import.meta.url), 'utf8')
+    assert.match(preview, /topicId=\{session\.topicId\}/)
+    // Repetisjonsøktene hører til egne perioder og får meldingen som før.
+    assert.equal(planned('repetisjon-var').find((x) => x.id === 'repetisjon-var-3')!.spec.unitId, 'repetisjon-var')
   })
 })

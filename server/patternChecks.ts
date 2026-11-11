@@ -1,4 +1,5 @@
-import { isMathDraft, type AiTaskDraft, type PatternArea } from '../src/ai/contract.ts'
+import { isMathDraft, type AiTaskDraft, type AiTextDraft, type PatternArea } from '../src/ai/contract.ts'
+import { MAX_COLOR_ITEMS, MAX_DOT_FIGURES, MAX_DOTS, PATTERN_COLORS, blankRowIn, colorRowsIn, dotCountsIn, dotLayout, drawableColors, type ExpectedAnswer } from '../src/ai/patternDisplay.ts'
 import { MISSING_FIGURE } from './geometryChecks.ts'
 import { numberLimit } from './problemSolvingChecks.ts'
 import { patternReferences } from './references/patterns.ts'
@@ -33,7 +34,15 @@ export interface PatternContext {
   secondaryAreas?: readonly PatternArea[]
   /** Største tall i oppgavesettet på nivået. Tallområdet er det største av dette og referansene på nivået. */
   existingMax?: number
+  /**
+   * Fylles med det korte svaret når kontrollen selv har regnet det ut og funnet det i fasiten (tall, tallrekke, figur
+   * eller farge). Appen retter da elevens svar automatisk. Oppgaver der eleven lager, vurderer eller retter noe, får ikke svar.
+   */
+  found?: { expected?: ExpectedAnswer }
 }
+
+/** Det korte svaret kontrollen fant (se PatternContext.found). */
+type Found = { expected?: ExpectedAnswer }
 
 // ---------------------------------------------------------------------------------------------
 // Felles tekstverktøy
@@ -161,7 +170,7 @@ function positionClaim(text: string, tokens: string[], period: number): boolean 
   return true
 }
 
-function repeatingProblem(studentText: string, solution: string, level: number): PatternProblem | null {
+function repeatingProblem(studentText: string, solution: string, level: number, found: Found = {}): PatternProblem | null {
   const shown = patternsIn(studentText)
   const questions = questionsOf(studentText).join(' ')
 
@@ -180,6 +189,12 @@ function repeatingProblem(studentText: string, solution: string, level: number):
     return null
   }
   if (shown.length === 0) return /se på mønsteret|mønsteret (under|over)/i.test(studentText) ? 'missingFigure' : 'missingInfo'
+
+  // Fargemønstre: fargerekka står på én egen linje med farger appen kan tegne (sirkler med navnet under).
+  const colorRows = colorRowsIn(studentText)
+  if (colorRows.some((row) => row.some((c) => !(c in PATTERN_COLORS)))) return 'invalidVisual'
+  if (colorRows.some((row) => row.length > MAX_COLOR_ITEMS)) return 'outsideRange'
+  if (shown.some((t) => !PATTERN_SYMBOLS.includes(t[0] as never)) && colorRows.length === 0) return 'format'
 
   // Et mønster med en feil: nøyaktig én retting, og fasiten peker på plassene.
   const tokens = shown[0]
@@ -214,14 +229,16 @@ function repeatingProblem(studentText: string, solution: string, level: number):
   const conclusion = conclusionOf(solution)
   if (claim !== null && conclusion && (conclusion === 'ja') !== claim) return 'wrongConclusion'
 
-  // Figuren på en gitt plass.
+  // Figuren på en gitt plass. Plassen det spørres etter skal ikke være blant fargesirklene appen tegner.
   const positions = [...questions.matchAll(/\b(?:nummer|nr\.?|plass(?: nummer)?)\s+(\d+)\b/gi)].map((m) => Number(m[1]))
+  if (colorRows.length === 1 && positions.some((position) => position <= colorRows[0].length)) return 'revealedSolution'
   for (const position of positions) {
     const expected = itemAt(tokens, period, position)
     const near = new RegExp(`(?:plass|nummer|nr\\.?)\\s*${position}(?!\\d)[^.?!●■▲]{0,15}?([●■▲]|${COLOR})`, 'iu').exec(solution)
     const answer = near ? near[1].toLowerCase() : positions.length === 1 ? firstToken(solution) : null
     if (answer === null) return positions.length === 1 ? 'unclearSolution' : null
     if (answer !== expected) return 'wrongSolution'
+    if (positions.length === 1) found.expected = { kind: 'item', value: expected }
   }
 
   // Hvor mange av hver figur når mønsteret har en oppgitt lengde.
@@ -234,6 +251,7 @@ function repeatingProblem(studentText: string, solution: string, level: number):
       for (let k = 1; k <= total; k++) if (itemAt(tokens, period, k) === item) count++
       const paired = new RegExp(`(\\d+)\\s*${item}`, 'iu').exec(solution)
       if (paired ? Number(paired[1]) !== count : !numbersOf(solution).includes(count)) return 'wrongSolution'
+      if (asked.length === 1) found.expected = { kind: 'number', value: count }
     }
   }
 
@@ -243,6 +261,8 @@ function repeatingProblem(studentText: string, solution: string, level: number):
     const count = next[1] ? (numberWord(next[1]) ?? 1) : 1
     const expected = Array.from({ length: count }, (_, j) => itemAt(tokens, period, tokens.length + j + 1))
     if (!containsRun(tokensOf(solution), expected)) return 'wrongSolution'
+    // Spør oppgaven også om hva som gjentas, er svaret mer enn de neste leddene – da rettes den ikke automatisk.
+    if (!/gjentas/i.test(questions)) found.expected = count === 1 ? { kind: 'item', value: expected[0] } : { kind: 'items', values: expected }
   }
 
   // Hva som gjentas: gjentakelsen (eller en rotasjon av den) må stå i fasiten.
@@ -318,7 +338,7 @@ function figureRules(values: FigureValue[], step?: number): FigureRule[] {
 const isSquare = (n: number) => Number.isInteger(Math.sqrt(n))
 const isTriangular = (n: number) => Number.isInteger((Math.sqrt(8 * n + 1) - 1) / 2)
 
-function figureProblem(studentText: string, solution: string): PatternProblem | null {
+function figureProblem(studentText: string, solution: string, found: Found = {}): PatternProblem | null {
   // «36 er (ikke) et kvadrattall»: alle slike utsagn i fasiten må stemme.
   for (const m of solution.matchAll(/(\d+) er (ikke )?et (kvadrattall|trekanttall)/gi)) {
     const truth = m[3].toLowerCase() === 'kvadrattall' ? isSquare(Number(m[1])) : isTriangular(Number(m[1]))
@@ -335,6 +355,16 @@ function figureProblem(studentText: string, solution: string): PatternProblem | 
   const { values, asked } = figureValues(studentText, noun)
   const given = values.filter((v) => !v.claimedBy)
   if (given.length === 0) return /kvadrattall|trekanttall/i.test(studentText) ? null : 'missingInfo'
+
+  // Prikkene appen tegner (se dotsFor): antallene må stå for figur 1, 2, 3 … uten hull og uten motsigelser, de må kunne
+  // tegnes, og figuren det spørres etter skal ikke tegnes.
+  if (showsDots(studentText)) {
+    const counts = dotCountsIn(studentText)
+    if (!counts) return 'missingInfo'
+    if (counts.length > MAX_DOT_FIGURES || counts.some((c) => c > MAX_DOTS)) return 'outsideRange'
+    if (!dotLayout(counts)) return 'wrongPattern'
+    if (asked.some((k) => k <= counts.length)) return 'revealedSolution'
+  }
 
   // Regelen: oppgitt i teksten («hver ny figur får 4 flere»), ellers ut fra minst tre figurer.
   const stated = /hver (?:ny )?figur får (\d+) (?:flere|nye|mer)|det kommer (\d+) (?:nye|flere)|(\d+) (?:flere|nye) (?:\p{L}+ )?(?:for|i) hver/iu.exec(studentText)
@@ -371,11 +401,16 @@ function figureProblem(studentText: string, solution: string): PatternProblem | 
     while (k < 200 && rule.at(k) < wanted) k++
     if (rule.at(k) !== wanted) return /^\s*(ingen|nei)\b/i.test(solution) ? null : 'wrongSolution'
     const answer = /figur\s+(\d+)/i.exec(solution)?.[1] ?? numbersOf(solution)[0]
-    return Number(answer) === k ? null : 'wrongSolution'
+    if (Number(answer) !== k) return 'wrongSolution'
+    found.expected = { kind: 'number', value: k }
+    return null
   }
   const unanswered = targets.filter((k) => !inSolution.some((s) => s.k === k))
-  if (targets.length === 1 && unanswered.length === 1 && claims.length === 0) {
-    if (numbersOf(solution)[0] !== rule.at(targets[0])) return 'wrongSolution'
+  if (targets.length === 1 && claims.length === 0) {
+    if (unanswered.length === 1 && numbersOf(solution)[0] !== rule.at(targets[0])) return 'wrongSolution'
+    found.expected = { kind: 'number', value: rule.at(targets[0]) }
+  } else if (targets.length > 1 && claims.length === 0 && unanswered.every((k) => numbersOf(solution).includes(rule.at(k)))) {
+    found.expected = { kind: 'numbers', values: targets.map((k) => rule.at(k)) }
   } else if (unanswered.some((k) => !numbersOf(solution).includes(rule.at(k)))) return 'wrongSolution'
   return null
 }
@@ -472,7 +507,7 @@ function askedPositions(studentText: string, terms: Term[]): number[] {
   return []
 }
 
-function sequenceProblem(studentText: string, solution: string): PatternProblem | null {
+function sequenceProblem(studentText: string, solution: string, found: Found = {}): PatternProblem | null {
   // Eleven lager følger selv: hver følge i fasiten må ha en enkel regel.
   if (OPEN_TASK.test(studentText)) {
     for (const m of solution.matchAll(SEQUENCE)) {
@@ -530,6 +565,10 @@ function sequenceProblem(studentText: string, solution: string): PatternProblem 
     const odd = parity[1].toLowerCase() === 'oddetall'
     const truth = Array.from({ length: 30 }, (_, i) => rule.at(i)).every((v) => (v % 2 === 1) === odd)
     if ((conclusion === 'ja') !== truth) return 'wrongConclusion'
+  }
+  // Tallene som mangler eller kommer etter (ikke ja/nei-spørsmål og påstander).
+  if (expected.length > 0 && !member && !parity && !ASSESSMENT.test(studentText)) {
+    found.expected = expected.length === 1 && !terms.some((t) => t === null) ? { kind: 'number', value: expected[0] } : { kind: 'numbers', values: expected }
   }
   return null
 }
@@ -803,7 +842,7 @@ function segmentFor(solution: string, input: number, inputs: number[]) {
   return rest.slice(0, Math.min(rest.length, ...others))
 }
 
-function codeProblem(studentText: string, solution: string, area: PatternArea, level: number): PatternProblem | null {
+function codeProblem(studentText: string, solution: string, area: PatternArea, level: number, found: Found = {}): PatternProblem | null {
   const studentBlocks = codeBlocks(studentText)
   const solutionBlocks = codeBlocks(solution)
   const parsed = [...studentBlocks, ...solutionBlocks].map(parseProgram)
@@ -838,11 +877,13 @@ function codeProblem(studentText: string, solution: string, area: PatternArea, l
       // Tallet etter hver runde, og tallet til slutt.
       const perRound = /etter hver runde|etter hver gang/i.test(questions)
       if (perRound && !containsRun(numbersOf(solution), first.rounds)) return 'wrongSolution'
+      if (perRound && !errorTask && runs.length === 1 && first.rounds.length > 0) found.expected = { kind: 'numbers', values: first.rounds }
       if (valueProgram && runs.length === 1 && !errorTask && (!perRound || /til slutt|ender på/i.test(solution))) {
         const expected = first.value!
         const final = /(?:til slutt|ender på|blir|får du)\D{0,12}?(\d+)/i.exec(solution)?.[1]
         const answer = final !== undefined && /til slutt|ender på/i.test(solution) ? Number(final) : numbersOf(solution)[0]
         if (answer !== expected && !(final !== undefined && Number(final) === expected)) return 'wrongSolution'
+        if (!perRound) found.expected = { kind: 'number', value: expected }
         if (new RegExp(`(?:til slutt|svaret)\\s+(?:er|blir)\\s+${expected}(?!\\d)`, 'i').test(studentText)) return 'revealedSolution'
       }
       if (valueProgram && runs.length > 1) {
@@ -885,6 +926,7 @@ function codeProblem(studentText: string, solution: string, area: PatternArea, l
         const word = stem(howMany[1])
         const expected = word === 'steg' ? first.steps : word === 'gang' ? null : first.outputs.filter((o) => stem(o) === word).length
         if (expected !== null && (word === 'steg' || expected > 0) && numbersOf(firstSentence(solution))[0] !== expected && numbersOf(solution)[0] !== expected) return 'wrongSolution'
+        if (expected !== null && (word === 'steg' || expected > 0) && !errorTask && !/rett|skriv (et|programmet)/i.test(studentText)) found.expected = { kind: 'number', value: expected }
       }
 
       // Det samme programmet skrevet kortere.
@@ -1005,7 +1047,7 @@ const REVEALED = /\b(svaret|fasiten|riktig svar) (er|blir)\s*\S/i
  * figurtegn appen ikke bruker, negative tall og desimaltall, innhold utenfor temaet, tallområdet, figurer og kode som
  * ikke vises, fagområdet i økta, nivået og til slutt den faglige kontrollen for oppgavetypen.
  */
-export function patternProblem(task: AiTaskDraft, { area, secondaryAreas = [], existingMax = 0 }: PatternContext): PatternProblem | null {
+export function patternProblem(task: AiTaskDraft, { area, secondaryAreas = [], existingMax = 0, found = {} }: PatternContext): PatternProblem | null {
   // Regnestykker viser utregningen under instruksjonen («16 + 4 = ___») og avslører regelen eller programmet.
   if (isMathDraft(task)) return 'format'
   const { studentText, solution, level } = task
@@ -1028,8 +1070,45 @@ export function patternProblem(task: AiTaskDraft, { area, secondaryAreas = [], e
   if (level === 1 && assessment) return 'levelMismatch'
   if (!assessment && REVEALED.test(studentText)) return 'revealedSolution'
 
-  if (kind === 'kode') return codeProblem(studentText, solution, areas.includes('koder-vilkar') ? 'koder-vilkar' : 'koder-lokker', level)
-  if (kind === 'gjentakende') return repeatingProblem(studentText, solution, level)
-  if (kind === 'figurtall') return figureProblem(studentText, solution)
-  return sequenceProblem(studentText, solution)
+  // Oppgaver der eleven lager, vurderer eller retter noe, har ikke ett kort svar som kan rettes automatisk.
+  const result = (() => {
+    if (kind === 'kode') return codeProblem(studentText, solution, areas.includes('koder-vilkar') ? 'koder-vilkar' : 'koder-lokker', level, found)
+    if (kind === 'gjentakende') return repeatingProblem(studentText, solution, level, found)
+    if (kind === 'figurtall') return figureProblem(studentText, solution, found)
+    return sequenceProblem(studentText, solution, found)
+  })()
+  if (result || assessment || OPEN_TASK.test(studentText)) delete found.expected
+  return result
+}
+
+// ---------------------------------------------------------------------------------------------
+// Visning: prikkene i figurtall og inputbokser i tallrekker. AI-en tegner ikke selv – den skriver antallene i en fast
+// tekstlinje («Figur 1: 5 prikker. Figur 2: 8 prikker. Figur 3: 11 prikker.»), og serveren gir appen tallene.
+
+/** Figurtall med prikker der figurene skal tegnes: minst to figurer med antall, og ikke en oppgave der eleven lager selv. */
+const showsDots = (studentText: string) =>
+  /prikk/i.test(studentText) && !OPEN_TASK.test(studentText) && kindOf(studentText, '') === 'figurtall' && (dotCountsIn(studentText)?.length ?? 2) >= 2
+
+/** Prikkantallene appen tegner for oppgaven, eller undefined. */
+export function dotsFor(studentText: string): number[] | undefined {
+  if (!showsDots(studentText)) return undefined
+  const counts = dotCountsIn(studentText)
+  return counts && dotLayout(counts) ? counts : undefined
+}
+
+/** Fargerekka appen tegner som sirkler: én fargerekke på egen linje i et gjentakende mønster, med farger appen kan tegne. */
+export function colorsFor(studentText: string): string[] | undefined {
+  const rows = colorRowsIn(studentText)
+  return kindOf(studentText, '') === 'gjentakende' && rows.length === 1 && drawableColors(rows[0]) ? rows[0] : undefined
+}
+
+/**
+ * En godkjent tekstoppgave med prikkantall, fargerekke og inputbokser når den har figurtall med prikker, et fargemønster
+ * eller en tallrekke med tomme felt.
+ */
+export function withPatternDisplay(task: AiTextDraft): AiTextDraft {
+  const dotCounts = dotsFor(task.studentText)
+  const colorItems = dotCounts ? undefined : colorsFor(task.studentText)
+  const boxes = !!blankRowIn(task.studentText) && kindOf(task.studentText, task.solution) !== 'kode'
+  return { ...task, ...(dotCounts && { dotCounts }), ...(colorItems && { colorItems }), ...(boxes && { answerBoxes: true as const }) }
 }

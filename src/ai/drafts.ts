@@ -1,5 +1,6 @@
 import type { SessionTask, Task, TextTask } from '../types/index.ts'
 import { asTextDraft, isMathDraft, readStoredVisual, type AiResponseMeta, type AiTaskDraft, type AiTaskMeta, type AiTextDraft, type TaskResult } from './contract.ts'
+import { blankRowIn, colorRowsIn, dotCountsIn, dotLayout, drawableColors, readExpected } from './patternDisplay.ts'
 
 // AI-utkast → oppgaver i appen. Alltid merket som AI-generert og «ikke gjennomgått» til
 // læreren sier noe annet. Rene funksjoner (ingen Firebase), så de kan testes i Node.
@@ -67,6 +68,11 @@ export function toTextTask(draft: AiTaskDraft, id: string, meta?: AiResponseMeta
     reviewed: false,
     // Geometri: figuren appen tegner (bare gyldige figurer kommer hit – ugyldige avvises på serveren).
     ...(text.figure && { figure: text.figure }),
+    // Mønster og algoritmer: prikkene i figurtallet og inputbokser i tallrekka (satt av serveren etter kontrollene).
+    ...(!text.figure && text.dotCounts && dotLayout(text.dotCounts) && { figure: { kind: 'dots' as const, counts: text.dotCounts } }),
+    ...(!text.figure && !text.dotCounts && text.colorItems && drawableColors(text.colorItems) && { figure: { kind: 'colors' as const, items: text.colorItems } }),
+    ...(text.answerBoxes && { answerBoxes: true as const }),
+    ...(readExpected(text.expected) && { expected: readExpected(text.expected) }),
     ...(aiMeta && { aiMeta }),
   }
 }
@@ -91,7 +97,29 @@ export function toDraft(task: TextTask): AiTextDraft {
  */
 export function applyRevision(original: TextTask, result: TaskResult): { task?: TextTask; error?: string; question?: string } {
   const revised = result.tasks[0]
-  if (revised) return { task: toTextTask(revised, original.id, result.meta) }
+  if (revised) return { task: keepPatternDisplay(toTextTask(revised, original.id, result.meta), original) }
   if (result.warning) return { error: result.warning }
   return { question: result.message }
+}
+
+/**
+ * Mønster og algoritmer ved «Juster med AI»: prikkfiguren, fargesirklene og inputboksene regnes ut på nytt fra den
+ * justerte teksten, så de alltid stemmer med den. Står ikke antallene, fargene eller rekka der lenger, forsvinner de.
+ * Svaret som rettes automatisk, fjernes: den nye teksten er ikke kontrollert, så oppgaven får dagens melding i stedet.
+ * Brukes også når læreren redigerer teksten eller fasiten selv.
+ */
+export function keepPatternDisplay(task: TextTask, original: TextTask): TextTask {
+  const { answerBoxes: _boxes, expected: _expected, ...rest } = task
+  const drawn = original.figure?.kind === 'dots' || original.figure?.kind === 'colors'
+  const next: TextTask = drawn && task.figure?.kind !== 'shape' && task.figure?.kind !== 'angle' ? (({ figure: _f, ...r }) => r)(rest) : rest
+  if (original.figure?.kind === 'dots' && !next.figure) {
+    const counts = dotCountsIn(task.text)
+    if (counts && dotLayout(counts)) next.figure = { kind: 'dots', counts }
+  }
+  if (original.figure?.kind === 'colors' && !next.figure) {
+    const rows = colorRowsIn(task.text)
+    if (rows.length === 1 && drawableColors(rows[0])) next.figure = { kind: 'colors', items: rows[0] }
+  }
+  if ((original.answerBoxes || task.answerBoxes) && blankRowIn(task.text)) next.answerBoxes = true
+  return next
 }

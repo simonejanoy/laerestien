@@ -18,6 +18,8 @@ interface StudentTaskFlowProps {
   onNext: () => void
   /** Uten denne (som for eleven) holder hver oppgaveskjerm sin egen tilstand. */
   preview?: PreviewAnswers
+  /** Perioden i årsplanen økta hører til (Session.topicId). Mønster og algoritmer har egen melding for tekstsvar. */
+  topicId?: string
 }
 
 /**
@@ -25,7 +27,7 @@ interface StudentTaskFlowProps {
  * elevvisningen og i lærerens forhåndsvisning. Hvor framdriften og svarene lagres (eller ikke),
  * bestemmer den som bruker flyten.
  */
-export function StudentTaskFlow({ tasks, index, onNext, preview }: StudentTaskFlowProps) {
+export function StudentTaskFlow({ tasks, index, onNext, preview, topicId }: StudentTaskFlowProps) {
   const task = tasks[index]
   if (!task) return <MessageCard title="Bra jobba!" text="Du har gjort alle oppgavene i denne økta." />
 
@@ -41,6 +43,7 @@ export function StudentTaskFlow({ tasks, index, onNext, preview }: StudentTaskFl
           index={index}
           total={tasks.length}
           onNext={onNext}
+          patternTopic={topicId === 'monster-og-algoritmer'}
           controlled={preview && { state: saved && !isMathState(saved) ? saved : initialTextState(), onChange }}
         />
       ) : (

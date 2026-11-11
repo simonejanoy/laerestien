@@ -120,7 +120,8 @@ describe('elevvisning: ingenting lagres', () => {
   it('den virkelige elevflyten er uendret: egen tilstand i skjermene og lagret framdrift', () => {
     const home = code('src/features/student/StudentHomePage.tsx')
     // Eleven sender ikke forhåndsvisningstilstand – hver oppgaveskjerm holder sin egen.
-    assert.match(home, /<StudentTaskFlow tasks=\{tasks\} index=\{index\} onNext=\{\(\) => setIndex\(index \+ 1\)\} \/>/)
+    // Temaet sendes med (Mønster og algoritmer har egen melding for tekstsvar), men ingen forhåndsvisningstilstand.
+    assert.match(home, /<StudentTaskFlow tasks=\{tasks\} index=\{index\} onNext=\{\(\) => setIndex\(index \+ 1\)\} topicId=\{session\.topicId\} \/>/)
     assert.ok(!home.includes('preview'))
     assert.match(home, /useSavedIndex\(/)
     // Uten `controlled` brukes skjermens egen useState.

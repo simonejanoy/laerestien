@@ -290,15 +290,15 @@ const AREA_GUIDANCE: Partial<Record<ReferenceArea, string[]>> = {
     'Sluttid og starttid må stemme med varigheten. Appen viser ikke urskiver i AI-oppgaver: beskriv en analog klokke med ord (hvor viserne peker) og si om det er formiddag eller ettermiddag når svaret er et digitalt klokkeslett. Ikke desimaltall i tid (ikke 1,5 time).',
   ],
   'utforske-monster': [
-    'Gjentakende mønstre skrives på én egen linje i oppgaveteksten med figurene ●, ■ og ▲ adskilt med mellomrom (f.eks. «▲ ● ● ▲ ● ●»), eller med fargeord adskilt med komma (rød, blå, gul, grønn). Ikke bruk andre tegn, emojier eller bilder.',
+    'Gjentakende mønstre skrives på én egen linje i oppgaveteksten med figurene ●, ■ og ▲ adskilt med mellomrom (f.eks. «▲ ● ● ▲ ● ●»), eller med fargeord adskilt med komma (f.eks. «gul, grønn, gul, grønn, gul, grønn»). Bruk bare fargene rød, blå, gul, grønn, oransje, lilla og svart, og bare én fargerekke per oppgave. Appen tegner fargerekka som sirkler med fargenavnet under – ikke tegn eller beskriv sirklene selv, og spør om en plass etter rekka (ikke en plass som vises). Ikke bruk andre tegn, emojier eller bilder.',
     'Vis gjentakelsen minst to ganger, og la alle leddene som vises, følge den. Fasiten starter med svaret (figuren, fargene eller tallene), f.eks. «▲. Gjentakelsen har 3 figurer …». Oppgaver om en feil i mønsteret skal ha nøyaktig én feil, og fasiten oppgir plassene.',
   ],
   figurtall: [
-    'Beskriv figurene med ord og tall, f.eks. «Figur 1 har 3 prikker. Figur 2 har 5 prikker. Figur 3 har 7 prikker.». Oppgi minst tre figurer, eller skriv regelen tydelig («hver ny figur får 4 flere prikker»). Regelen er lik økning, kvadrattall (rader med like mange i hver rad) eller trekanttall (en ny rad som er én lengre).',
+    'Skriv figurene på én egen linje i fast form: «Figur 1: 5 prikker. Figur 2: 8 prikker. Figur 3: 11 prikker.» – fra figur 1 og uten hull, og minst tre figurer (eller skriv regelen tydelig: «hver ny figur får 4 flere prikker»). Appen tegner prikkene ut fra disse antallene: ikke tegn, ikke beskriv hvor prikkene ligger, og ikke ta med figuren det spørres etter i linja. Regelen er lik økning, kvadrattall (rader med like mange i hver rad) eller trekanttall (en ny rad som er én lengre).',
     'Fasiten starter med antallet for figuren det spørres om, f.eks. «31 klosser.», og verdier for andre figurer skrives «Figur 4: 9 fyrstikker.». Appen viser ikke figurer: eleven kan tegne på papir, men oppgaven må kunne løses ut fra teksten.',
   ],
   tallfolger: [
-    'Skriv tallfølgen med komma og mellomrom på én linje, f.eks. «5, 10, 15, 20, __, __», med «__» for tall som mangler. Vis minst fire tall, eller beskriv regelen tydelig («starter på 4 og øker med 6 hver gang»). Bare hele tall fra 0 og oppover.',
+    'Skriv tallfølgen med komma og mellomrom på én linje, f.eks. «5, 10, 15, 20, ___, ___», med «___» for hvert tall som mangler – appen viser hvert tomme felt som en inputboks i rekka, så fasiten oppgir tallene i samme rekkefølge. Vis minst fire tall, eller beskriv regelen tydelig («starter på 4 og øker med 6 hver gang»). Bare hele tall fra 0 og oppover.',
     'Bruk enkle regler som bare kan tolkes på én måte: legg til eller trekk fra det samme tallet, gang med det samme tallet, hopp som blir 1 større hver gang, eller summen av de to forrige. Fasiten starter med tallene som mangler eller kommer etter, f.eks. «25 og 30.», og skriver regelen som «Regelen er +5.» eller «Regelen er · 2.».',
   ],
   'koder-lokker': [

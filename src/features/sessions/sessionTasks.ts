@@ -58,6 +58,9 @@ export function buildTasks({ id, skills, profile, n }: Pick<Planned, 'id' | 'ski
           text: task.text,
           solution: task.solution,
           ...(task.figure && { figure: task.figure }),
+          ...(task.answerBoxes && { answerBoxes: true as const }),
+          // Automatisk retting bare i økter med øktprofil (Mønster og algoritmer) – ikke i repetisjonsøktene.
+          ...(task.expected && profile && { expected: task.expected }),
           competenceGoal: '',
           adaptation: '',
           aiGenerated: false,
