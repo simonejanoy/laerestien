@@ -39,6 +39,24 @@ export const taskSchema: Schema = {
             type: Type.STRING,
             description: 'Kompetansemålet oppgaven støtter, bare hvis læreren har oppgitt det. Ellers tom streng.',
           },
+          figur: {
+            type: Type.OBJECT,
+            description:
+              'Bare i geometrioppgaver der appen skal vise en figur. Appen tegner figuren selv – bare disse verdiene støttes. Utelat feltet, eller bruk type «ingen», når oppgaven ikke har figur.',
+            properties: {
+              type: { type: Type.STRING, enum: ['ingen', 'figur', 'vinkel'], description: 'figur: en plan figur (fyll ut form). vinkel: én vinkel (fyll ut vinkeltype).' },
+              form: { type: Type.STRING, enum: ['trekant', 'kvadrat', 'rektangel', 'firkant', 'femkant', 'sekskant', 'åttekant', 'sirkel'], description: 'Bare for type figur.' },
+              vinkeltype: { type: Type.STRING, enum: ['spiss', 'rett', 'stump'], description: 'Bare for type vinkel.' },
+              grader: {
+                type: Type.INTEGER,
+                description: 'Bare for type vinkel, valgfritt: spiss 1–89, rett 90, stump 91–179. Utelat feltet hvis oppgaven ikke oppgir gradtallet.',
+                minimum: 1,
+                maximum: 179,
+              },
+            },
+            required: ['type'],
+            propertyOrdering: ['type', 'form', 'vinkeltype', 'grader'],
+          },
           tilpasning: {
             type: Type.STRING,
             description: 'Kort pedagogisk forklaring av nivået og det faglige innholdet (vises for læreren). Ingen ord om hvordan oppgaven ble laget.',
@@ -55,6 +73,7 @@ export const taskSchema: Schema = {
           'tall2',
           'oppgavetekst',
           'fasit',
+          'figur',
           'kompetansemaal',
           'tilpasning',
         ],

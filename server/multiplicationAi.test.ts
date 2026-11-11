@@ -272,8 +272,8 @@ describe('prompt for multiplikasjon', () => {
     assert.ok(prompt.includes('Representative eksisterende oppgaver:'))
   })
 
-  it('systemprompten (regelversjon 7) har regelen om referansebanken og oppgavesettet', () => {
-    assert.equal(aiConfig.rulesVersion, '7')
+  it('systemprompten (regelversjon 8) har regelen om referansebanken og oppgavesettet', () => {
+    assert.equal(aiConfig.rulesVersion, '8')
     assert.ok(systemPrompt.includes('Lag nye oppgaver med selvstendig formulering og passende verdier'))
     assert.ok(systemPrompt.includes('skal du ikke lage oppgaver som er identiske med dem'))
   })

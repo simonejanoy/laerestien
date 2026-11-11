@@ -1,7 +1,12 @@
 import type { TaskFigure as Figure } from '../../types'
+import { GeometryFigure } from './GeometryFigure.ts'
 
-/** Tegner figuren til en oppgave: rutefigur eller analog klokke. */
+/**
+ * Tegner figuren til en oppgave: rutefigur, analog klokke, plan figur eller vinkel. Brukes i lærerens
+ * oppgavekort og i elevvisningen (som også er lærerens elevvisning), så figuren ser lik ut overalt.
+ */
 export function TaskFigure({ figure, size = 'md' }: { figure: Figure; size?: 'sm' | 'md' }) {
+  if (figure.kind === 'shape' || figure.kind === 'angle') return <GeometryFigure figure={figure} size={size} />
   return figure.kind === 'grid' ? <GridFigure rows={figure.rows} size={size} /> : <Clock time={figure.time} size={size} />
 }
 

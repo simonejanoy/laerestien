@@ -1,4 +1,4 @@
-import type { AiTaskMeta } from '../../ai/contract.ts'
+import { readStoredVisual, type AiTaskMeta } from '../../ai/contract.ts'
 import type { Operator, SessionTask, TaskFigure, TaskSource, TaskType } from '../../types/index.ts'
 
 // Varig lagring av øktenes oppgavesett i nettleseren (prototype – ingen backend).
@@ -55,7 +55,8 @@ function readFigure(value: unknown): TaskFigure | undefined {
   if (!isObject(value)) return undefined
   if (value.kind === 'grid' && Array.isArray(value.rows) && value.rows.every(isString)) return { kind: 'grid', rows: value.rows }
   if (value.kind === 'clock' && isString(value.time)) return { kind: 'clock', time: value.time }
-  return undefined
+  // Plane figurer og vinkler (geometri). En ukjent figur leses ikke inn – oppgaven beholdes uten figur.
+  return readStoredVisual(value) ?? undefined
 }
 
 /** Én oppgave med bare kjente felt, eller null når den ikke er gyldig. */

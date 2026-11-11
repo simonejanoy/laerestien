@@ -1,6 +1,6 @@
 import { ArrowUp, LoaderCircle } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import { AiError, SLOW_AI_HINT, fallbackNotice, requestTasks, toDraft, toTextTask } from '../../ai/client'
+import { AiError, SLOW_AI_HINT, applyRevision, fallbackNotice, requestTasks, toDraft } from '../../ai/client'
 import type { AnonStudentProfile, SubjectContext } from '../../ai/contract'
 import { useSlowAiHint } from '../../hooks/useSlowAiHint'
 import type { TextTask } from '../../types'
@@ -44,15 +44,18 @@ export function AiReviseForm({ task, context, label, classId, student, onRevised
         classId,
         student,
       })
-      const revised = result.tasks[0]
-      setNotice(fallbackNotice(result.meta, revised ? 'Den nye versjonen' : 'Svaret'))
-      if (revised) {
-        onRevised(toTextTask(revised, task.id, result.meta), result.message)
+      // Ny versjon, avvist justering (den opprinnelige oppgaven beholdes) eller et spørsmål fra AI-en.
+      const applied = applyRevision(task, result)
+      setNotice(fallbackNotice(result.meta, applied.task ? 'Den nye versjonen' : 'Svaret'))
+      if (applied.task) {
+        onRevised(applied.task, result.message)
         setInstruction('')
+      } else if (applied.error) {
+        setError(applied.error)
       } else {
         // AI-en trenger mer informasjon (f.eks. hva «enklere» betyr).
-        setQuestion(result.message)
-        onMessage?.(result.message)
+        setQuestion(applied.question ?? '')
+        onMessage?.(applied.question ?? '')
       }
     } catch (err) {
       if (!(err instanceof AiError)) console.error('Uventet feil ved justering med AI:', err)

@@ -2,13 +2,16 @@ import { randomUUID } from 'node:crypto'
 import type { Content } from '@google/genai'
 import {
   asTextDraft,
+  isMathDraft,
   parseTaskResult,
+  readStoredVisual,
   readLevelContexts,
   readSessionProfile,
   type AiLevel,
   type AiLevelContext,
   type AiResponseMeta,
   type AiTaskDraft,
+  type AiTextDraft,
   topicOfArea,
   type TaskRequest,
   type TaskResult,
@@ -23,6 +26,7 @@ import { newReferenceSeed, selectReferences, toAiReference } from './references/
 import type { ReferenceTask } from './references/types.ts'
 import { checkCandidates, signatureOf, stripInternalText, type RemovalReason } from './taskChecks.ts'
 import { taskSchema } from './taskSchema.ts'
+import { checkRevision } from './visualChecks.ts'
 
 // Oppgavebestillinger fra appen: generelle oppgaver, elevforslag og justering.
 // Sluttoppgavene kommer alltid fra et nytt Gemini-kall. Referansene fra referansebanken sendes
@@ -61,6 +65,9 @@ export interface TaskHandlerDeps {
   now?: () => Date
 }
 
+/** Tekstoppgaven uten figurfeltene (for flyter som ikke viser figurer). */
+const stripFigure = ({ figure: _figure, invalidFigure: _invalid, noFigure: _none, ...rest }: AiTextDraft): AiTextDraft => rest
+
 const userTurn = (text: string): Content => ({ role: 'user', parts: [{ text }] })
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 const readSeed = (value: unknown) => (Number.isInteger(value) && (value as number) >= 0 ? (value as number) : undefined)
@@ -93,7 +100,7 @@ export function createTaskHandler({
         const secondaryAreas = request.profile?.secondaryAreas ?? []
         const referenceIds: NonNullable<AiResponseMeta['referenceIds']> = {}
         request.levels = request.levels.map((level): AiLevelContext => {
-          const chosen = selectReferences(references, { area, secondaryAreas, level: level.level, seed })
+          const chosen = selectReferences(references, { area, secondaryAreas, level: level.level, seed, divisionType: request.profile?.divisionType })
           referenceIds[String(level.level) as '1' | '2' | '3'] = chosen.map((r) => r.id)
           return { ...level, referenceTasks: chosen.map(toAiReference) }
         })
@@ -108,9 +115,23 @@ export function createTaskHandler({
 
     const answer: GenerateResult = await generate('tasks', [userTurn(taskPrompt(request))], taskSchema, { requestId })
     const meta: AiResponseMeta = { ...trace, model: answer.model, fallbackUsed: answer.fallbackUsed }
-    const result = parseAnswer(answer, requestId)
+    let result = parseAnswer(answer, requestId)
     if (result.tasks.length === 0 && !result.message) {
       throw new HttpError(502, 'AI-en laget ingen brukbare oppgaver. Prøv igjen.')
+    }
+    if (request.kind === 'revise' && result.tasks[0]) {
+      // «Juster med AI»: figuren beholdes som standard, og den justerte oppgaven kontrolleres som ved generering.
+      // Avvises den, får læreren en melding, og den opprinnelige oppgaven beholdes (ingen ny versjon i svaret).
+      const original = readStoredVisual((request.task as { figure?: unknown })?.figure) ?? undefined
+      const checked = checkRevision(result.tasks[0], { original, instruction: String(request.instruction ?? ''), topic: String(request.context?.topic ?? '') })
+      if ('problem' in checked) {
+        log({ requestId, event: 'revise_rejected', rulesVersion: aiConfig.rulesVersion, model: answer.model, fallbackUsed: answer.fallbackUsed, reason: checked.problem })
+        return { tasks: [], message: '', warning: checked.warning, meta }
+      }
+      result = { ...result, tasks: [checked.draft] }
+    } else if (request.kind === 'individual') {
+      // Elevforslag har ikke figurer (som før).
+      result = { ...result, tasks: result.tasks.map((t) => (isMathDraft(t) ? t : stripFigure(t))) }
     }
     // Elevforslag og justering viser bare tekstoppgaver. Interne ord fjernes fra alle synlige felt.
     const visible = result.tasks.map(asTextDraft).flatMap((t) => {

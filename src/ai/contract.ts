@@ -15,6 +15,85 @@ interface AiDraftBase {
   servedBy?: { model: string; fallbackUsed: boolean }
 }
 
+// ---------------------------------------------------------------------------------------------
+// Figurer i geometrioppgaver. AI-en velger bare en type fra listene; appen tegner selv en matematisk
+// korrekt SVG (src/components/ui/GeometryFigure.ts). Ingen bilder og ingen 3D-figurer.
+
+/** Plane figurer appen kan tegne. */
+export const SHAPE_KINDS = ['triangle', 'square', 'rectangle', 'quadrilateral', 'pentagon', 'hexagon', 'octagon', 'circle'] as const
+export type ShapeKind = (typeof SHAPE_KINDS)[number]
+/** Vinkeltyper appen kan tegne. */
+export const ANGLE_KINDS = ['acute', 'right', 'obtuse'] as const
+export type AngleKind = (typeof ANGLE_KINDS)[number]
+
+/** Gradtallet som tegnes når AI-en ikke oppgir grader. */
+export const DEFAULT_ANGLE_DEGREES: Record<AngleKind, number> = { acute: 45, right: 90, obtuse: 120 }
+
+/** Figuren til en oppgave: en plan figur eller en vinkel. Lagres i `figure` på tekstoppgaven. */
+export type AiVisual = { kind: 'shape'; shape: ShapeKind } | { kind: 'angle'; angleType: AngleKind; degrees?: number }
+
+/** Norske navn – i AI-skjemaet («figur.form») og i teksten eleven leser. */
+export const SHAPE_NAMES: Record<ShapeKind, string> = {
+  triangle: 'trekant',
+  square: 'kvadrat',
+  rectangle: 'rektangel',
+  quadrilateral: 'firkant',
+  pentagon: 'femkant',
+  hexagon: 'sekskant',
+  octagon: 'åttekant',
+  circle: 'sirkel',
+}
+export const ANGLE_NAMES: Record<AngleKind, string> = { acute: 'spiss', right: 'rett', obtuse: 'stump' }
+
+/** Om gradtallet passer vinkeltypen: spiss 0 < v < 90, rett 90, stump 90 < v < 180 (hele grader). */
+export function degreesFit(angleType: AngleKind, degrees: number) {
+  if (!Number.isInteger(degrees)) return false
+  if (angleType === 'acute') return degrees > 0 && degrees < 90
+  if (angleType === 'right') return degrees === 90
+  return degrees > 90 && degrees < 180
+}
+
+/** Figuren i appens format (lagring og visning), eller null når den ikke er gyldig. */
+export function readStoredVisual(value: unknown): AiVisual | null {
+  if (typeof value !== 'object' || value === null) return null
+  const v = value as Record<string, unknown>
+  if (v.kind === 'shape') return (SHAPE_KINDS as readonly unknown[]).includes(v.shape) ? { kind: 'shape', shape: v.shape as ShapeKind } : null
+  if (v.kind === 'angle' && (ANGLE_KINDS as readonly unknown[]).includes(v.angleType)) {
+    const angleType = v.angleType as AngleKind
+    if (v.degrees === undefined) return { kind: 'angle', angleType }
+    return typeof v.degrees === 'number' && degreesFit(angleType, v.degrees) ? { kind: 'angle', angleType, degrees: v.degrees } : null
+  }
+  return null
+}
+
+/**
+ * Feltet «figur» i AI-svaret. Mangler det, eller er typen «ingen», blir det ingen figur (`{}`).
+ * En ukjent figur, eller en vinkeltype som ikke passer gradtallet, gir `{ invalid: true }` – oppgaven
+ * avvises da i kvalitetskontrollen (og erstattes), i stedet for å vises uten figuren den viser til.
+ */
+export function readVisual(raw: unknown): { visual?: AiVisual; invalid?: true; none?: true } {
+  if (raw === undefined || raw === null) return {}
+  if (typeof raw !== 'object') return { invalid: true }
+  const { type, form, vinkeltype, grader } = raw as Record<string, unknown>
+  if (type === 'ingen') return { none: true }
+  if (type === undefined || type === '') return {}
+  if (type === 'figur') {
+    const shape = (Object.keys(SHAPE_NAMES) as ShapeKind[]).find((k) => SHAPE_NAMES[k] === form)
+    return shape ? { visual: { kind: 'shape', shape } } : { invalid: true }
+  }
+  if (type === 'vinkel') {
+    const angleType = (Object.keys(ANGLE_NAMES) as AngleKind[]).find((k) => ANGLE_NAMES[k] === vinkeltype)
+    if (!angleType) return { invalid: true }
+    if (grader === undefined || grader === null) return { visual: { kind: 'angle', angleType } }
+    return typeof grader === 'number' && degreesFit(angleType, grader) ? { visual: { kind: 'angle', angleType, degrees: grader } } : { invalid: true }
+  }
+  return { invalid: true }
+}
+
+/** Kort, stabil beskrivelse av figuren (til duplikatkontrollen), f.eks. «shape:pentagon» eller «angle:acute:30». */
+export const visualSignature = (visual?: AiVisual) =>
+  !visual ? '' : visual.kind === 'shape' ? `shape:${visual.shape}` : `angle:${visual.angleType}:${visual.degrees ?? DEFAULT_ANGLE_DEGREES[visual.angleType]}`
+
 /** Tekstoppgave: eleven skriver svaret, og læreren ser på det. Uten `format` er det en tekstoppgave. */
 export interface AiTextDraft extends AiDraftBase {
   format?: 'text'
@@ -22,6 +101,12 @@ export interface AiTextDraft extends AiDraftBase {
   studentText: string
   /** Fasit eller løsningsforslag til læreren. */
   solution: string
+  /** Geometri: figuren appen tegner til oppgaven. */
+  figure?: AiVisual
+  /** Satt av serveren når AI-en oppga en figur appen ikke kan tegne – oppgaven avvises da. */
+  invalidFigure?: true
+  /** Satt av serveren når AI-en uttrykkelig svarte «ingen figur» (betyr noe ved justering av en oppgave med figur). */
+  noFigure?: true
 }
 
 /** Kort regnestykke (tall – regneart – tall), vist som de vanlige hoderegningsoppgavene. Appen retter svaret selv. */
@@ -156,18 +241,48 @@ export type MultiplicationArea = (typeof MULTIPLICATION_AREAS)[number]
 export const PLACE_VALUE_AREAS = ['hoderegning', 'firesifrede-tall', 'addisjon-subtraksjon', 'oppstilling-over-1000', 'negative-tall'] as const
 export type PlaceValueArea = (typeof PLACE_VALUE_AREAS)[number]
 
+/** Fagområdene i Divisjon, i progresjonsrekkefølge. */
+export const DIVISION_AREAS = ['multiplikasjon-divisjon', 'delingsdivisjon-malingsdivisjon', 'divisjon-med-rest', 'modeller'] as const
+export type DivisionArea = (typeof DIVISION_AREAS)[number]
+
+/** Delingsdivisjon (antall grupper er kjent) eller målingsdivisjon (størrelsen på hver gruppe er kjent). */
+export type DivisionType = 'deling' | 'maling'
+
+/** Fagområdene i Geometri, i progresjonsrekkefølge. */
+export const GEOMETRY_AREAS = ['todimensjonale-figurer', 'tredimensjonale-figurer', 'fra-3d-til-2d', 'vinkler'] as const
+export type GeometryArea = (typeof GEOMETRY_AREAS)[number]
+
+/** Fagområdene i Problemløsing, i progresjonsrekkefølge. */
+export const PROBLEM_SOLVING_AREAS = ['regnefortelling-regneuttrykk', 'bruke-modeller', 'flerstegsoppgaver', 'flervalg-begrunnelse'] as const
+export type ProblemSolvingArea = (typeof PROBLEM_SOLVING_AREAS)[number]
+
+/**
+ * Fagområdene i Tall og regning, i progresjonsrekkefølge. «addisjon-subtraksjon» og «multiplikasjon-divisjon» i
+ * referansefilen finnes allerede i Tall og plassverdi og Divisjon, så de to sammenhengsområdene har egne ID-er.
+ */
+export const NUMBERS_AND_OPERATIONS_AREAS = ['sammenheng-addisjon-subtraksjon', 'sammenheng-multiplikasjon-divisjon', 'desimaltall-tideler', 'desimaltall-lengde'] as const
+export type NumbersAndOperationsArea = (typeof NUMBERS_AND_OPERATIONS_AREAS)[number]
+
 /** Temaene som har en referansebank på serveren, med fagområdene sine. */
 export const REFERENCE_TOPICS = {
   multiplikasjon: MULTIPLICATION_AREAS,
   'tall-og-plassverdi': PLACE_VALUE_AREAS,
+  divisjon: DIVISION_AREAS,
+  geometri: GEOMETRY_AREAS,
+  problemlosing: PROBLEM_SOLVING_AREAS,
+  'tall-og-regning': NUMBERS_AND_OPERATIONS_AREAS,
 } as const
 export type ReferenceTopic = keyof typeof REFERENCE_TOPICS
 /** Et fagområde i en av referansebankene. Områdene har unike ID-er på tvers av temaene. */
-export type ReferenceArea = MultiplicationArea | PlaceValueArea
+export type ReferenceArea = MultiplicationArea | PlaceValueArea | DivisionArea | GeometryArea | ProblemSolvingArea | NumbersAndOperationsArea
 
 export const TOPIC_TITLES: Record<ReferenceTopic, string> = {
   multiplikasjon: 'Multiplikasjon',
   'tall-og-plassverdi': 'Tall og plassverdi',
+  divisjon: 'Divisjon',
+  geometri: 'Geometri',
+  problemlosing: 'Problemløsing',
+  'tall-og-regning': 'Tall og regning',
 }
 
 export const AREA_TITLES: Record<ReferenceArea, string> = {
@@ -182,6 +297,22 @@ export const AREA_TITLES: Record<ReferenceArea, string> = {
   'addisjon-subtraksjon': 'Addisjon og subtraksjon',
   'oppstilling-over-1000': 'Oppstilling med tall over 1000',
   'negative-tall': 'Negative tall',
+  'multiplikasjon-divisjon': 'Multiplikasjon og divisjon',
+  'delingsdivisjon-malingsdivisjon': 'Delingsdivisjon og målingsdivisjon',
+  'divisjon-med-rest': 'Divisjon med noe til overs',
+  modeller: 'Bruke modeller',
+  'todimensjonale-figurer': 'Todimensjonale figurer',
+  'tredimensjonale-figurer': 'Tredimensjonale figurer',
+  'fra-3d-til-2d': 'Fra tredimensjonal til todimensjonal',
+  vinkler: 'Vinkler',
+  'regnefortelling-regneuttrykk': 'Regnefortellinger og regneuttrykk',
+  'bruke-modeller': 'Bruke modeller',
+  flerstegsoppgaver: 'Flerstegsoppgaver',
+  'flervalg-begrunnelse': 'Flervalgsoppgaver',
+  'sammenheng-addisjon-subtraksjon': 'Sammenhengen mellom addisjon og subtraksjon',
+  'sammenheng-multiplikasjon-divisjon': 'Sammenhengen mellom multiplikasjon og divisjon',
+  'desimaltall-tideler': 'Desimaltall med tideler',
+  'desimaltall-lengde': 'Desimaltall i lengdemåling',
 }
 
 export const isMultiplicationArea = (value: unknown): value is MultiplicationArea =>
@@ -208,6 +339,8 @@ export interface AiReferenceTask {
   id?: string
   purpose?: string
   representation?: string
+  /** Problemløsing: visuell støtte beskrevet med ord (f.eks. en tekstbasert blokkmodell) – ikke en figur som mangler. */
+  support?: string
 }
 
 /** Én oppgave som allerede finnes på nivået – til oppsummeringen og duplikatkontrollen. Ingen elevdata. */
@@ -221,8 +354,10 @@ export interface AiExistingTask {
   b?: number
   /** Tekstoppgaver: teksten (forkortet). */
   text?: string
-  /** Tekstoppgaven har en figur (rutefigur eller klokke). */
+  /** Tekstoppgaven har en figur (rutefigur, klokke, plan figur eller vinkel). */
   figure?: boolean
+  /** Plane figurer og vinkler: hvilken figur (visualSignature), så samme tekst med en annen figur er en annen oppgave. */
+  figureKind?: string
 }
 
 /** Høyst så mange eksisterende oppgaver per nivå sendes med. */
@@ -269,6 +404,8 @@ export interface AiSessionProfile {
   strategyFocus?: boolean
   /** Tierovergang er målet: alle oppgaver må kreve minst én addisjon med veksling (kontrolleres på serveren). */
   requiresCarry?: boolean
+  /** Divisjon: økta handler bare om delingsdivisjon eller bare om målingsdivisjon (kontrolleres på serveren). */
+  divisionType?: DivisionType
 }
 
 export type TaskRequest =
@@ -337,6 +474,7 @@ export interface TextResponse {
 
 /** Feltnavnene i JSON-skjemaet (se server/taskSchema.ts). */
 interface RawTask {
+  figur?: unknown
   nivaa?: unknown
   format?: unknown
   oppgavetekst?: unknown
@@ -387,7 +525,17 @@ export function parseTaskResult(raw: unknown): TaskResult | null {
     const studentText = text(item.oppgavetekst)
     const solution = text(item.fasit)
     if (!studentText || !solution) return []
-    return [{ ...base, studentText, solution }]
+    const { visual, invalid, none } = readVisual(item.figur)
+    return [
+      {
+        ...base,
+        studentText,
+        solution,
+        ...(visual && { figure: visual }),
+        ...(invalid && { invalidFigure: true as const }),
+        ...(none && { noFigure: true as const }),
+      },
+    ]
   })
   return { tasks, message: text(melding) }
 }
@@ -434,6 +582,7 @@ export function readSessionProfile(raw: unknown): AiSessionProfile | undefined {
     ...(p.allowSwappedFactors === true && { allowSwappedFactors: true }),
     ...(p.strategyFocus === true && { strategyFocus: true }),
     ...(p.requiresCarry === true && { requiresCarry: true }),
+    ...((p.divisionType === 'deling' || p.divisionType === 'maling') && { divisionType: p.divisionType }),
   }
 }
 
@@ -445,14 +594,15 @@ function readExisting(value: unknown): AiExistingTask[] | undefined {
   if (!Array.isArray(value)) return undefined
   return value.slice(0, MAX_EXISTING_TASKS).flatMap((item): AiExistingTask[] => {
     if (typeof item !== 'object' || item === null) return []
-    const { taskType, instruction, a, operator, b, text: body, figure } = item as Partial<Record<keyof AiExistingTask, unknown>>
+    const { taskType, instruction, a, operator, b, text: body, figure, figureKind } = item as Partial<Record<keyof AiExistingTask, unknown>>
     const type = clip(taskType, 60)
     if (!type) return []
     if (appOperators.includes(operator as AiOperator) && Number.isFinite(a) && Number.isFinite(b)) {
       return [{ taskType: type, instruction: clip(instruction, 160), a: a as number, operator: operator as AiOperator, b: b as number }]
     }
     const textBody = clip(body, MAX_EXISTING_TEXT)
-    return textBody ? [{ taskType: type, text: textBody, ...(figure === true && { figure: true }) }] : []
+    const kind = clip(figureKind, 40)
+    return textBody ? [{ taskType: type, text: textBody, ...(figure === true && { figure: true }), ...(figure === true && kind && { figureKind: kind }) }] : []
   })
 }
 
@@ -546,7 +696,8 @@ export function isTaskResult(value: unknown): value is TaskResult {
           : typeof t.studentText === 'string' &&
             t.studentText.length > 0 &&
             typeof t.solution === 'string' &&
-            t.solution.length > 0,
+            t.solution.length > 0 &&
+            (t.figure === undefined || readStoredVisual(t.figure) !== null),
     )
   )
 }

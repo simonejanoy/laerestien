@@ -68,7 +68,7 @@ function generalPrompt(tasks: SessionTask[], wishes = '') {
   return taskPrompt(request)
 }
 
-describe('regler versjon 7', () => {
+describe('regler versjon 8', () => {
   it('1. systemprompten har «Samsvar med eksisterende oppgavesett» på riktig plass', () => {
     const at = (heading: string) => systemPrompt.indexOf(`## ${heading}`)
     assert.ok(at('Samsvar med eksisterende oppgavesett') > at('Faglig grunnlag og læreplan'))
@@ -80,8 +80,8 @@ describe('regler versjon 7', () => {
     assert.ok(!systemPrompt.includes('Representative eksisterende oppgaver:'))
   })
 
-  it('2. konfigurasjonen angir regelversjon 7, og systemprompten har regelen om referansebanken og støttestrukturen', () => {
-    assert.equal(aiConfig.rulesVersion, '7')
+  it('2. konfigurasjonen angir regelversjon 8, og systemprompten har regelen om referansebanken og støttestrukturen', () => {
+    assert.equal(aiConfig.rulesVersion, '8')
     assert.ok(systemPrompt.includes('skal strategien være matematisk gyldig for akkurat det regnestykket oppgaven gjelder'))
     assert.ok(systemPrompt.includes('Nye oppgaver skal følge støttestrukturen på nivået'))
     assert.ok(systemPrompt.includes('Referansene skal ikke returneres direkte.'))

@@ -1,3 +1,4 @@
+import { readStoredVisual } from '../../ai/contract.ts'
 import type { Operator, SessionTask, Task } from '../../types/index.ts'
 import { answerOf, answerProblem, expressionOf, formatNumber } from '../tasks/taskUtils.ts'
 
@@ -33,6 +34,8 @@ export function previewProblem(task: SessionTask): string | null {
     if (figure.kind === 'clock') {
       return CLOCK_TIME.test(figure.time) ? null : `Klokkeslettet «${figure.time}» kan ikke vises på klokka.`
     }
+    if (figure.kind === 'shape') return readStoredVisual(figure) ? null : 'Figuren er en type elevvisningen ikke kan tegne.'
+    if (figure.kind === 'angle') return readStoredVisual(figure) ? null : 'Vinkeltypen passer ikke gradtallet, så vinkelen kan ikke tegnes riktig.'
     return 'Figuren har et format elevvisningen ikke kan vise.'
   }
 
