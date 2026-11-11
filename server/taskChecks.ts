@@ -9,12 +9,13 @@ import {
   type TaskRequest,
   type TaskResult,
 } from '../src/ai/contract.ts'
-import { isReferenceArea, topicOfArea, type DivisionArea, type GeometryArea, type MeasurementArea, type NumbersAndOperationsArea, type ProblemSolvingArea, type ReferenceArea } from '../src/ai/contract.ts'
+import { isReferenceArea, topicOfArea, type DivisionArea, type GeometryArea, type MeasurementArea, type NumbersAndOperationsArea, type PatternArea, type ProblemSolvingArea, type ReferenceArea } from '../src/ai/contract.ts'
 import { strategyProblem } from '../src/features/topics/multiplicationStrategies.ts'
 import { divisionProblem, wishRequiresRoundUp } from './divisionChecks.ts'
 import { geometryProblem } from './geometryChecks.ts'
 import { measurementProblem } from './measurementChecks.ts'
 import { numbersProblem } from './numbersAndOperationsChecks.ts'
+import { patternProblem } from './patternChecks.ts'
 import { problemSolvingProblem } from './problemSolvingChecks.ts'
 import { visualProblem } from './visualChecks.ts'
 import { divisionReferences } from './references/division.ts'
@@ -104,6 +105,9 @@ export type RemovalReason =
   | 'wrongAreaUnit'
   | 'wrongTime'
   | 'unreasonableValue'
+  | 'wrongPattern'
+  | 'ambiguousRule'
+  | 'invalidCode'
 
 export interface GeneralCheck {
   result: TaskResult
@@ -264,6 +268,9 @@ const REMOVAL_TEXT: Record<RemovalReason, string> = {
   wrongAreaUnit: 'blandet areal og omkrets (areal i lengdeenhet, omkrets i kvadratenhet eller kvadratenhet skrevet uten ²)',
   wrongTime: 'regnet feil med tid (f.eks. som om en time har 100 minutter), eller hadde et ugyldig eller tvetydig klokkeslett',
   unreasonableValue: 'hadde en vekt som ikke er rimelig for tingen som veies',
+  wrongPattern: 'hadde et mønster, et figurtall eller en tallfølge der regelen ikke passer alle leddene',
+  ambiguousRule: 'hadde for få ledd eller figurer til at regelen er entydig',
+  invalidCode: 'hadde kode utenfor kodeformatet (ekte programmeringsspråk, ukjente kommandoer, uklart vilkår, nøstede løkker eller feil innrykk)',
 }
 
 const emptyRemoved = (): Record<RemovalReason, number> => ({
@@ -311,6 +318,9 @@ const emptyRemoved = (): Record<RemovalReason, number> => ({
   wrongAreaUnit: 0,
   wrongTime: 0,
   unreasonableValue: 0,
+  wrongPattern: 0,
+  ambiguousRule: 0,
+  invalidCode: 0,
 })
 
 /** «Tatt bort: 2 som var like …, 1 som …» – eller tom streng. */
@@ -434,9 +444,9 @@ export function requiresCarry(task: AiTaskDraft): boolean {
 // Intern systemtekst: hører hjemme i serverloggen, aldri i synlige felt.
 
 const INTERNAL_TEXT =
-  /reserve\s?(kandidat|oppgave)\w*|utfyllings?(forsøk|runde)\w*|\brefill\w*|\bfallback\w*|reservemodell\w*|\bprompt\w*|referanse[- ]?(id|oppgave)\w*|\b(?:[MTDGP]|TR|MA)\d-N\d-\d{2}\b|\bkandidat(en|er|ene|nummer|nr)?\b/i
+  /reserve\s?(kandidat|oppgave)\w*|utfyllings?(forsøk|runde)\w*|\brefill\w*|\bfallback\w*|reservemodell\w*|\bprompt\w*|referanse[- ]?(id|oppgave)\w*|\b(?:[MTDGP]|TR|MA|MO)\d-N\d-\d{2}\b|\bkandidat(en|er|ene|nummer|nr)?\b/i
 
-/** Om teksten inneholder interne ord eller ID-er (reservekandidat, utfyllingsforsøk, prompt, M4-N2-01, D3-N2-01, P2-N1-03, TR2-N2-01, MA4-N2-01 …). */
+/** Om teksten inneholder interne ord eller ID-er (reservekandidat, utfyllingsforsøk, prompt, M4-N2-01, D3-N2-01, P2-N1-03, TR2-N2-01, MA4-N2-01, MO4-N2-01 …). */
 export const containsInternalText = (text: string) => INTERNAL_TEXT.test(text)
 
 /** Teksten uten setningene som inneholder interne ord. */
@@ -502,7 +512,8 @@ export function assessmentProblem(
   if (answers.size > 1) return 'unclearSolution'
   const conclusion = /^\s*(ja|nei)\b/i.exec(solution)?.[1].toLowerCase()
   if (!conclusion) return 'unclearSolution'
-  // Måling: påstanden har enheter eller klokkeslett («1130 − 1040 = 90» er ikke 90 minutter) og regnes ut i measurementChecks.ts.
+  // Måling og Mønster og algoritmer: påstanden har enheter, klokkeslett, figurer eller kode og regnes ut i egne kontroller
+  // (measurementChecks.ts og patternChecks.ts) – «Figur 2 har 1 + 2 = 3 prikker» er ikke påstanden eleven vurderer.
   if (measureClaims) return null
   const claim = claimIn(task.studentText)
   // Påstander i ord («Alle kvadrater er rektangler») kan ikke regnes ut. I Geometri er de vanlige: da kreves
@@ -550,6 +561,9 @@ export interface CandidateCheck {
  *   - Måling: enheter som hører til økta, enhet i svaret, omgjøringer (L og dL, kg og g, timer og minutter), regnestykker
  *     med enheter og klokkeslett, desimaltall med én desimal i liter og kilogram, terninger, areal og omkrets av rektangler,
  *     tidsintervaller og rimelig vekt (se measurementChecks.ts). Kopier sammenlignes også med Tall og regning og Geometri.
+ *   - Mønster og algoritmer: bare tekstoppgaver; gjentakende mønstre, figurtall og tallfølger regnes ut (regelen må passe
+ *     alle leddene og være entydig, og svarene må følge den), og pseudokoden kjøres (kodeformat, innrykk, løkker, vilkår,
+ *     grensetilfeller og sluttverdi). Tallområdet er referansenes eller oppgavesettets på nivået (se patternChecks.ts).
  * - uten fagområde logges gangestykker utenfor øktas tabeller (som før)
  * Kontrollene er de samme for første generering og for utfylling.
  */
@@ -594,8 +608,8 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
   // Løsningsforslaget må være entydig, og ja/nei i vurderingsoppgaver må stemme (alle økter).
   // Geometri, Problemløsing og Tall og regning har påstander i ord («Er modellen riktig?», «1,3 er mindre enn 0,9»):
   // da kreves én entydig ja/nei-konklusjon (påstander om desimaltall og lengder kontrolleres i numbersAndOperationsChecks.ts).
-  const verbalClaims = !!profile?.area && ['geometri', 'problemlosing', 'tall-og-regning', 'maling'].includes(topicOfArea(profile.area))
-  const measureClaims = !!profile?.area && topicOfArea(profile.area) === 'maling'
+  const verbalClaims = !!profile?.area && ['geometri', 'problemlosing', 'tall-og-regning', 'maling', 'monster-og-algoritmer'].includes(topicOfArea(profile.area))
+  const measureClaims = !!profile?.area && ['maling', 'monster-og-algoritmer'].includes(topicOfArea(profile.area))
   tasks = tasks.filter((t) => {
     const problem = assessmentProblem(t, { verbalClaims, measureClaims })
     return !problem || remove(t, problem)
@@ -630,6 +644,16 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
     const problemSolving = topic === 'problemlosing'
     const numbersAndOperations = topic === 'tall-og-regning'
     const measurement = topic === 'maling'
+    const patterns = topic === 'monster-og-algoritmer'
+    const patternContext = patterns
+      ? {
+          area: area as PatternArea,
+          secondaryAreas: (profile?.secondaryAreas ?? []).filter((a): a is PatternArea => isReferenceArea(a) && topicOfArea(a) === 'monster-og-algoritmer'),
+        }
+      : null
+    // Største tall i oppgavesettet per nivå: tallområdet i Mønster og algoritmer er referansenes eller oppgavesettets.
+    const existingMax = (level: AiLevel) =>
+      Math.max(0, ...(levelInfo(level)?.existing ?? []).flatMap((t) => (t.text ? numbersIn(t.text).split(',').filter(Boolean).map(Number) : [t.a ?? 0, t.b ?? 0])))
     const numbersContext = numbersAndOperations
       ? {
           area: area as NumbersAndOperationsArea,
@@ -715,6 +739,13 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
         const problem = measurementProblem(task, { area: area as MeasurementArea })
         if (problem) return remove(task, problem)
       }
+      // Mønster og algoritmer: mønstre, figurtall og tallfølger regnes ut, og pseudokoden kjøres (se patternChecks.ts).
+      // Synlig nøling i oppgaveteksten avvises også.
+      if (patternContext) {
+        if (!isMathDraft(task) && HESITATION.test(task.studentText)) return remove(task, 'unclearSolution')
+        const problem = patternProblem(task, { ...patternContext, existingMax: existingMax(task.level) })
+        if (problem) return remove(task, problem)
+      }
       // Økter der tierovergang er det uttrykkelige målet: minst én addisjon med veksling.
       if (profile?.requiresCarry && !requiresCarry(task)) return remove(task, 'missingCarry')
       if (!hasWishes && outsideTables(task, factorsOf(task.level))) return remove(task, 'outsideTables')
@@ -745,7 +776,9 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
         }
         // Divisjon og Problemløsing: de samme tallene som en referanse og lignende formulering er samme oppgave
         // (samme gangefakta i et annet format, f.eks. «__ · 8 = 56» og «Regn ut 56 : 8», er lov).
-        if ((division || problemSolving || numbersAndOperations || measurement) && references.some((r) => numbersIn(task.studentText) === numbersIn(r.studentText) && textSimilarity(task.studentText, r.studentText) >= SAME_NUMBERS_SIMILARITY)) {
+        // Mønstre med bare figurer har ingen tall: «samme tall» betyr da ingenting, og bare formuleringen sammenlignes (over).
+        const sameNumbersApply = division || problemSolving || numbersAndOperations || measurement || (patterns && numbersIn(task.studentText) !== '')
+        if (sameNumbersApply && references.some((r) => numbersIn(task.studentText) === numbersIn(r.studentText) && textSimilarity(task.studentText, r.studentText) >= SAME_NUMBERS_SIMILARITY)) {
           return remove(task, 'copiedReference')
         }
       } else if (placeValue) {
@@ -758,7 +791,8 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
       // feilanalyseoppgaver (gjelder også med «Andre ønsker»). Problemløsing har egne nivåregler: synlige
       // mellomsteg og svaralternativer hører hjemme på nivå 1 (se problemSolvingChecks.ts).
       // Måling: nivå 1 kan ha to korte spørsmål («Trenger du å vite arealet eller omkretsen? …»), som referansene.
-      if (!multiplication && !problemSolving && task.level === 1 && !isMathDraft(task)) {
+      // Mønster og algoritmer har egne nivåregler (kodelinjer og mønstre gjør teksten lengre, se patternChecks.ts).
+      if (!multiplication && !problemSolving && !patterns && task.level === 1 && !isMathDraft(task)) {
         const tooLong = measurement ? task.studentText.length > 180 : isLongOrMultiPart(task.studentText)
         if (tooLong || ERROR_ANALYSIS.test(task.studentText)) return remove(task, 'levelMismatch')
       }

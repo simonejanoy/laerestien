@@ -11,7 +11,7 @@ import { aiConfig } from '../src/ai/config.ts'
 import { GEOMETRY_AREAS, type AiLevel, type AiTaskDraft, type AiTextDraft, type AiVisual, type TaskRequest } from '../src/ai/contract.ts'
 import { buildLevelContexts, toAiProfile } from '../src/ai/referenceTasks.ts'
 import { buildTasks, levelsFor, planned, type Planned } from '../src/features/sessions/sessionTasks.ts'
-import { tasksFor } from '../src/features/topics/yearPlan.ts'
+import { tasksFor, unitSpecs } from '../src/features/topics/yearPlan.ts'
 import { angleType, geometryProblem, type GeometryContext } from './geometryChecks.ts'
 import type { AiLogEntry, GenerateResult } from './gemini.ts'
 import { taskPrompt } from './prompts.ts'
@@ -298,9 +298,26 @@ describe('7. vinkler', () => {
     assert.equal(problem('geometri-6', text(2, 'En rett vinkel deles i to. Den ene delen er 35°. Hvor stor er den andre delen?', '65°')), 'wrongSolution')
     assert.equal(problem('geometri-6', text(2, 'To vinkler ligger langs en rett linje. Den ene er 130°. Hvor stor er den andre?', '60°')), 'wrongSolution')
     assert.equal(problem('geometri-6', text(3, 'I en trekant er to av vinklene 50° og 70°. Hvor stor er den tredje vinkelen?', '60°')), null)
-    // Regnestykket appen retter må passe vinklene i instruksjonen.
-    assert.equal(problem('geometri-6', math(1, 90, '-', 40, 'En rett vinkel deles i to. Den ene er 40°. Hvor stor er den andre?')), null)
-    assert.equal(problem('geometri-6', math(1, 180, '-', 40, 'En rett vinkel deles i to. Den ene er 40°. Hvor stor er den andre?')), 'wrongSolution')
+    // Regnestykker avvises: «90 − 40 =» under teksten ville røpe hvordan oppgaven løses. AI-oppgavene blir tekstoppgaver.
+    assert.equal(problem('geometri-6', math(1, 90, '-', 40, 'En rett vinkel deles i to. Den ene er 40°. Hvor stor er den andre?')), 'format')
+    assert.equal(problem('geometri-6', math(1, 180, '-', 40, 'En rett vinkel deles i to. Den ene er 40°. Hvor stor er den andre?')), 'format')
+  })
+
+  it('«Vinkler i trekanter» har bare tekstoppgaver: ingen regnestykker under teksten, og fasiten viser utregningen', () => {
+    const angles = unitSpecs.flatMap((u) => planned(u.unitId)).find((s) => s.id === 'geometri-6')!
+    const tasks = buildTasks(angles)
+    assert.equal(tasks.length, 15)
+    for (const t of tasks) {
+      assert.equal(t.kind, 'text', t.id)
+      if (t.kind !== 'text') continue
+      assert.ok(!/=/.test(t.text) && !/\d+\s*[−-]\s*\d+/.test(t.text), `utregningen står i oppgaveteksten: ${t.text}`)
+      const [, a, b, answer] = /\((\d+)° − (\d+)° = (\d+)°\)/.exec(t.solution) ?? []
+      assert.ok(answer && Number(a) - Number(b) === Number(answer) && t.solution.startsWith(`${answer}°`), t.solution)
+    }
+    assert.ok(tasks.some((t) => t.kind === 'text' && t.text.startsWith('En rett vinkel er 90°. Den deles i to vinkler.')))
+    // Repetisjonsøkta med samme undertema (uten øktprofil) har regnestykkene som før.
+    const repetition = unitSpecs.flatMap((u) => planned(u.unitId)).find((s) => s.id === 'repetisjon-vinter-2')!
+    assert.ok(buildTasks(repetition).every((t) => t.kind !== 'text'))
   })
 })
 
@@ -423,7 +440,7 @@ describe('11. andre temaer og referansebanker er uendret', () => {
     assert.equal(hash(placeValueBankFile), '21ba85a512aeffed')
     assert.equal(hash(divisionBankFile), '137f3e1f03a7d25f')
     assert.deepEqual([multiplicationReferences.length, placeValueReferences.length, divisionReferences.length], [54, 45, 36])
-    assert.equal(referenceBanks.filter((r) => !['problemlosing', 'tall-og-regning', 'maling'].includes(r.topic)).length, 54 + 45 + 36 + 36)
+    assert.equal(referenceBanks.filter((r) => !['problemlosing', 'tall-og-regning', 'maling', 'monster-og-algoritmer'].includes(r.topic)).length, 54 + 45 + 36 + 36)
   })
 
   it('utvalget i de andre bankene er det samme som før', () => {

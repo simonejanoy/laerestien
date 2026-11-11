@@ -271,6 +271,13 @@ export type NumbersAndOperationsArea = (typeof NUMBERS_AND_OPERATIONS_AREAS)[num
 export const MEASUREMENT_AREAS = ['volum-liter-desiliter', 'desimaltall-maling', 'kilogram-gram', 'areal-omkrets', 'tid'] as const
 export type MeasurementArea = (typeof MEASUREMENT_AREAS)[number]
 
+/**
+ * Fagområdene i Mønster og algoritmer, i progresjonsrekkefølge. Temaet har fire økter: den første dekker både
+ * «Utforske mønster» og «Figurtall» (figurtall som tilgrensende område).
+ */
+export const PATTERN_AREAS = ['utforske-monster', 'figurtall', 'tallfolger', 'koder-lokker', 'koder-vilkar'] as const
+export type PatternArea = (typeof PATTERN_AREAS)[number]
+
 /** Temaene som har en referansebank på serveren, med fagområdene sine. */
 export const REFERENCE_TOPICS = {
   multiplikasjon: MULTIPLICATION_AREAS,
@@ -280,10 +287,11 @@ export const REFERENCE_TOPICS = {
   problemlosing: PROBLEM_SOLVING_AREAS,
   'tall-og-regning': NUMBERS_AND_OPERATIONS_AREAS,
   maling: MEASUREMENT_AREAS,
+  'monster-og-algoritmer': PATTERN_AREAS,
 } as const
 export type ReferenceTopic = keyof typeof REFERENCE_TOPICS
 /** Et fagområde i en av referansebankene. Områdene har unike ID-er på tvers av temaene. */
-export type ReferenceArea = MultiplicationArea | PlaceValueArea | DivisionArea | GeometryArea | ProblemSolvingArea | NumbersAndOperationsArea | MeasurementArea
+export type ReferenceArea = MultiplicationArea | PlaceValueArea | DivisionArea | GeometryArea | ProblemSolvingArea | NumbersAndOperationsArea | MeasurementArea | PatternArea
 
 export const TOPIC_TITLES: Record<ReferenceTopic, string> = {
   multiplikasjon: 'Multiplikasjon',
@@ -293,6 +301,7 @@ export const TOPIC_TITLES: Record<ReferenceTopic, string> = {
   problemlosing: 'Problemløsing',
   'tall-og-regning': 'Tall og regning',
   maling: 'Måling',
+  'monster-og-algoritmer': 'Mønster og algoritmer',
 }
 
 export const AREA_TITLES: Record<ReferenceArea, string> = {
@@ -328,6 +337,11 @@ export const AREA_TITLES: Record<ReferenceArea, string> = {
   'kilogram-gram': 'Kilogram og gram',
   'areal-omkrets': 'Areal og omkrets',
   tid: 'Tid',
+  'utforske-monster': 'Utforske mønster',
+  figurtall: 'Figurtall',
+  tallfolger: 'Mønster i tallfølger',
+  'koder-lokker': 'Koder med løkker',
+  'koder-vilkar': 'Koder med vilkår',
 }
 
 export const isMultiplicationArea = (value: unknown): value is MultiplicationArea =>

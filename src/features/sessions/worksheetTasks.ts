@@ -160,7 +160,8 @@ const numberLines: [number, number, number, number[]][] = [
   [11, 1, 20, [0, 5, 9, 15]],
   [21, 1, 20, [0, 6, 12]],
   [43, 1, 20, [1, 4, 14]],
-  [58, 1, 20, [8]],
+  // Tre tall vises, så hoppet (1) er entydig. Med bare ett tall kunne regelen vært hva som helst.
+  [58, 1, 20, [0, 8, 15]],
 ]
 
 function numberLineTask(id: string, level: Level, [start, step, count, shown]: (typeof numberLines)[number]) {
@@ -171,7 +172,7 @@ function numberLineTask(id: string, level: Level, [start, step, count, shown]: (
 }
 
 /** «Hva blir de neste tallene?» (tallrekker) – uten eksempelet 0, 2, 0, 2. */
-const numberSequences: { start: number[]; rule: string; next: (seq: number[]) => number }[] = [
+const numberSequences: { start: number[]; rule: string; next: (seq: number[]) => number; count?: number }[] = [
   { start: [100, 110, 120, 130], rule: '10 mer hver gang', next: (q) => q[q.length - 1] + 10 },
   { start: [60, 65, 70, 75], rule: '5 mer hver gang', next: (q) => q[q.length - 1] + 5 },
   { start: [40, 42, 44, 46], rule: '2 mer hver gang', next: (q) => q[q.length - 1] + 2 },
@@ -180,7 +181,8 @@ const numberSequences: { start: number[]; rule: string; next: (seq: number[]) =>
   { start: [4, 5, 7, 10], rule: 'økningen blir 1 større hver gang', next: (q) => q[q.length - 1] + (q[q.length - 1] - q[q.length - 2] + 1) },
   { start: [6, 6, 12, 18], rule: 'hvert tall er summen av de to før', next: (q) => q[q.length - 1] + q[q.length - 2] },
   { start: [4, 8, 16, 32], rule: 'tallet dobles hver gang', next: (q) => q[q.length - 1] * 2 },
-  { start: [3, 9, 27, 81], rule: 'tallet ganges med 3 hver gang', next: (q) => q[q.length - 1] * 3 },
+  // To neste tall (243, 729): de fire neste ville gått til 6561, langt utenfor tallområdet på 4. trinn.
+  { start: [3, 9, 27, 81], rule: 'tallet ganges med 3 hver gang', next: (q) => q[q.length - 1] * 3, count: 2 },
 ]
 
 export function continueSequence(start: number[], next: (seq: number[]) => number, count = 4) {
@@ -189,12 +191,12 @@ export function continueSequence(start: number[], next: (seq: number[]) => numbe
   return seq.slice(start.length)
 }
 
-function sequenceTask(id: string, level: Level, { start, rule, next }: (typeof numberSequences)[number]) {
+function sequenceTask(id: string, level: Level, { start, rule, next, count = 4 }: (typeof numberSequences)[number]) {
   return textTask(
     id,
     level,
-    `Hva blir de fire neste tallene?\n${start.join(', ')}, ___, ___, ___, ___`,
-    `${continueSequence(start, next).join(', ')}  (${rule})`,
+    `Hva blir de ${count === 4 ? 'fire' : 'to'} neste tallene?\n${start.join(', ')}, ${Array(count).fill('___').join(', ')}`,
+    `${continueSequence(start, next, count).join(', ')}  (${rule})`,
   )
 }
 

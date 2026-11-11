@@ -1,8 +1,8 @@
-import { DIVISION_AREAS, GEOMETRY_AREAS, MEASUREMENT_AREAS, MULTIPLICATION_AREAS, NUMBERS_AND_OPERATIONS_AREAS, PLACE_VALUE_AREAS, PROBLEM_SOLVING_AREAS } from '../../src/ai/contract.ts'
+import { DIVISION_AREAS, GEOMETRY_AREAS, MEASUREMENT_AREAS, MULTIPLICATION_AREAS, NUMBERS_AND_OPERATIONS_AREAS, PATTERN_AREAS, PLACE_VALUE_AREAS, PROBLEM_SOLVING_AREAS } from '../../src/ai/contract.ts'
 import type { ReferenceBank, ReferenceTask } from './types.ts'
 
 // Kontroll av referansebankene. Kjøres når serveren starter (multiplication.ts, placeValue.ts, division.ts, geometry.ts,
-// problemSolving.ts, numbersAndOperations.ts, measurement.ts) og i testene.
+// problemSolving.ts, numbersAndOperations.ts, measurement.ts, patterns.ts) og i testene.
 
 /** Hva en bank skal inneholde: tema, ID-prefiks (M1-N1-01, T1-N1-01) og fagområdene i rekkefølge. */
 export interface BankSpec {
@@ -18,6 +18,7 @@ export const GEOMETRY_BANK: BankSpec = { topic: 'geometri', idPrefix: 'G', areas
 export const PROBLEM_SOLVING_BANK: BankSpec = { topic: 'problemlosing', idPrefix: 'P', areas: PROBLEM_SOLVING_AREAS }
 export const NUMBERS_AND_OPERATIONS_BANK: BankSpec = { topic: 'tall-og-regning', idPrefix: 'TR', areas: NUMBERS_AND_OPERATIONS_AREAS }
 export const MEASUREMENT_BANK: BankSpec = { topic: 'maling', idPrefix: 'MA', areas: MEASUREMENT_AREAS }
+export const PATTERN_BANK: BankSpec = { topic: 'monster-og-algoritmer', idPrefix: 'MO', areas: PATTERN_AREAS }
 const REQUIRED_TEXT = ['id', 'topic', 'area', 'areaTitle', 'title', 'format', 'purpose', 'studentText', 'solution'] as const
 
 export interface BankCheck {
@@ -106,8 +107,8 @@ const UNIT_WORD = /^\s*(tiere|tier|hundrere|hundrer|enere|ener)\b/i
 /** Rest etter en divisjon: «14 : 4 = 3 rest 2», «… = 3 med 2 til overs» eller «… = 3, og 2 til overs». */
 const REMAINDER_AFTER = /^\s*(?:rest\s+(\d+)|,?\s*(?:og|med)\s+(\d+)\s+til overs)/i
 
-/** Ordet foran en nummerert etikett («Steg 1:», «Trinn 2:»). */
-const STEP_LABEL = /\b(steg|trinn|del)\s*$/i
+/** Ordet foran en nummerert etikett («Steg 1:», «Trinn 2:», «Figur 4:» i figurtall). */
+const STEP_LABEL = /\b(steg|trinn|del|figur)\s*$/i
 
 /** Om teksten foran en regnerekke slutter med et regnetegn eller et tomt felt (ikke kolon etter et ord, som i «Fyll inn:»). */
 function operatorBefore(text: string) {
@@ -134,7 +135,7 @@ export function checkEquations(text: string): { checked: number; errors: string[
     if (!run.includes('=')) continue
     const before = operatorBefore(text.slice(0, match.index))
     const after = text.slice((match.index ?? 0) + run.length)
-    // «Steg 1: 18 + 12 = 30»: tallet foran kolonet er en etikett, ikke et tall som deles.
+    // «Steg 1: 18 + 12 = 30» og «Figur 4: 6 + 4 = 10»: tallet foran kolonet er en etikett, ikke et tall som deles.
     const label = STEP_LABEL.test(text.slice(0, match.index)) ? /^\d+\s*:\s*/.exec(run) : null
     const sides = (label ? run.slice(label[0].length) : run).split('=').map((s) => s.trim())
     if (before) sides.shift()

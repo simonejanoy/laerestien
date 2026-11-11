@@ -1,4 +1,4 @@
-import { visualSignature, type AiVisual, type DivisionArea, type DivisionType, type GeometryArea, type MeasurementArea, type NumbersAndOperationsArea, type PlaceValueArea, type ProblemSolvingArea } from '../../ai/contract.ts'
+import { visualSignature, type AiVisual, type DivisionArea, type DivisionType, type GeometryArea, type MeasurementArea, type NumbersAndOperationsArea, type PatternArea, type PlaceValueArea, type ProblemSolvingArea } from '../../ai/contract.ts'
 import type { Level, LevelGroup, LevelProfile, Operator, TaskProfile, TaskType, TopicDetails } from '../../types/index.ts'
 import { OPEN_STRATEGY, strategyInstruction } from './multiplicationStrategies.ts'
 import { columnTasks, fourDigitTasks, mentalStrategyTasks, negativeNumberTasks, type FourDigitVariant } from './placeValueTasks.ts'
@@ -61,11 +61,18 @@ function pick<T>(list: T[], i: number) {
   return list[i % list.length]
 }
 
-/** Typografisk minus for negative tall: −3 */
-const signed = (x: number) => (x < 0 ? `−${-x}` : String(x))
-
 /** 2.5 → «2,5» */
 const dec = (x: number) => String(Math.round(x * 100) / 100).replace('.', ',')
+
+/** Gjentakelsene i mønstrene i «Utforske mønster», per nivå: to eller tre ledd på nivå 1 og 2, fire på nivå 3. */
+const PATTERN_UNITS: Record<Level, string[][]> = {
+  1: [['▲', '●'], ['■', '▲'], ['●', '■', '■'], ['gul', 'grønn'], ['▲', '▲', '●']],
+  2: [['■', '●', '●'], ['▲', '■', '●'], ['●', '●', '▲'], ['rød', 'gul', 'gul'], ['■', '▲', '▲']],
+  3: [['▲', '●', '●', '■'], ['●', '■', '■', '▲'], ['■', '■', '●', '▲'], ['blå', 'rød', 'rød', 'gul'], ['●', '▲', '■', '■']],
+}
+const isColor = (item: string) => /^\p{L}+$/u.test(item)
+/** «● ■ ●» med figurer, «rød, blå, rød» med fargeord. */
+const patternLine = (items: string[]) => items.join(isColor(items[0]) ? ', ' : ' ')
 
 /** Gangestykker: grupper · faktor. */
 const times = (factors: number[], n: number, instruction: string, [minGroups, maxGroups]: [number, number] = [2, 10]) =>
@@ -336,6 +343,16 @@ const angleSumTasks = byLevel(
       return [H, 180, '-', two, `Vinklene i en trekant er 180° til sammen. To av vinklene er ${two}° til sammen. Hvor stor er den tredje?`]
     }),
 )
+
+/**
+ * «Vinkler i trekanter»: de samme oppgavene som tekstoppgaver. Et regnestykke under teksten («90 − 10 =») ville
+ * røpe hvordan oppgaven løses; eleven ser bare teksten, og fasiten viser utregningen for læreren.
+ */
+const angleSumTextTasks = (level: Level, n: number): TextSpec[] =>
+  angleSumTasks(level, n).map((task) => {
+    const [, a, , b, text] = task as TaskSpec
+    return { text, solution: `${a - b}°  (${a}° − ${b}° = ${a - b}°)` }
+  })
 
 /** Tekst, fasit og eventuelt en figur appen tegner. */
 type Item = [string, string] | [string, string, AiVisual]
@@ -1181,7 +1198,9 @@ const skillTasks: Record<string, Generator> = {
       return { text: `${q}${suffix}`, solution: a }
     })
   },
-  'geo.vinkler': (level, n, profile) => (profile?.taskVariant === 'klassifisere' ? angleTypeTasks(level, n) : angleSumTasks(level, n)),
+  // Repetisjonsøkta (uten profil) har regnestykkene som før.
+  'geo.vinkler': (level, n, profile) =>
+    profile?.taskVariant === 'klassifisere' ? angleTypeTasks(level, n) : profile ? angleSumTextTasks(level, n) : angleSumTasks(level, n),
 
   // Problemløsing. Repetisjonsøktene bruker de samme grunnoppgavene som øktene de repeterer.
   'prob.regnefortellinger': storyTasks,
@@ -1378,69 +1397,131 @@ const skillTasks: Record<string, Generator> = {
 
   // Mønster og algoritmer
   'mon.utforske': (level, n) =>
-    five((i): TaskSpec => {
-      const d = vary(n, i, level === 1 ? 2 : 3, level === 3 ? 12 : 9)
-      const s = vary(n + 1, i, 1, 20)
-      const seq = [s, s + d, s + 2 * d, s + 3 * d]
-      return [H, seq[3], '+', d, `Tallfølgen er ${seq.join(', ')}. Hva er neste tall?`]
+    five((i): TextSpec => {
+      // Gjentakende mønstre med ●, ■ og ▲ eller fargeord. Gjentakelsen vises minst to ganger, og fasiten regnes ut.
+      const unit = PATTERN_UNITS[level][(i + n) % 5]
+      const p = unit.length
+      const line = patternLine(Array.from({ length: p === 2 ? 6 : p === 3 ? 6 : 8 }, (_, j) => unit[j % p]))
+      const word = isColor(unit[0]) ? 'farge' : 'figur'
+      const at = (k: number) => unit[(k - 1) % p]
+      if (level === 2 && i % 2 === 1 && !isColor(unit[0])) {
+        const total = p * vary(n, i, 4, 7)
+        const item = unit.find((u) => unit.filter((x) => x === u).length === 1) ?? unit[0]
+        const each = unit.filter((x) => x === item).length
+        return {
+          text: `Ola legger figurer i dette mønsteret:\n${line}\nHan fortsetter til han har lagt ${total} figurer. Hvor mange ${item} har han lagt?`,
+          solution: `${(total / p) * each} ${item}. ${total} : ${p} = ${total / p} gjentakelser med ${each} ${item} i hver.`,
+        }
+      }
+      if (level === 3) {
+        const k = vary(n, i, 30, 60)
+        const m = k - ((k - 1) % p) - 1
+        return {
+          text: `Mønsteret fortsetter likt hele veien:\n${line}\nFinn ${word}en på plass ${k} uten å skrive hele mønsteret. Forklar hvordan du tenker.`,
+          solution: `${at(k)}. Gjentakelsen har ${p} ${word}r, og ${m} er i ${p === 4 ? 'fire' : 'tre'}gangen. Plass ${m} er den siste i en gjentakelse, så plass ${k} er nr. ${k - m} i neste.`,
+        }
+      }
+      // Ulik plass i hver oppgave på nivået (7–12 på nivå 1, 13–24 på nivå 2).
+      const k = level === 1 ? 7 + ((n + i) % 6) : 13 + ((n + 2 * i) % 12)
+      return {
+        text: `Her gjentar ${word === 'farge' ? 'fargene' : 'figurene'} seg:\n${line}\nHvilken ${word} står på plass ${k}?${level === 2 ? ' Forklar.' : ''}`,
+        solution: `${at(k)}. Gjentakelsen er ${patternLine(unit)}.`,
+      }
     }),
   'mon.figurtall': (level, n) =>
     five((i): TextSpec => {
       const [s, d] = [vary(n, i, 1, 5), vary(n + 1, i, 2, 4)]
       const k = level === 1 ? 4 : level === 2 ? 6 : 10
+      // Egen formulering – «Figur 1 har 2 prikker. Figur 2 har 4 prikker …» er referanseoppgaven MO2-N1-01.
       return {
-        text: `Figur 1 har ${s} prikker, figur 2 har ${s + d} og figur 3 har ${s + 2 * d}. Hvor mange prikker har figur ${k}?`,
-        solution: `${s + (k - 1) * d} prikker  (det kommer ${d} til hver gang)`,
+        text: `Et figurtall vokser med like mange prikker hver gang.\nFigur 1: ${s} prikker. Figur 2: ${s + d} prikker. Figur 3: ${s + 2 * d} prikker.\nHvor mange prikker blir det i figur ${k}?`,
+        solution: `${s + (k - 1) * d} prikker. Det kommer ${d} nye prikker hver gang.`,
       }
     }),
+  // Tekstoppgaver: et regnestykke under teksten («16 + 4 = ___») ville vist regelen eleven skal finne.
   'mon.tallfolger': byLevel(
     (n) =>
-      five((i): TaskSpec => {
+      five((i): TextSpec => {
         const d = vary(n, i, 2, 9)
         const k = vary(n + 2, i, 6, 10)
-        return [H, k, '*', d, `Tallfølgen er ${d}, ${2 * d}, ${3 * d} … Hva er tall nummer ${k}?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const d = vary(n, i, 2, 9)
-        const start = vary(n, i, 60, 100)
-        const seq = [start, start - d, start - 2 * d]
-        return [H, seq[2], '-', d, `Tallfølgen er ${seq.join(', ')}. Hva er neste tall?`]
+        return { text: `Tallfølgen er ${d}, ${2 * d}, ${3 * d}, ${4 * d} … Hva er tall nummer ${k}?`, solution: `${k * d}. Regelen er +${d}.` }
       }),
     (n) =>
       five((i): TextSpec => {
-        const start = vary(n, i, 1, 4)
+        const d = vary(n, i, 2, 9)
+        const start = vary(n, i, 60, 100)
+        const seq = [start, start - d, start - 2 * d, start - 3 * d]
+        return { text: `Fortsett tallfølgen: ${seq.join(', ')}, __, __`, solution: `${start - 4 * d} og ${start - 5 * d}. Regelen er −${d}.` }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        // Ikke 4: «4, 8, 16, 32» står allerede i arbeidsarket i økta.
+        const start = pick([1, 2, 3, 5, 6], i + n)
         const seq = [start, start * 2, start * 4, start * 8]
         return { text: `Finn regelen og neste tall: ${seq.join(', ')}, ___`, solution: `${start * 16}  (tallet dobles hver gang)` }
       }),
   ),
+  // Pseudokode i kodeformatet: én kommando per linje og fire mellomrom innrykk inne i løkker og vilkår.
   'mon.lokker': byLevel(
     (n) =>
-      five((i): TaskSpec => {
+      five((i): TextSpec => {
         const [r, st] = [vary(n, i, 2, 5), vary(n + 1, i, 2, 6)]
-        return [H, r, '*', st, `Koden sier: «Gjenta ${r} ganger: gå ${st} steg.» Hvor mange steg går figuren?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const [r, st] = [vary(n, i, 3, 8), vary(n + 1, i, 3, 9)]
-        return [H, r, '*', st, `Koden sier: «Start på 0. Gjenta ${r} ganger: legg til ${st}.» Hvilket tall ender du på?`]
+        return {
+          text: `En robot følger programmet:\ngjenta ${r} ganger:\n    gå ${st} steg fram\nHvor mange steg går roboten til sammen?`,
+          solution: `${r * st} steg. ${r} · ${st} = ${r * st}.`,
+        }
       }),
     (n) =>
       five((i): TextSpec => {
-        const [r, st] = [vary(n, i, 3, 8), vary(n + 1, i, 4, 12)]
-        return { text: `Koden sier: «Start på 100. Gjenta ${r} ganger: trekk fra ${st}.» Hvilket tall ender du på?`, solution: `${signed(100 - r * st)}  (${r} · ${st} = ${r * st}, 100 − ${r * st})` }
+        const [s, r, a, b] = [vary(n, i, 1, 10), vary(n + 1, i, 2, 4), vary(n + 2, i, 5, 9), vary(n + 3, i, 1, 4)]
+        return {
+          text: `Start med ${s}.\ngjenta ${r} ganger:\n    legg til ${a}\n    trekk fra ${b}\nHvilket tall ender programmet på?`,
+          solution: `${s + r * (a - b)}. Hver runde gir ${a} − ${b} = ${a - b} mer: ${s} + ${r} · ${a - b} = ${s + r * (a - b)}.`,
+        }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const [r, st] = [vary(n, i, 3, 6), vary(n + 1, i, 4, 12)]
+        const rounds = Array.from({ length: r }, (_, j) => 100 - (j + 1) * st)
+        return {
+          text: `Start med 100.\ngjenta ${r} ganger:\n    trekk fra ${st}\nSkriv tallet etter hver runde. Hvilket tall ender du på?`,
+          solution: `${rounds.join(', ')}. Tallet til slutt er ${rounds[r - 1]}.`,
+        }
       }),
   ),
-  'mon.vilkar': (level, n) =>
-    five((i): TextSpec => {
-      let x = vary(n, i, 9, 40)
-      const start = x
-      for (let k = 0; k < level; k++) x = x % 2 === 0 ? x / 2 : x + 1
-      return {
-        text: `Koden sier: «Hvis tallet er et partall, del det på 2. Ellers legg til 1.» Start på ${start}. Hvilket tall har du etter ${level} steg?`,
-        solution: String(x),
-      }
-    }),
+  'mon.vilkar': byLevel(
+    (n) =>
+      five((i): TextSpec => {
+        const x = vary(n, i, 9, 40)
+        const even = x % 2 === 0
+        return {
+          text: `Start med ${x}.\nhvis tallet er et partall:\n    legg til 10\nellers:\n    legg til 1\nHvilket tall får du?`,
+          solution: `${even ? x + 10 : x + 1}. ${x} er et ${even ? 'partall, så programmet legger til 10' : 'oddetall, så programmet går til «ellers» og legger til 1'}.`,
+        }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        // Grensetilfellet (tallet er lik grensen) er med: da er tallet ikke større enn grensen.
+        const g = vary(n, i, 10, 20)
+        const x = g + [0, 3, -2, 0, 5][i]
+        const [a, b] = [vary(n + 1, i, 2, 6), vary(n + 2, i, 2, 6)]
+        const bigger = x > g
+        return {
+          text: `Start med ${x}.\nhvis tallet er større enn ${g}:\n    trekk fra ${a}\nellers:\n    legg til ${b}\nHvilket tall får du?`,
+          solution: `${bigger ? x - a : x + b}. ${x} er ${bigger ? '' : 'ikke '}større enn ${g}, så programmet ${bigger ? `trekker fra ${a}` : `går til «ellers» og legger til ${b}`}.`,
+        }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const x = vary(n, i, 12, 24)
+        const rounds: number[] = []
+        for (let v = x, j = 0; j < 4; j++) rounds.push((v = v > 20 ? v - 6 : v + 5))
+        return {
+          text: `Start med ${x}.\ngjenta 4 ganger:\n    hvis tallet er større enn 20:\n        trekk fra 6\n    ellers:\n        legg til 5\nHvilket tall har du etter hver runde?`,
+          solution: `${rounds.join(', ')}. Tallet til slutt er ${rounds[3]}. Vilkåret sjekkes på nytt i hver runde.`,
+        }
+      }),
+  ),
 
   // Regning
   'reg.diagrammer': byLevel(
@@ -2063,6 +2144,27 @@ const measureProfile = (
     'Rene gangestykker der måleenheten ikke betyr noe',
     'Kubeoppgaver som bare er gangestykker',
     'Henvisninger til figurer, klokker eller bilder som ikke vises («se figuren», «se på klokka»)',
+  ],
+  figures: false,
+  levels: { 1: levels[0], 2: levels[1], 3: levels[2] },
+  ...extra,
+})
+
+/**
+ * Økt i Mønster og algoritmer. Fagområdet styrer referansene og kontrollene på serveren (se PATTERN_AREAS i
+ * ai/contract.ts). Alle oppgavene er tekstoppgaver: mønstre og pseudokode står som tekst på egne linjer.
+ */
+const patternProfile = (area: PatternArea, focus: string, levels: [LevelProfile, LevelProfile, LevelProfile], extra: Partial<TaskProfile> = {}): TaskProfile => ({
+  focus,
+  area,
+  operations: [],
+  formats: ['Tekstoppgave'],
+  steps: 'Nivå 1: ett steg med tydelig støtte. Nivå 2: finne regelen selv eller følge to kommandoer. Nivå 3: forklare, vurdere eller rette. Høyst to korte spørsmål i samme oppgave.',
+  avoid: [
+    'Regnestykker der utregningen under oppgaven avslører regelen eller programmet',
+    'Negative tall, desimaltall, brøk og måleenheter',
+    'Ekte programmeringsspråk (Scratch, Python) og kodeblokker – bare pseudokoden i kodeformatet',
+    'Henvisninger til figurer eller kode som ikke står i teksten («se figuren», «koden under»)',
   ],
   figures: false,
   levels: { 1: levels[0], 2: levels[1], 3: levels[2] },
@@ -2755,9 +2857,60 @@ export const unitSpecs: UnitSpec[] = [
     topic: 'Mønster og algoritmer',
     area: 'Tall og algebra',
     description: 'Elevene utforsker mønster, figurtall og tallfølger, og lager koder med løkker og vilkår.',
+    // Fire økter og fem fagområder: økt 1 dekker utforske mønster (hovedområde) og figurtall (tilgrensende område),
+    // de andre øktene ett fagområde hver. Økt-ID-ene, rekkefølgen og antallet er de samme som før.
     weeks: [
-      { title: 'Uke 1 - mønster', sessions: [s('Utforske mønster og figurtall', 'mon.utforske', 'mon.figurtall'), s('Mønster i tallfølger', 'mon.tallfolger')] },
-      { title: 'Uke 2 - algoritmer', sessions: [s('Koder med løkker', 'mon.lokker'), s('Koder med vilkår', 'mon.vilkar')] },
+      {
+        title: 'Uke 1 - mønster',
+        sessions: [
+          p(
+            'Utforske mønster og figurtall',
+            ['mon.utforske', 'mon.figurtall'],
+            patternProfile(
+              'utforske-monster',
+              'Gjentakende mønstre med figurene ●, ■ og ▲ og med farger: finne gjentakelsen, fortsette mønsteret og finne figuren på en plass – og figurtall som vokser med like mange hver gang.',
+              [
+                { title: 'Fortsette mønsteret', subtitle: 'Korte gjentakelser.', description: 'Finne gjentakelsen, figuren på en plass og neste figur i et figurtall.', numbers: 'Gjentakelser med 2–3 figurer, plasser opp til 12, figur 4' },
+                { title: 'Forutsi', subtitle: 'Plasser lenger ut.', description: 'Bruke lengden på gjentakelsen, telle figurer og finne regelen i et figurtall.', numbers: 'Gjentakelser med 3 figurer, plasser opp til 24, figur 6' },
+                { title: 'Forklare', subtitle: 'Langt ut i mønsteret.', description: 'Forutsi langt ut i mønsteret og i figurtallet, og forklare uten å skrive alt.', numbers: 'Gjentakelser med 4 figurer, plasser opp til 60, figur 10' },
+              ],
+              { secondaryAreas: ['figurtall'] },
+            ),
+          ),
+          p(
+            'Mønster i tallfølger',
+            ['mon.tallfolger'],
+            patternProfile('tallfolger', 'Finne og beskrive regelen i en tallfølge, fortsette følgen og finne tall som mangler.', [
+              { title: 'Fortsette tallfølgen', subtitle: 'Like store hopp.', description: 'Fortsette tallfølger og tallinjer som øker med like mye.', numbers: 'Tall opp til 100, hopp på 1–10' },
+              { title: 'Finne regelen', subtitle: 'Opp og ned.', description: 'Finne regelen selv, også når følgen synker, og finne tall som mangler.', numbers: 'Tall opp til 200' },
+              { title: 'Andre regler', subtitle: 'Gange og voksende hopp.', description: 'Følger der tallet dobles, ganges eller hoppene vokser, og forklare regelen.', numbers: 'Tall opp til 1000' },
+            ]),
+          ),
+        ],
+      },
+      {
+        title: 'Uke 2 - algoritmer',
+        sessions: [
+          p(
+            'Koder med løkker',
+            ['mon.lokker'],
+            patternProfile('koder-lokker', 'Lese, fullføre, skrive og rette korte programmer med «gjenta» i norsk pseudokode (kodeformatet i økta).', [
+              { title: 'Følge en løkke', subtitle: 'Én kommando.', description: 'Følge en løkke som gjentar én kommando.', numbers: 'Gjenta 2–5 ganger, tall opp til 30' },
+              { title: 'To kommandoer', subtitle: 'Mer i løkka.', description: 'Følge en løkke med to kommandoer og skrive kortere med «gjenta».', numbers: 'Gjenta 2–4 ganger, tall opp til 50' },
+              { title: 'Rette og lage', subtitle: 'Hver runde.', description: 'Skrive tallet etter hver runde, finne og rette feil og lage egne løkker.', numbers: 'Gjenta 3–6 ganger, tall opp til 100' },
+            ]),
+          ),
+          p(
+            'Koder med vilkår',
+            ['mon.vilkar'],
+            patternProfile('koder-vilkar', 'Lese, skrive og rette korte programmer med «hvis» og «ellers» i norsk pseudokode, også grensetilfeller og vilkår inne i en løkke.', [
+              { title: 'Hvis og ellers', subtitle: 'Partall og oddetall.', description: 'Følge et vilkår og velge riktig gren.', numbers: 'Tall opp til 50' },
+              { title: 'Grensetilfeller', subtitle: 'Større enn.', description: 'Følge vilkår med «større enn», også når tallet er lik grensen, og sortere tall.', numbers: 'Tall opp til 30' },
+              { title: 'Vilkår i løkke', subtitle: 'Sjekkes hver runde.', description: 'Følge et vilkår inne i en løkke, finne og rette feil i vilkår.', numbers: 'Tall opp til 30, 4 runder' },
+            ]),
+          ),
+        ],
+      },
     ],
     goals: ['Beskrive og fortsette mønster og figurtall.', 'Finne regelen i en tallfølge.', 'Lese og lage enkle koder med løkker og vilkår.'],
     levels: [
