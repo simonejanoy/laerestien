@@ -1,5 +1,6 @@
 import {
   isMathDraft,
+  visualSignature,
   type AiExistingTask,
   type AiLevel,
   type AiLevelContext,
@@ -8,9 +9,11 @@ import {
   type TaskRequest,
   type TaskResult,
 } from '../src/ai/contract.ts'
-import { isReferenceArea, topicOfArea, type DivisionArea, type ReferenceArea } from '../src/ai/contract.ts'
+import { isReferenceArea, topicOfArea, type DivisionArea, type GeometryArea, type ReferenceArea } from '../src/ai/contract.ts'
 import { strategyProblem } from '../src/features/topics/multiplicationStrategies.ts'
 import { divisionProblem, wishRequiresRoundUp } from './divisionChecks.ts'
+import { geometryProblem } from './geometryChecks.ts'
+import { visualProblem } from './visualChecks.ts'
 import { checkEquations, checkReferenceMath } from './references/validate.ts'
 
 // Kontroller av generelle oppgaver etter at AI-en har svart. Stiltreff styres av
@@ -71,6 +74,15 @@ export type RemovalReason =
   | 'wrongRemainder'
   | 'missingModel'
   | 'missingRelation'
+  | 'missingFigure'
+  | 'wrongAngle'
+  | 'wrongFact'
+  | 'wrongTerm'
+  | 'invalidVisual'
+  | 'irrelevantVisual'
+  | 'drawingTask'
+  | 'visualMismatch'
+  | 'figureRequired'
 
 export interface GeneralCheck {
   result: TaskResult
@@ -136,7 +148,9 @@ const factKey = (level: AiLevel, f: Fact, swapped: boolean) => {
   return `${level}|regnestykke|${f.taskType}|${instructionPurpose(f.instruction)}|${a}${f.operator}${b}`
 }
 
-const textKey = (level: AiLevel, text: string, figure = false) => `${level}|tekst|${figure ? 'figur' : ''}|${normalizeText(text)}`
+/** Tekstoppgaver: teksten og eventuell figur. En plan figur eller vinkel er med i nøkkelen (samme tekst, annen figur = annen oppgave). */
+const textKey = (level: AiLevel, text: string, figure: boolean | string = false) =>
+  `${level}|tekst|${typeof figure === 'string' ? figure : figure ? 'figur' : ''}|${normalizeText(text)}`
 
 /** Nøklene til en oppgave: eksakt, og med faktorene sortert (byttede faktorer). */
 function keysOf(level: AiLevel, task: AiTaskDraft | AiExistingTask) {
@@ -148,7 +162,9 @@ function keysOf(level: AiLevel, task: AiTaskDraft | AiExistingTask) {
     return { exact: factKey(level, fact, false), swapped: factKey(level, fact, true) }
   }
   const text = 'studentText' in task ? task.studentText : (task.text ?? '')
-  const key = textKey(level, text, 'figure' in task && task.figure === true)
+  const figure =
+    'studentText' in task ? visualSignature(task.figure) || false : (task as AiExistingTask).figureKind || (task as AiExistingTask).figure === true
+  const key = textKey(level, text, figure)
   return { exact: key, swapped: key }
 }
 
@@ -204,6 +220,15 @@ const REMOVAL_TEXT: Record<RemovalReason, string> = {
   wrongRemainder: 'brukte rest feil for økta eller situasjonen',
   missingModel: 'ikke ba eleven bruke eller tolke en modell',
   missingRelation: 'ikke viste sammenhengen mellom multiplikasjon og divisjon',
+  missingFigure: 'viste til en figur eller et bilde som ikke vises',
+  wrongAngle: 'hadde feil vinkeltype eller feil gradtall',
+  wrongFact: 'hadde feil fakta om en figur, en romfigur eller et nett',
+  wrongTerm: 'brukte feil geometriske begreper (sider, kanter og flater)',
+  invalidVisual: 'hadde en figur appen ikke kan tegne',
+  irrelevantVisual: 'hadde en figur som ikke hører til økta',
+  drawingTask: 'ba eleven tegne, noe elevvisningen ikke støtter',
+  visualMismatch: 'hadde en tekst eller fasit som ikke stemte med figuren',
+  figureRequired: 'manglet figuren oppgavene i området skal ha, eller viste ikke til den',
 }
 
 const emptyRemoved = (): Record<RemovalReason, number> => ({
@@ -228,6 +253,15 @@ const emptyRemoved = (): Record<RemovalReason, number> => ({
   wrongRemainder: 0,
   missingModel: 0,
   missingRelation: 0,
+  missingFigure: 0,
+  wrongAngle: 0,
+  wrongFact: 0,
+  wrongTerm: 0,
+  invalidVisual: 0,
+  irrelevantVisual: 0,
+  drawingTask: 0,
+  visualMismatch: 0,
+  figureRequired: 0,
 })
 
 /** «Tatt bort: 2 som var like …, 1 som …» – eller tom streng. */
@@ -347,7 +381,7 @@ export function requiresCarry(task: AiTaskDraft): boolean {
 // Intern systemtekst: hører hjemme i serverloggen, aldri i synlige felt.
 
 const INTERNAL_TEXT =
-  /reserve\s?(kandidat|oppgave)\w*|utfyllings?(forsøk|runde)\w*|\brefill\w*|\bfallback\w*|reservemodell\w*|\bprompt\w*|referanse[- ]?(id|oppgave)\w*|\b[MTD]\d-N\d-\d{2}\b|\bkandidat(en|er|ene|nummer|nr)?\b/i
+  /reserve\s?(kandidat|oppgave)\w*|utfyllings?(forsøk|runde)\w*|\brefill\w*|\bfallback\w*|reservemodell\w*|\bprompt\w*|referanse[- ]?(id|oppgave)\w*|\b[MTDG]\d-N\d-\d{2}\b|\bkandidat(en|er|ene|nummer|nr)?\b/i
 
 /** Om teksten inneholder interne ord eller ID-er (reservekandidat, utfyllingsforsøk, prompt, M4-N2-01, D3-N2-01 …). */
 export const containsInternalText = (text: string) => INTERNAL_TEXT.test(text)
@@ -391,7 +425,7 @@ function claimIn(text: string) {
  *   og det riktige svaret må stå der. Kan påstanden ikke leses, kan svaret ikke kontrolleres → uklart.
  * Den bevisste feilen i oppgaveteksten er lov – det er løsningen som må identifisere den.
  */
-export function assessmentProblem(task: AiTaskDraft): 'wrongConclusion' | 'unclearSolution' | null {
+export function assessmentProblem(task: AiTaskDraft, { verbalClaims = false }: { verbalClaims?: boolean } = {}): 'wrongConclusion' | 'unclearSolution' | null {
   if (isMathDraft(task)) return null
   const { solution } = task
   if (HESITATION.test(solution) || NAME_ALTERNATIVE.test(solution)) return 'unclearSolution'
@@ -402,7 +436,9 @@ export function assessmentProblem(task: AiTaskDraft): 'wrongConclusion' | 'uncle
   const conclusion = /^\s*(ja|nei)\b/i.exec(solution)?.[1].toLowerCase()
   if (!conclusion) return 'unclearSolution'
   const claim = claimIn(task.studentText)
-  if (!claim) return 'unclearSolution'
+  // Påstander i ord («Alle kvadrater er rektangler») kan ikke regnes ut. I Geometri er de vanlige: da kreves
+  // bare én entydig ja/nei-konklusjon – fagkontrollene og prompten tar resten.
+  if (!claim) return verbalClaims ? null : 'unclearSolution'
   const claimIsTrue = claim.value === claim.claimed
   if ((conclusion === 'ja') !== claimIsTrue) return 'wrongConclusion'
   if (checkEquations(solution).errors.length > 0) return 'wrongConclusion'
@@ -433,6 +469,8 @@ export interface CandidateCheck {
  *   - «Andre ønsker» kan bare gjøre formatkontrollen (lange tekstoppgaver) fleksibel
  *   - regnestykker med en strategi som ikke passer stykket (f.eks. «10-gangen minus én gruppe» til 8 · 7) tas bort
  *   - tekstoppgaver som er svært like en referanses formulering tas bort (i Divisjon også med samme tall)
+ *   - Geometri: figur som ikke vises, areal og omkrets, fagområdet, vinkeltyper og gradtall, fakta om
+ *     figurer, romfigurer og nett (se geometryChecks.ts)
  *   - Divisjon: divisjon på 0, tallområdet, fasit og rest (også når svaret må rundes opp), divisjonstype,
  *     sammenheng med gange og modeller (se divisionChecks.ts)
  * - uten fagområde logges gangestykker utenfor øktas tabeller (som før)
@@ -470,9 +508,16 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
   })
   // Oppgavetekst, instruksjon og fasit med interne ord leveres ikke (de erstattes gjennom utfyllingen).
   tasks = tasks.filter((t) => !containsInternalText(isMathDraft(t) ? t.instruction : `${t.studentText} ${t.solution}`) || remove(t, 'internalText'))
-  // Løsningsforslaget må være entydig, og ja/nei i vurderingsoppgaver må stemme (alle økter).
+  // Figurer: bare gyldige figurer, bare i geometriøkter der de hører hjemme, ingen tegneoppgaver i Geometri,
+  // og tekst og fasit må stemme med figuren (alle økter – også med «Andre ønsker»).
   tasks = tasks.filter((t) => {
-    const problem = assessmentProblem(t)
+    const problem = visualProblem(t, { area: profile?.area })
+    return !problem || remove(t, problem)
+  })
+  // Løsningsforslaget må være entydig, og ja/nei i vurderingsoppgaver må stemme (alle økter).
+  const verbalClaims = !!profile?.area && topicOfArea(profile.area) === 'geometri'
+  tasks = tasks.filter((t) => {
+    const problem = assessmentProblem(t, { verbalClaims })
     return !problem || remove(t, problem)
   })
 
@@ -501,6 +546,13 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
     const multiplication = topic === 'multiplikasjon'
     const placeValue = topic === 'tall-og-plassverdi'
     const division = topic === 'divisjon'
+    const geometry = topic === 'geometri'
+    const geometryContext = geometry
+      ? {
+          area: area as GeometryArea,
+          secondaryAreas: (profile?.secondaryAreas ?? []).filter((a): a is GeometryArea => isReferenceArea(a) && topicOfArea(a) === 'geometri'),
+        }
+      : null
     const divisionContext = division
       ? {
           area: area as DivisionArea,
@@ -512,17 +564,23 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
       : null
     const operators = sessionOperators(profile?.operations)
     // Tekstene som finnes på nivået (oppgavesettet og godkjente kandidater), til kontrollen av nesten like oppgaver.
-    const textsOn = new Map<AiLevel, string[]>()
-    const addText = (level: AiLevel, text: string) => textsOn.set(level, [...(textsOn.get(level) ?? []), text])
-    for (const level of levels) for (const task of level.existing ?? []) if (task.text && !task.figure) addText(level.level, task.text)
-    for (const task of accepted) if (!isMathDraft(task)) addText(task.level, task.studentText)
+    // Tekster med figur sammenlignes bare med tekster med samme figur (samme spørsmål til en annen figur er en ny oppgave).
+    const textsOn = new Map<AiLevel, { text: string; figure: string }[]>()
+    const addText = (level: AiLevel, text: string, figure = '') => textsOn.set(level, [...(textsOn.get(level) ?? []), { text, figure }])
+    for (const level of levels) {
+      for (const task of level.existing ?? []) if (task.text && (!task.figure || task.figureKind)) addText(level.level, task.text, task.figureKind ?? '')
+    }
+    for (const task of accepted) if (!isMathDraft(task)) addText(task.level, task.studentText, visualSignature(task.figure))
 
     tasks = tasks.filter((task) => {
       const keys = keysOf(task.level, task)
       if (inResponse.has(keys.exact) || (!allowSwapped && inResponse.has(keys.swapped))) return remove(task, 'duplicateInResponse')
       if (inSet.get(keys.exact) === 'exact') return remove(task, 'duplicateInSet')
       if (!allowSwapped && inSet.has(keys.swapped)) return remove(task, 'swappedFactors')
-      if (!isMathDraft(task) && (textsOn.get(task.level) ?? []).some((t) => isNearDuplicate(task.studentText, t))) {
+      if (
+        !isMathDraft(task) &&
+        (textsOn.get(task.level) ?? []).some((t) => t.figure === visualSignature(task.figure) && isNearDuplicate(task.studentText, t.text))
+      ) {
         return remove(task, 'nearDuplicate')
       }
       // Faglige kontroller – gjelder alltid, også når læreren har skrevet «Andre ønsker». Ønskene kan
@@ -536,6 +594,11 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
         const problem = divisionProblem(task, divisionContext)
         if (problem) return remove(task, problem)
       }
+      // Geometri: figurer som ikke vises, deltema utenfor økta, fagområdet, vinkler og figurfakta.
+      if (geometryContext) {
+        const problem = geometryProblem(task, geometryContext)
+        if (problem) return remove(task, problem)
+      }
       // Økter der tierovergang er det uttrykkelige målet: minst én addisjon med veksling.
       if (profile?.requiresCarry && !requiresCarry(task)) return remove(task, 'missingCarry')
       if (!hasWishes && outsideTables(task, factorsOf(task.level))) return remove(task, 'outsideTables')
@@ -543,9 +606,15 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
       if (isMathDraft(task) && strategyProblem(task.instruction, task.a, task.b)) return remove(task, 'invalidStrategy')
       if (solutionProblem(task)) return remove(task, 'wrongSolution')
       const references = levelInfo(task.level)?.referenceTasks ?? []
+      // Figuroppgaver som spør om «figuren» eller «vinkelen» har innholdet i figuren appen tegner, ikke i teksten:
+      // et kort spørsmål som «Hvor mange sider har figuren?» er ikke en kopi av en referanse uten figur.
+      const figureCarriesContent = !isMathDraft(task) && !!task.figure && /\b(figuren|vinkelen)\b/i.test(task.studentText)
       if (!isMathDraft(task)) {
         // Bare referanser med en egen formulering – en kort mal som «Regn ut: a + b = __» er ikke en formulering å kopiere.
-        if (references.some((r) => hasWording(r.studentText) && textSimilarity(task.studentText, r.studentText) >= TEXT_SIMILARITY_THRESHOLD)) {
+        if (
+          !figureCarriesContent &&
+          references.some((r) => hasWording(r.studentText) && textSimilarity(task.studentText, r.studentText) >= TEXT_SIMILARITY_THRESHOLD)
+        ) {
           return remove(task, 'copiedReference')
         }
         // Divisjon: de samme tallene som en referanse og lignende formulering er samme oppgave (samme gangefakta
@@ -566,7 +635,7 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
       }
       inResponse.add(keys.exact)
       inResponse.add(keys.swapped)
-      if (!isMathDraft(task)) addText(task.level, task.studentText)
+      if (!isMathDraft(task)) addText(task.level, task.studentText, visualSignature(task.figure))
       return true
     })
   } else {

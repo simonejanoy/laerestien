@@ -1,3 +1,4 @@
+import { visualSignature } from '../../ai/contract.ts'
 import type { Level, LevelGroup, SessionTask, TaskProfile } from '../../types/index.ts'
 import { isTextSpec, tasksFor, unitSpecs, type UnitSpec } from '../topics/yearPlan.ts'
 
@@ -56,6 +57,7 @@ export function buildTasks({ id, skills, profile, n }: Pick<Planned, 'id' | 'ski
           level,
           text: task.text,
           solution: task.solution,
+          ...(task.figure && { figure: task.figure }),
           competenceGoal: '',
           adaptation: '',
           aiGenerated: false,
@@ -69,9 +71,15 @@ export function buildTasks({ id, skills, profile, n }: Pick<Planned, 'id' | 'ski
   )
 }
 
-/** To oppgaver på samme nivå er like når teksten, eller regnestykket, er det samme. */
-export const sessionTaskKey = (task: SessionTask) =>
-  task.kind === 'text' ? `${task.level}|${task.text.trim()}` : `${task.level}|${task.a} ${task.operator} ${task.b}`
+/**
+ * To oppgaver på samme nivå er like når teksten, eller regnestykket, er det samme. En plan figur eller
+ * vinkel hører med: samme spørsmål til en annen figur er en annen oppgave.
+ */
+export const sessionTaskKey = (task: SessionTask) => {
+  if (task.kind !== 'text') return `${task.level}|${task.a} ${task.operator} ${task.b}`
+  const visual = task.figure?.kind === 'shape' || task.figure?.kind === 'angle' ? `|${visualSignature(task.figure)}` : ''
+  return `${task.level}|${task.text.trim()}${visual}`
+}
 
 /** Arbeidsarkene først, så resten. Oppgaver som er helt like en tidligere på samme nivå, tas bort. */
 export function mergeTasks(...lists: SessionTask[][]): SessionTask[] {

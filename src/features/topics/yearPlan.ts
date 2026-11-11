@@ -1,4 +1,4 @@
-import type { DivisionArea, DivisionType, PlaceValueArea } from '../../ai/contract.ts'
+import { visualSignature, type AiVisual, type DivisionArea, type DivisionType, type GeometryArea, type PlaceValueArea } from '../../ai/contract.ts'
 import type { Level, LevelGroup, LevelProfile, Operator, TaskProfile, TaskType, TopicDetails } from '../../types/index.ts'
 import { OPEN_STRATEGY, strategyInstruction } from './multiplicationStrategies.ts'
 import { columnTasks, fourDigitTasks, mentalStrategyTasks, negativeNumberTasks, type FourDigitVariant } from './placeValueTasks.ts'
@@ -17,6 +17,8 @@ export type TaskSpec = [TaskType, number, Operator, number, string]
 export interface TextSpec {
   text: string
   solution: string
+  /** Geometri: plan figur eller vinkel som appen tegner til oppgaven. */
+  figure?: AiVisual
 }
 
 export type GeneratedTask = TaskSpec | TextSpec
@@ -272,6 +274,230 @@ const divisionModelTasks = byLevel(
 )
 
 // ---------------------------------------------------------------------------------------
+// Geometri: grunnoppgaver per økt. Tekstoppgaver uten figur – skal eleven se en figur, tegner eleven den selv.
+
+/** Repetisjon (uten profil): som før. */
+const oldPlaneTasks = byLevel(
+  (n) =>
+    five((i): TaskSpec => {
+      const k = vary(n, i, 2, 9)
+      return i % 2 === 0
+        ? [H, k, '*', 3, `En trekant har 3 hjørner. Hvor mange hjørner har ${k} trekanter?`]
+        : [H, k, '*', 4, `En firkant har 4 sider. Hvor mange sider har ${k} firkanter?`]
+    }),
+  (n) =>
+    five((i): TaskSpec => {
+      const s = vary(n, i, 3, 12)
+      return i % 2 === 0
+        ? [H, 4, '*', s, `Et kvadrat har sider på ${s} cm. Hva er omkretsen?`]
+        : [H, 6, '*', s, `En sekskant har seks like lange sider på ${s} cm. Hva er omkretsen?`]
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      const [l, b] = [vary(n, i, 4, 12), vary(n + 1, i, 2, 7)]
+      return { text: `Et rektangel er ${l} cm langt og ${b} cm bredt. Hva er omkretsen?`, solution: `${2 * (l + b)} cm  (${l} + ${b} + ${l} + ${b})` }
+    }),
+)
+
+/** Repetisjon (uten profil): som før. */
+const oldSolidTasks = byLevel(
+  (n) =>
+    five((i): TaskSpec => {
+      const k = vary(n, i, 2, 8)
+      return [H, k, '*', 6, `En kube har 6 sideflater. Hvor mange sideflater har ${k} kuber til sammen?`]
+    }),
+  (n) =>
+    five((i): TaskSpec => {
+      const k = vary(n, i, 2, 9)
+      return [H, k, '*', 8, `En kube har 8 hjørner. Hvor mange hjørner har ${k} kuber til sammen?`]
+    }),
+  (n) =>
+    five((i): TaskSpec => {
+      const k = vary(n, i, 2, 9)
+      return [H, k, '*', 12, `En kube har 12 kanter. Hvor mange kanter har ${k} kuber til sammen?`]
+    }),
+)
+
+/** Manglende del av en rett vinkel, en rett linje og vinkelsummen i en trekant (Vinkler i trekanter og repetisjon). */
+const angleSumTasks = byLevel(
+  (n) =>
+    five((i): TaskSpec => {
+      const x = 10 * vary(n, i, 1, 8)
+      return [H, 90, '-', x, `En rett vinkel er 90°. Den deles i to vinkler. Den ene er ${x}°. Hvor stor er den andre?`]
+    }),
+  (n) =>
+    five((i): TaskSpec => {
+      const x = 10 * vary(n, i, 2, 16)
+      return [H, 180, '-', x, `Vinklene på en rett linje er 180° til sammen. Den ene vinkelen er ${x}°. Hvor stor er den andre?`]
+    }),
+  (n) =>
+    five((i): TaskSpec => {
+      const two = 10 * vary(n, i, 9, 15)
+      return [H, 180, '-', two, `Vinklene i en trekant er 180° til sammen. To av vinklene er ${two}° til sammen. Hvor stor er den tredje?`]
+    }),
+)
+
+/** Tekst, fasit og eventuelt en figur appen tegner. */
+type Item = [string, string] | [string, string, AiVisual]
+/** Fem ulike oppgaver fra lista (lista har minst fem), forskjøvet med økta. */
+const fromList = (items: Item[], n: number) => five((i): TextSpec => {
+  const [text, solution, figure] = pick(items, i + n)
+  return { text, solution, ...(figure && { figure }) }
+})
+const shape = (s: Extract<AiVisual, { kind: 'shape' }>['shape']): AiVisual => ({ kind: 'shape', shape: s })
+
+/** Mangekanter: gjenkjenne og telle → sammenligne og sortere → resonnere. */
+const polygonTasks = byLevel(
+  (n) =>
+    fromList(
+      [
+        ['Hvor mange hjørner har en trekant, og hvor mange sider har den?', '3 hjørner og 3 sider'],
+        ['En figur har fire sider og fire hjørner. Hva kaller vi en slik figur?', 'Firkant'],
+        ['Hvor mange sider har en sekskant?', '6 sider'],
+        ['En mangekant har åtte sider. Hvor mange hjørner har den?', '8 hjørner'],
+        ['Hvor mange sider og hjørner har figuren?', '5 sider og 5 hjørner', shape('pentagon')],
+        ['En figur er rund og har ingen hjørner. Hva heter figuren?', 'Sirkel'],
+      ],
+      n,
+    ),
+  (n) =>
+    fromList(
+      [
+        ['Hvor mange flere hjørner har en sekskant enn en firkant?', '2 flere hjørner (6 − 4 = 2)'],
+        ['Sorter figurene etter antall sider, fra færrest til flest: femkant, trekant, åttekant, firkant.', 'Trekant (3), firkant (4), femkant (5), åttekant (8)'],
+        ['Hva er likt, og hva er ulikt, ved en trekant og en sekskant?', 'Begge er mangekanter med like mange sider som hjørner. Trekanten har 3 sider og 3 hjørner, mens sekskanten har 6 sider og 6 hjørner.'],
+        ['Sorter beskrivelsene: A har fem sider. B har ingen hjørner. C har tre hjørner. Hvilken er en trekant, en femkant og en sirkel?', 'A er en femkant, B er en sirkel og C er en trekant.'],
+        ['Hvor mange flere hjørner har figuren enn en firkant?', '4 flere hjørner. Figuren er en åttekant med 8 hjørner, og 8 − 4 = 4.', shape('octagon')],
+      ],
+      n,
+    ),
+  (n) =>
+    fromList(
+      [
+        ['Jeg er en mangekant med like mange sider som hjørner. Til sammen har jeg 10 sider og hjørner. Hvilken figur er jeg?', 'Femkant (5 sider og 5 hjørner)'],
+        ['Kan en mangekant ha tre sider og fire hjørner? Forklar.', 'Nei. En mangekant har like mange hjørner som sider, så tre sider gir tre hjørner.'],
+        ['Ola sier at en sekskant har fem hjørner. Har Ola rett? Forklar.', 'Nei. En sekskant har 6 sider og 6 hjørner.'],
+        ['Hvilken mangekant har dobbelt så mange hjørner som en firkant? Forklar.', 'Åttekant. En firkant har 4 hjørner, og 4 · 2 = 8.'],
+        [
+          'Figuren er en femkant. Forklar hvorfor den fortsatt ville vært en femkant om sidene hadde vært ulikt lange.',
+          'Den har 5 sider og 5 hjørner. Det er antall sider og hjørner som bestemmer at figuren er en femkant, ikke lengden på sidene.',
+          shape('pentagon'),
+        ],
+      ],
+      n,
+    ),
+)
+
+/** Firkanter: egenskaper ved kvadrat og rektangel → sammenligne og symmetri → resonnere om klassifisering. */
+const quadrilateralTasks = byLevel(
+  (n) =>
+    fromList(
+      [
+        ['Hvor mange rette vinkler har et kvadrat?', '4 rette vinkler'],
+        ['Hvor mange rette vinkler har rektangelet på figuren?', '4 rette vinkler', shape('rectangle')],
+        ['Et kvadrat har fire sider. Hva er spesielt med lengden på sidene?', 'Alle de fire sidene er like lange.'],
+        ['Hvor mange hjørner har et rektangel?', '4 hjørner'],
+        ['En firkant har fire like lange sider og fire rette vinkler. Hva heter figuren?', 'Kvadrat'],
+      ],
+      n,
+    ),
+  (n) =>
+    fromList(
+      [
+        ['Figuren er et kvadrat. Hvor mange symmetrilinjer har det?', '4 symmetrilinjer', shape('square')],
+        ['Rektangelet på figuren er ikke et kvadrat. Hvor mange symmetrilinjer har det?', '2 symmetrilinjer', shape('rectangle')],
+        ['Hva er likt, og hva er ulikt, ved et kvadrat og et rektangel?', 'Begge har 4 sider og 4 rette vinkler. Kvadratet har fire like lange sider, mens rektangelet har to par like lange motstående sider.'],
+        ['Sorter: A har fire like lange sider og fire rette vinkler. B har fire rette vinkler, og bare de motstående sidene er like lange. Hvilken er kvadrat, og hvilken er rektangel?', 'A er et kvadrat, og B er et rektangel.'],
+        ['En trekant har nøyaktig én symmetrilinje. Hva kan du si om sidene?', 'To av sidene er like lange.'],
+      ],
+      n,
+    ),
+  (n) =>
+    fromList(
+      [
+        ['Mia sier at et rektangel aldri kan være et kvadrat. Har Mia rett? Forklar.', 'Nei. Et rektangel med fire like lange sider er et kvadrat. Alle kvadrater er rektangler.'],
+        ['Kan en firkant ha fire rette vinkler uten å være et kvadrat? Forklar, og gi et eksempel.', 'Ja. Et rektangel har fire rette vinkler, men sidene trenger ikke være like lange.'],
+        ['Jeg er en firkant med fire rette vinkler. To av sidene mine er 3 cm, og to er 7 cm. Hvilken figur er jeg?', 'Rektangel'],
+        ['Hvor mange symmetrilinjer har et kvadrat, og hvor mange har et rektangel som ikke er et kvadrat? Forklar forskjellen.', 'Kvadratet har 4 symmetrilinjer, og rektangelet har 2. Fordi alle sidene i kvadratet er like lange, går det også symmetrilinjer gjennom hjørnene.'],
+        ['Firkanten på figuren har ingen rette vinkler. Kan den være et rektangel? Forklar.', 'Nei. Et rektangel må ha fire rette vinkler, og denne firkanten har ingen.', shape('quadrilateral')],
+      ],
+      n,
+    ),
+)
+
+/** Romfigurer: gjenkjenne og telle → flater og former → resonnere. */
+const solidTasks = byLevel(
+  (n) =>
+    fromList(
+      [
+        ['Hvor mange hjørner har en kube?', '8 hjørner'],
+        ['Hvor mange kanter har en terning?', '12 kanter'],
+        ['En romfigur er helt rund og har ingen kanter eller hjørner. Hva heter den?', 'Kule'],
+        ['Hvilken romfigur ligner mest på en hermetikkboks?', 'Sylinder'],
+        ['Hvor mange flater har en kube?', '6 flater'],
+      ],
+      n,
+    ),
+  (n) =>
+    fromList(
+      [
+        ['Hvilken form har endeflatene på en sylinder?', 'Sirkler. En sylinder har 2 sirkelformede endeflater og én krum sideflate.'],
+        ['Hvor mange flater har et trekantet prisme, og hvilke former har de?', '5 flater: 2 trekanter og 3 rektangler.'],
+        ['Hva er forskjellen på et trekantet prisme og en trekantet pyramide?', 'Prismet har to like trekantede endeflater og tre rektangulære sideflater. Pyramiden har en trekantet grunnflate og trekantede sideflater som møtes i ett toppunkt.'],
+        ['Hvor mange sideflater har en firkantet pyramide, og hvilken form har de?', '4 sideflater. De er trekanter.'],
+        ['En romfigur har 5 flater: én kvadratisk grunnflate og fire trekanter. Hva heter romfiguren?', 'Firkantet pyramide'],
+      ],
+      n,
+    ),
+  (n) =>
+    fromList(
+      [
+        ['Jeg har seks flater, men ikke alle er kvadrater. Hvilken romfigur kan jeg være?', 'Et firkantet prisme, for eksempel en eske.'],
+        ['Hvilke av romfigurene kule, kube og sylinder kan rulle? Forklar.', 'Kulen og sylinderen kan rulle fordi de har krumme flater. Kuben har bare plane flater og ruller ikke jevnt.'],
+        ['Ali sier at alle romfigurer med seks flater er kuber. Har Ali rett? Forklar.', 'Nei. Et firkantet prisme har også seks flater, men flatene trenger ikke være kvadrater.'],
+        ['En firkantet pyramide og en kube står på bordet. Hvilken har flest hjørner, og hvor mange flere?', 'Kuben har 8 hjørner og pyramiden har 5, så kuben har 3 flere.'],
+        ['Hvor mange kanter har et trekantet prisme? Forklar hvordan du teller.', '9 kanter: 3 kanter i hver av de to trekantene og 3 kanter som går mellom dem.'],
+      ],
+      n,
+    ),
+)
+
+const ANGLE_NAMES = (d: number) => (d < 90 ? 'spiss' : d === 90 ? 'rett' : 'stump')
+
+/** Vinkeltyper: klassifisere → sammenligne og dele opp en rett vinkel → resonnere og forklare. */
+const angleTypeTasks = byLevel(
+  (n) =>
+    five((i): TextSpec => {
+      // Appen tegner vinkelen med det samme gradtallet (rett vinkel med rettvinkelsymbol).
+      const d = pick([30, 120, 45, 150, 60, 90, 100, 20, 135, 75], i + n)
+      return {
+        text: `Vinkelen på figuren er ${d}°. Er den spiss, rett eller stump?`,
+        solution: `${capitalize(ANGLE_NAMES(d))} vinkel (${d < 90 ? 'mindre enn 90°' : d === 90 ? 'nøyaktig 90°' : 'mellom 90° og 180°'})`,
+        figure: { kind: 'angle', angleType: d < 90 ? 'acute' : d === 90 ? 'right' : 'obtuse', degrees: d },
+      }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      if (i % 2 === 0) {
+        const x = 10 * vary(n, i, 2, 7)
+        return { text: `En rett vinkel deles i to. Den ene delen er ${x}°. Hvor stor er den andre delen, og hva slags vinkler er begge delene?`, solution: `${90 - x}°. Begge delene er spisse vinkler.` }
+      }
+      const [a, b] = [pick([40, 70, 85, 60, 35], i + n), pick([110, 95, 140, 125, 160], i + n)]
+      return { text: `Hvilken vinkel er størst: ${a}° eller ${b}°? Hva slags vinkel er den største?`, solution: `${b}° er størst. ${b}° er en stump vinkel.` }
+    }),
+  (n) =>
+    five((i): TextSpec => {
+      if (i % 2 === 0) {
+        const d = pick([85, 95, 80, 100, 88, 92], i + n)
+        return { text: `Lars sier at en vinkel på ${d}° er rett fordi den er nesten 90°. Har Lars rett? Forklar.`, solution: `Nei. En rett vinkel er nøyaktig 90°. ${d}° er en ${ANGLE_NAMES(d)} vinkel.` }
+      }
+      const h = pick([3, 2, 4, 1, 5], i + n)
+      const d = 30 * h
+      return { text: `Viserne på en klokke peker på 12 og ${h}. Hver time på urskiven er 30°. Hvor stor er vinkelen mellom viserne, og hva slags vinkel er det?`, solution: `${d}°, en ${ANGLE_NAMES(d)} vinkel (${h} · 30 = ${d}).` }
+    }),
+)
+
+// ---------------------------------------------------------------------------------------
 // Regler per undertema
 
 const skillTasks: Record<string, Generator> = {
@@ -405,45 +631,15 @@ const skillTasks: Record<string, Generator> = {
   // Modelloppgaver: eleven tegner, leser eller tolker en konkret representasjon beskrevet i teksten.
   'div.modeller': (level, n) => divisionModelTasks(level, n),
 
-  // Geometri
-  'geo.2d': byLevel(
-    (n) =>
-      five((i): TaskSpec => {
-        const k = vary(n, i, 2, 9)
-        return i % 2 === 0
-          ? [H, k, '*', 3, `En trekant har 3 hjørner. Hvor mange hjørner har ${k} trekanter?`]
-          : [H, k, '*', 4, `En firkant har 4 sider. Hvor mange sider har ${k} firkanter?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const s = vary(n, i, 3, 12)
-        return i % 2 === 0
-          ? [H, 4, '*', s, `Et kvadrat har sider på ${s} cm. Hva er omkretsen?`]
-          : [H, 6, '*', s, `En sekskant har seks like lange sider på ${s} cm. Hva er omkretsen?`]
-      }),
-    (n) =>
-      five((i): TextSpec => {
-        const [l, b] = [vary(n, i, 4, 12), vary(n + 1, i, 2, 7)]
-        return { text: `Et rektangel er ${l} cm langt og ${b} cm bredt. Hva er omkretsen?`, solution: `${2 * (l + b)} cm  (${l} + ${b} + ${l} + ${b})` }
-      }),
-  ),
-  'geo.3d': byLevel(
-    (n) =>
-      five((i): TaskSpec => {
-        const k = vary(n, i, 2, 8)
-        return [H, k, '*', 6, `En kube har 6 sideflater. Hvor mange sideflater har ${k} kuber til sammen?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const k = vary(n, i, 2, 9)
-        return [H, k, '*', 8, `En kube har 8 hjørner. Hvor mange hjørner har ${k} kuber til sammen?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const k = vary(n, i, 2, 9)
-        return [H, k, '*', 12, `En kube har 12 kanter. Hvor mange kanter har ${k} kuber til sammen?`]
-      }),
-  ),
+  // Geometri. Økter med profil (Geometri-perioden) får grunnoppgaver etter progresjonen gjenkjenne → sammenligne
+  // → resonnere; uten profil (repetisjon) lages de samme oppgavene som før.
+  'geo.2d': (level, n, profile) =>
+    profile?.taskVariant === 'mangekanter'
+      ? polygonTasks(level, n)
+      : profile?.taskVariant === 'firkanter'
+        ? quadrilateralTasks(level, n)
+        : oldPlaneTasks(level, n),
+  'geo.3d': (level, n, profile) => (profile?.area === 'tredimensjonale-figurer' ? solidTasks(level, n) : oldSolidTasks(level, n)),
   'geo.3d-til-2d': (level, n) => {
     const nets = [
       ['En kube brettes ut. Hvor mange kvadrater består utbrettingen av?', '6 kvadrater'],
@@ -454,28 +650,12 @@ const skillTasks: Record<string, Generator> = {
     ]
     return five((i): TextSpec => {
       const [q, a] = pick(nets, i + n)
-      const prefix = level === 3 ? 'Tegn utbrettingen. ' : ''
-      const suffix = level === 2 ? ' Forklar hvordan du vet det.' : ''
-      return { text: `${prefix}${q}${suffix}`, solution: a }
+      // Elevvisningen har ikke tegneverktøy: nivå 3 forklarer sammenhengen i stedet for å tegne nettet.
+      const suffix = level === 2 ? ' Forklar hvordan du vet det.' : level === 3 ? ' Forklar hvilke flater på romfiguren figurene i nettet kommer fra.' : ''
+      return { text: `${q}${suffix}`, solution: a }
     })
   },
-  'geo.vinkler': byLevel(
-    (n) =>
-      five((i): TaskSpec => {
-        const x = 10 * vary(n, i, 1, 8)
-        return [H, 90, '-', x, `En rett vinkel er 90°. Den deles i to vinkler. Den ene er ${x}°. Hvor stor er den andre?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const x = 10 * vary(n, i, 2, 16)
-        return [H, 180, '-', x, `Vinklene på en rett linje er 180° til sammen. Den ene vinkelen er ${x}°. Hvor stor er den andre?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const two = 10 * vary(n, i, 9, 15)
-        return [H, 180, '-', two, `Vinklene i en trekant er 180° til sammen. To av vinklene er ${two}° til sammen. Hvor stor er den tredje?`]
-      }),
-  ),
+  'geo.vinkler': (level, n, profile) => (profile?.taskVariant === 'klassifisere' ? angleTypeTasks(level, n) : angleSumTasks(level, n)),
 
   // Problemløsing
   'prob.regnefortellinger': byLevel(
@@ -878,7 +1058,7 @@ const skillTasks: Record<string, Generator> = {
 }
 
 /** To oppgaver er like når teksten, eller regnestykket, er det samme. */
-export const taskKey = (task: GeneratedTask) => (isTextSpec(task) ? task.text : `${task[1]} ${task[2]} ${task[3]}`)
+export const taskKey = (task: GeneratedTask) => (isTextSpec(task) ? `${task.text}${task.figure ? `|${visualSignature(task.figure)}` : ''}` : `${task[1]} ${task[2]} ${task[3]}`)
 
 function round(skills: string[], level: Level, n: number, profile?: TaskProfile): GeneratedTask[] {
   if (skills.length === 1) return skillTasks[skills[0]](level, n, profile)
@@ -1206,6 +1386,76 @@ const divisionProfile = (
     ) as Record<Level, LevelProfile>,
   }
 }
+
+// ---------------------------------------------------------------------------------------
+// Geometri: fire fagområder fordelt på seks økter i tre uker – todimensjonale figurer (økt 1–2),
+// tredimensjonale figurer (økt 3), fra tredimensjonal til todimensjonal (økt 4) og vinkler (økt 5–6).
+// Nivåene: gjenkjenne og beskrive → sammenligne og bruke egenskaper → resonnere og forklare.
+
+const GEOMETRY_SUPPORT: Record<Level, string> = {
+  1: 'Gjenkjenne og beskrive: korte, konkrete spørsmål om navn, sider, hjørner, kanter, flater og enkle vinkeltyper.',
+  2: 'Sammenligne og bruke egenskaper: sortere, sammenligne, symmetri, flater og nett, enkle vinkelberegninger. Mindre støtte enn på nivå 1.',
+  3: 'Resonnere og forklare: vurdere påstander, begrunne klassifiseringer, lage eller undersøke nett og trekke slutninger fra egenskaper.',
+}
+
+const GEOMETRY_LEVELS: Record<GeometryArea, [LevelText, LevelText, LevelText]> = {
+  'todimensjonale-figurer': [
+    { title: 'Plane figurer – gjenkjenne', subtitle: 'Navn, sider og hjørner.', description: 'Kjenne igjen trekanter, firkanter og andre mangekanter og telle sider og hjørner.', numbers: 'Mangekanter med 3 til 8 sider' },
+    { title: 'Plane figurer – sammenligne', subtitle: 'Egenskaper og symmetri.', description: 'Sammenligne og sortere figurer etter sider, hjørner og rette vinkler, og finne symmetrilinjer.', numbers: 'Mangekanter med 3 til 8 sider' },
+    { title: 'Plane figurer – resonnere', subtitle: 'Påstander og egenskaper.', description: 'Vurdere påstander om figurer og finne en figur ut fra flere egenskaper.', numbers: 'Mangekanter med 3 til 8 sider' },
+  ],
+  'tredimensjonale-figurer': [
+    { title: 'Romfigurer – gjenkjenne', subtitle: 'Navn, flater, kanter og hjørner.', description: 'Kjenne igjen kube, kule, sylinder, prisme og pyramide og telle flater, kanter og hjørner.', numbers: 'Kube, kule, sylinder, prisme og pyramide' },
+    { title: 'Romfigurer – sammenligne', subtitle: 'Flater og former.', description: 'Beskrive formen på flatene og sammenligne romfigurer.', numbers: 'Kube, kule, sylinder, prisme og pyramide' },
+    { title: 'Romfigurer – resonnere', subtitle: 'Kjennetegn og påstander.', description: 'Finne en romfigur ut fra flere kjennetegn og forklare hvorfor én egenskap ikke alltid er nok.', numbers: 'Kube, kule, sylinder, prisme og pyramide' },
+  ],
+  'fra-3d-til-2d': [
+    { title: 'Fra rom til plan – gjenkjenne', subtitle: 'Avtrykk og flater.', description: 'Finne den plane figuren en flate på en romfigur gir, og telle figurene i et enkelt nett.', numbers: 'Kube, eske, sylinder, prisme og pyramide' },
+    { title: 'Fra rom til plan – sammenligne', subtitle: 'Nett og former.', description: 'Beskrive hvilke plane figurer nettet til en romfigur består av, og forklare hvorfor.', numbers: 'Kube, eske, sylinder, prisme og pyramide' },
+    { title: 'Fra rom til plan – resonnere', subtitle: 'Lage og vurdere nett.', description: 'Forklare hvilke figurer et nett består av, og vurdere om et nett kan brettes til romfiguren.', numbers: 'Kube, eske, sylinder, prisme og pyramide' },
+  ],
+  vinkler: [
+    { title: 'Vinkler – gjenkjenne', subtitle: 'Spiss, rett og stump.', description: 'Kjenne igjen og navngi spisse, rette og stumpe (butte) vinkler ut fra gradtall.', numbers: 'Vinkler fra 10° til 180°' },
+    { title: 'Vinkler – sammenligne og regne', subtitle: 'Sortere og dele opp.', description: 'Sortere vinkler og finne den manglende delen av en rett vinkel eller en rett linje.', numbers: 'Vinkler fra 10° til 180°' },
+    { title: 'Vinkler – resonnere', subtitle: 'Forklare og løse sammensatte oppgaver.', description: 'Begrunne en klassifisering, finne feil og løse vinkeloppgaver i flere steg.', numbers: 'Vinkler fra 10° til 360°' },
+  ],
+}
+
+const GEOMETRY_FORMATS: Record<GeometryArea, string[]> = {
+  'todimensjonale-figurer': ['Korte tekstoppgaver om sider, hjørner, egenskaper og symmetri, med en plan figur appen tegner (feltet figur) som teksten viser til'],
+  'tredimensjonale-figurer': ['Korte tekstoppgaver om flater, kanter, hjørner og former på romfigurer'],
+  'fra-3d-til-2d': ['Korte tekstoppgaver om avtrykk og nett, der nettet beskrives med ord'],
+  vinkler: ['Korte tekstoppgaver om vinkeltyper, gradtall og vinkelberegninger, med en vinkel appen tegner (feltet figur) som teksten viser til'],
+}
+
+/** Øktprofil i Geometri. */
+const geometryProfile = (
+  area: GeometryArea,
+  focus: string,
+  { secondaryAreas, taskVariant }: { secondaryAreas?: GeometryArea[]; taskVariant?: 'mangekanter' | 'firkanter' | 'klassifisere' } = {},
+): TaskProfile => ({
+  focus,
+  area,
+  ...(secondaryAreas && { secondaryAreas }),
+  ...(taskVariant && { taskVariant }),
+  operations: area === 'vinkler' ? ['+', '-'] : [],
+  formats: GEOMETRY_FORMATS[area],
+  steps: 'Ett faglig steg på nivå 1. Nivå 2 kan ha sammenligning eller ett regnesteg, og nivå 3 kan be om forklaring eller begrunnelse.',
+  avoid: [
+    'Areal, omkrets og volum',
+    'Henvisninger til figurer eller bilder som ikke vises («se figuren under»)',
+    'Oppgaver der eleven skal tegne – elevvisningen har bare et tekstfelt',
+    'Sider om flater på romfigurer, eller flater og kanter om plane figurer',
+    'Andre regnearter eller tema enn geometri',
+  ],
+  figures: false,
+  levels: Object.fromEntries(
+    GEOMETRY_LEVELS[area].map((text, i) => {
+      const level = (i + 1) as Level
+      return [level, { ...text, support: GEOMETRY_SUPPORT[level] }]
+    }),
+  ) as Record<Level, LevelProfile>,
+})
 
 /** Måleøkt. */
 const measureProfile = (
@@ -1635,9 +1885,60 @@ export const unitSpecs: UnitSpec[] = [
     area: 'Geometri',
     description: 'Elevene beskriver todimensjonale og tredimensjonale figurer, bretter ut romfigurer og undersøker vinkler.',
     weeks: [
-      { title: 'Uke 1 - todimensjonale figurer', sessions: [s('Mangekanter – sider og hjørner', 'geo.2d'), s('Omkrets av mangekanter', 'geo.2d')] },
-      { title: 'Uke 2 - tredimensjonale figurer', sessions: [s('Kube, prisme, pyramide og sylinder', 'geo.3d'), s('Fra tredimensjonal til todimensjonal', 'geo.3d-til-2d')] },
-      { title: 'Uke 3 - vinkler', sessions: [s('Rette, spisse og butte vinkler', 'geo.vinkler'), s('Vinkler i trekanter', 'geo.vinkler')] },
+      {
+        title: 'Uke 1 - todimensjonale figurer',
+        sessions: [
+          p(
+            'Mangekanter – sider og hjørner',
+            ['geo.2d'],
+            geometryProfile('todimensjonale-figurer', 'Kjenne igjen og beskrive mangekanter: navn, sider og hjørner, sammenligne figurer og trekke slutninger fra egenskaper.', {
+              taskVariant: 'mangekanter',
+            }),
+          ),
+          // Tidligere «Omkrets av mangekanter»: omkrets er ikke med i Geometri (det hører til Måling). Samme ID og plass.
+          p(
+            'Firkanter – egenskaper og symmetri',
+            ['geo.2d'],
+            geometryProfile('todimensjonale-figurer', 'Egenskapene til kvadrat og rektangel (sider og rette vinkler), symmetrilinjer, og at et kvadrat også er et rektangel.', {
+              taskVariant: 'firkanter',
+            }),
+          ),
+        ],
+      },
+      {
+        title: 'Uke 2 - tredimensjonale figurer',
+        sessions: [
+          p(
+            'Kube, prisme, pyramide og sylinder',
+            ['geo.3d'],
+            geometryProfile('tredimensjonale-figurer', 'Kjenne igjen og beskrive romfigurer: kube, kule, sylinder, prisme og pyramide, med flater, kanter og hjørner.'),
+          ),
+          p(
+            'Fra tredimensjonal til todimensjonal',
+            ['geo.3d-til-2d'],
+            geometryProfile('fra-3d-til-2d', 'Sammenhengen mellom romfigurer og plane figurer: avtrykk av flater, nett og hvilke figurer et nett består av.', {
+              secondaryAreas: ['tredimensjonale-figurer'],
+            }),
+          ),
+        ],
+      },
+      {
+        title: 'Uke 3 - vinkler',
+        sessions: [
+          p(
+            'Rette, spisse og butte vinkler',
+            ['geo.vinkler'],
+            geometryProfile('vinkler', 'Kjenne igjen, sammenligne og klassifisere vinkler: spiss (under 90°), rett (90°) og stump eller butt (mellom 90° og 180°).', {
+              taskVariant: 'klassifisere',
+            }),
+          ),
+          p(
+            'Vinkler i trekanter',
+            ['geo.vinkler'],
+            geometryProfile('vinkler', 'Regne med vinkler: den manglende delen av en rett vinkel (90°) og en rett linje (180°), og vinkelsummen i en trekant (180°).'),
+          ),
+        ],
+      },
     ],
     goals: [
       'Beskrive todimensjonale figurer ut fra sider og hjørner.',
@@ -1646,9 +1947,9 @@ export const unitSpecs: UnitSpec[] = [
       'Kjenne igjen og sammenligne vinkler.',
     ],
     levels: [
-      { title: 'Sider og hjørner', subtitle: 'Trekanter og firkanter.', description: 'Telle sider, hjørner og flater.' },
-      { title: 'Omkrets og flater', subtitle: 'Kvadrater og romfigurer.', description: 'Regne ut omkrets og telle flater.' },
-      { title: 'Vinkler og utbrettinger', subtitle: 'Vinkelsum og utbrettinger.', description: 'Bruke at vinklene er 180° til sammen.' },
+      { title: 'Gjenkjenne og beskrive', subtitle: 'Figurer, sider, hjørner og flater.', description: 'Kjenne igjen figurer og telle sider, hjørner, kanter og flater.' },
+      { title: 'Sammenligne og bruke egenskaper', subtitle: 'Symmetri, nett og vinkler.', description: 'Sammenligne og sortere figurer, bruke nett og regne enkelt med vinkler.' },
+      { title: 'Resonnere og forklare', subtitle: 'Påstander og begrunnelser.', description: 'Vurdere påstander, undersøke nett og begrunne svaret.' },
     ],
   },
   {

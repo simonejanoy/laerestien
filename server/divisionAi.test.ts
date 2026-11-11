@@ -461,7 +461,7 @@ describe('12. andre temaer og referansebanker er uendret', () => {
     assert.equal(hash(placeValueBankFile), '21ba85a512aeffed')
     assert.equal(multiplicationReferences.length, 54)
     assert.equal(placeValueReferences.length, 45)
-    assert.equal(referenceBanks.length, 54 + 45 + 36)
+    assert.equal(referenceBanks.filter((r) => r.topic !== 'geometri').length, 54 + 45 + 36)
   })
 
   it('utvalget i de andre bankene er det samme som før (ingen divisjonstype, ingen divisjonsreferanser)', () => {
@@ -473,7 +473,7 @@ describe('12. andre temaer og referansebanker er uendret', () => {
   })
 
   it('regelversjon, modeller og tidsgrenser er uendret', () => {
-    assert.equal(aiConfig.rulesVersion, '7')
+    assert.equal(aiConfig.rulesVersion, '8')
     assert.equal(aiConfig.primaryModel, 'gemini-3.8-flash')
     assert.equal(aiConfig.fallbackModel, 'gemini-3.5-flash-lite')
     assert.deepEqual(aiConfig.timeoutMsByUse.tasks, { primary: 4000 })

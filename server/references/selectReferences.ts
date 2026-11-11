@@ -47,6 +47,13 @@ export interface SelectOptions {
 }
 
 /**
+ * Referanser om deltema som ingen av øktene i temaet har (i Geometri: omkrets og areal, som hører til
+ * Måling). De blir værende i banken, men velges ikke.
+ */
+const OUTSIDE_SESSIONS = /\bomkrets|\bareal\b/i
+const fitsSessions = (ref: ReferenceTask) => !(ref.topic === 'geometri' && OUTSIDE_SESSIONS.test(`${ref.studentText} ${ref.purpose}`))
+
+/**
  * Divisjonstypen en referanse viser: typen hensikten nevner (ingen når den nevner begge), ellers typen
  * spørsmålet i oppgaveteksten viser. Null når referansen gjelder begge eller ingen av typene.
  */
@@ -74,13 +81,13 @@ export function selectReferences(bank: readonly ReferenceTask[], { area, seconda
     // Hovedfokus: alle plassene unntatt én går til hovedområdet; én støttereferanse fra et tilgrensende område.
     const main = selectReferences(bank, { area, level, seed, max: max - 1, divisionType })
     const support = shuffle(
-      bank.filter((r) => r.level === level && secondaryAreas.includes(r.area) && r.area !== area && fitsType(r, divisionType)),
+      bank.filter((r) => r.level === level && secondaryAreas.includes(r.area) && r.area !== area && fitsType(r, divisionType) && fitsSessions(r)),
       seed + level * 7919 + 1,
     ).slice(0, 1)
     return [...main, ...support]
   }
   const pool = shuffle(
-    bank.filter((r) => r.area === area && r.level === level && fitsType(r, divisionType)),
+    bank.filter((r) => r.area === area && r.level === level && fitsType(r, divisionType) && fitsSessions(r)),
     seed + level * 7919,
   )
   const chosen: ReferenceTask[] = []

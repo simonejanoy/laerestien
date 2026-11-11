@@ -1,4 +1,4 @@
-import type { AiTaskMeta, DivisionType, ReferenceArea } from '../ai/contract.ts'
+import type { AiTaskMeta, AiVisual, DivisionType, ReferenceArea } from '../ai/contract.ts'
 
 export type Role = 'teacher' | 'student'
 
@@ -182,12 +182,17 @@ export interface Task {
   aiMeta?: AiTaskMeta
 }
 
-/** Figur som tegnes til en oppgave: rutefigur (areal) eller analog klokke. */
+/**
+ * Figur som tegnes til en oppgave: rutefigur (areal), analog klokke, plan figur eller vinkel (geometri).
+ * Appen tegner alle selv som SVG (components/ui/TaskFigure.tsx).
+ */
 export type TaskFigure =
   /** «#» er en rute, «.» er tomt. */
   | { kind: 'grid'; rows: string[] }
   /** «HH:MM» – vises på en analog klokke. */
   | { kind: 'clock'; time: string }
+  /** Plan figur (trekant, kvadrat …) eller vinkel (spiss, rett, stump) – se AiVisual. */
+  | AiVisual
 
 /** Fritekstoppgave, f.eks. laget med AI-assistenten. Eleven skriver svaret, og læreren vurderer det. */
 export interface TextTask {

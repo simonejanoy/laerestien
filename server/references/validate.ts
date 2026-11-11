@@ -1,7 +1,7 @@
-import { DIVISION_AREAS, MULTIPLICATION_AREAS, PLACE_VALUE_AREAS } from '../../src/ai/contract.ts'
+import { DIVISION_AREAS, GEOMETRY_AREAS, MULTIPLICATION_AREAS, PLACE_VALUE_AREAS } from '../../src/ai/contract.ts'
 import type { ReferenceBank, ReferenceTask } from './types.ts'
 
-// Kontroll av referansebankene. Kjøres når serveren starter (multiplication.ts, placeValue.ts, division.ts) og i testene.
+// Kontroll av referansebankene. Kjøres når serveren starter (multiplication.ts, placeValue.ts, division.ts, geometry.ts) og i testene.
 
 /** Hva en bank skal inneholde: tema, ID-prefiks (M1-N1-01, T1-N1-01) og fagområdene i rekkefølge. */
 export interface BankSpec {
@@ -13,6 +13,7 @@ export interface BankSpec {
 export const MULTIPLICATION_BANK: BankSpec = { topic: 'multiplikasjon', idPrefix: 'M', areas: MULTIPLICATION_AREAS }
 export const PLACE_VALUE_BANK: BankSpec = { topic: 'tall-og-plassverdi', idPrefix: 'T', areas: PLACE_VALUE_AREAS }
 export const DIVISION_BANK: BankSpec = { topic: 'divisjon', idPrefix: 'D', areas: DIVISION_AREAS }
+export const GEOMETRY_BANK: BankSpec = { topic: 'geometri', idPrefix: 'G', areas: GEOMETRY_AREAS }
 const REQUIRED_TEXT = ['id', 'topic', 'area', 'areaTitle', 'title', 'format', 'purpose', 'studentText', 'solution'] as const
 
 export interface BankCheck {
@@ -206,6 +207,7 @@ export function validateReferenceBank(raw: unknown, expectedCount: number, spec:
   if (bank.referenceCount !== refs.length) errors.push(`referenceCount er ${bank.referenceCount}, men lista har ${refs.length}.`)
 
   const ids = new Set<string>()
+  const texts = new Set<string>()
   const perArea = new Map<string, Map<number, number>>()
   const areaTitles = new Map<string, string>()
 
@@ -225,6 +227,10 @@ export function validateReferenceBank(raw: unknown, expectedCount: number, spec:
 
     if (ids.has(ref.id)) errors.push(`${where}: ID-en er brukt før.`)
     ids.add(ref.id)
+    // Ingen identiske elevtekster (små/store bokstaver og mellomrom teller ikke).
+    const studentText = typeof ref.studentText === 'string' ? ref.studentText.trim().toLowerCase().replace(/\s+/g, ' ') : ''
+    if (studentText && texts.has(studentText)) errors.push(`${where}: elevteksten finnes allerede i en annen referanse.`)
+    texts.add(studentText)
 
     const id = idPattern.exec(ref.id)
     if (!id) errors.push(`${where}: ID-en følger ikke mønsteret ${spec.idPrefix}1-N1-01.`)

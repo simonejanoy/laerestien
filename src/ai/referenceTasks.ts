@@ -2,6 +2,7 @@ import { answerOf, answerProblem, expressionOf, formatNumber } from '../features
 import { strategySupport } from '../features/topics/multiplicationStrategies.ts'
 import type { LevelGroup, Operator, SessionTask, TaskProfile } from '../types/index.ts'
 import {
+  visualSignature,
   MAX_EXISTING_TASKS,
   MAX_REFERENCE_TASKS,
   type AiExistingTask,
@@ -129,7 +130,8 @@ export function toAiProfile(profile: TaskProfile): AiSessionProfile {
 export function summarizeExisting(levelTasks: SessionTask[]): AiExistingTask[] {
   return levelTasks.slice(0, MAX_EXISTING_TASKS).map((task): AiExistingTask => {
     if (task.kind === 'text') {
-      return { taskType: TEXT_TASK, text: task.text.trim().slice(0, 300), ...(task.figure && { figure: true }) }
+      const kind = task.figure?.kind === 'shape' || task.figure?.kind === 'angle' ? visualSignature(task.figure) : ''
+      return { taskType: TEXT_TASK, text: task.text.trim().slice(0, 300), ...(task.figure && { figure: true }), ...(kind && { figureKind: kind }) }
     }
     return { taskType: task.type, instruction: task.instruction.trim(), a: task.a, operator: task.operator, b: task.b }
   })

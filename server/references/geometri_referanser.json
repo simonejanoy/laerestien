@@ -1,0 +1,656 @@
+{
+  "schemaVersion": 1,
+  "topic": "geometri",
+  "description": "Originale referanseoppgaver for temaet Geometri på 4. trinn.",
+  "referenceCount": 36,
+  "references": [
+    {
+      "id": "G1-N1-01",
+      "topic": "geometri",
+      "area": "todimensjonale-figurer",
+      "areaTitle": "Todimensjonale figurer",
+      "level": 1,
+      "title": "Tre sider og tre hjørner",
+      "format": "Kort svar",
+      "purpose": "Kjenne igjen en trekant ut fra egenskaper.",
+      "studentText": "En figur har tre rette sider og tre hjørner. Hva heter figuren?",
+      "solution": "Trekant",
+      "representationHint": null,
+      "teacherNote": "Figuren er en trekant uansett hvor lange sidene er.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_todimensjonale_figurer.pdf"
+      }
+    },
+    {
+      "id": "G1-N1-02",
+      "topic": "geometri",
+      "area": "todimensjonale-figurer",
+      "areaTitle": "Todimensjonale figurer",
+      "level": 1,
+      "title": "Tell sider",
+      "format": "Kort svar",
+      "purpose": "Koble navn på mangekant til antall sider.",
+      "studentText": "Hvor mange sider og hjørner har en femkant?",
+      "solution": "5 sider og 5 hjørner",
+      "representationHint": "Eleven kan tegne en femkant før svaret skrives.",
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "01_todimensjonale_figurer.pdf"
+      }
+    },
+    {
+      "id": "G1-N1-03",
+      "topic": "geometri",
+      "area": "todimensjonale-figurer",
+      "areaTitle": "Todimensjonale figurer",
+      "level": 1,
+      "title": "Tegn et kvadrat",
+      "format": "Tegning",
+      "purpose": "Vise de viktigste egenskapene til et kvadrat.",
+      "studentText": "Tegn et kvadrat. Marker de fire like lange sidene og de fire rette vinklene.",
+      "solution": "En lukket figur med fire like lange sider og fire rette vinkler.",
+      "representationHint": null,
+      "teacherNote": "Tegningen trenger ikke ha en bestemt størrelse.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_todimensjonale_figurer.pdf"
+      }
+    },
+    {
+      "id": "G1-N2-01",
+      "topic": "geometri",
+      "area": "todimensjonale-figurer",
+      "areaTitle": "Todimensjonale figurer",
+      "level": 2,
+      "title": "Kvadrat eller rektangel",
+      "format": "Forklaring",
+      "purpose": "Sammenligne egenskapene til to firkanter.",
+      "studentText": "Et kvadrat og et rektangel har begge fire rette vinkler. Hva er forskjellen på sidene deres?",
+      "solution": "Et kvadrat har fire like lange sider. Et rektangel har to par like lange motstående sider.",
+      "representationHint": null,
+      "teacherNote": "Et kvadrat er også et spesielt rektangel, men her sammenlignes de vanlige kjennetegnene.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_todimensjonale_figurer.pdf"
+      }
+    },
+    {
+      "id": "G1-N2-02",
+      "topic": "geometri",
+      "area": "todimensjonale-figurer",
+      "areaTitle": "Todimensjonale figurer",
+      "level": 2,
+      "title": "Sorter figurene",
+      "format": "Klassifisering",
+      "purpose": "Klassifisere figurer ved hjelp av sider og vinkler.",
+      "studentText": "Sorter disse beskrivelsene som trekant, firkant eller sirkel: A har ingen rette sider. B har tre sider. C har fire sider.",
+      "solution": "A er sirkel, B er trekant, C er firkant.",
+      "representationHint": null,
+      "teacherNote": "Oppgaven bruker egenskaper i stedet for bilder.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_todimensjonale_figurer.pdf"
+      }
+    },
+    {
+      "id": "G1-N2-03",
+      "topic": "geometri",
+      "area": "todimensjonale-figurer",
+      "areaTitle": "Todimensjonale figurer",
+      "level": 2,
+      "title": "Symmetrilinjer",
+      "format": "Tegning og kort svar",
+      "purpose": "Utforske speilsymmetri i kjente figurer.",
+      "studentText": "Tegn et kvadrat og et rektangel. Tegn alle symmetrilinjene du finner i hver figur.",
+      "solution": "Kvadratet har 4 symmetrilinjer. Et vanlig rektangel som ikke er et kvadrat, har 2.",
+      "representationHint": null,
+      "teacherNote": "Presiser at rektangelet ikke skal være et kvadrat.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_todimensjonale_figurer.pdf"
+      }
+    },
+    {
+      "id": "G1-N3-01",
+      "topic": "geometri",
+      "area": "todimensjonale-figurer",
+      "areaTitle": "Todimensjonale figurer",
+      "level": 3,
+      "title": "Er påstanden riktig?",
+      "format": "Vurdering",
+      "purpose": "Resonnere med egenskaper og delmengder.",
+      "studentText": "En elev sier: Alle kvadrater er rektangler, men ikke alle rektangler er kvadrater. Er påstanden riktig? Forklar.",
+      "solution": "Ja. Et kvadrat har fire rette vinkler og oppfyller derfor kravene til et rektangel, men et rektangel trenger ikke ha fire like lange sider.",
+      "representationHint": null,
+      "teacherNote": "Godta forklaringer som tydelig bruker egenskapene.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_todimensjonale_figurer.pdf"
+      }
+    },
+    {
+      "id": "G1-N3-02",
+      "topic": "geometri",
+      "area": "todimensjonale-figurer",
+      "areaTitle": "Todimensjonale figurer",
+      "level": 3,
+      "title": "Finn figuren",
+      "format": "Logisk resonnering",
+      "purpose": "Kombinere flere geometriske egenskaper.",
+      "studentText": "Jeg er en firkant. Jeg har to par parallelle sider og fire like lange sider, men ingen rette vinkler. Hvilken figur kan jeg være?",
+      "solution": "Rombe",
+      "representationHint": "Eleven kan tegne figuren som støtte.",
+      "teacherNote": "En rombe har fire like sider og motstående sider parallelle.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_todimensjonale_figurer.pdf"
+      }
+    },
+    {
+      "id": "G1-N3-03",
+      "topic": "geometri",
+      "area": "todimensjonale-figurer",
+      "areaTitle": "Todimensjonale figurer",
+      "level": 3,
+      "title": "Sammenlign to firkanter",
+      "format": "Tegning og forklaring",
+      "purpose": "Eleven bruker geometriske egenskaper til å sammenligne og klassifisere todimensjonale figurer.",
+      "studentText": "Tegn to forskjellige firkanter. Beskriv minst én egenskap de har felles, og minst én egenskap som er forskjellig.",
+      "solution": "Et gyldig svar kan for eksempel sammenligne et kvadrat og et rektangel. Begge har fire sider og fire rette vinkler. Kvadratet har fire like lange sider, mens rektangelet kan ha to lange og to korte sider.",
+      "representationHint": null,
+      "teacherNote": "Godta andre par av firkanter når egenskapene som beskrives, er riktige.",
+      "source": {
+        "kind": "gruppen",
+        "document": "01_todimensjonale_figurer.pdf"
+      }
+    },
+    {
+      "id": "G2-N1-01",
+      "topic": "geometri",
+      "area": "tredimensjonale-figurer",
+      "areaTitle": "Tredimensjonale figurer",
+      "level": 1,
+      "title": "Seks kvadratiske flater",
+      "format": "Kort svar",
+      "purpose": "Kjenne igjen en kube fra flatene.",
+      "studentText": "En romfigur har seks flater. Alle flatene er kvadrater. Hva heter romfiguren?",
+      "solution": "Kube",
+      "representationHint": null,
+      "teacherNote": "En kube har også 12 kanter og 8 hjørner.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_tredimensjonale_figurer.pdf"
+      }
+    },
+    {
+      "id": "G2-N1-02",
+      "topic": "geometri",
+      "area": "tredimensjonale-figurer",
+      "areaTitle": "Tredimensjonale figurer",
+      "level": 1,
+      "title": "Som en ball",
+      "format": "Kort svar",
+      "purpose": "Kjenne igjen en kule i hverdagen.",
+      "studentText": "Hvilken romfigur ligner mest på en vanlig ball?",
+      "solution": "Kule",
+      "representationHint": null,
+      "teacherNote": "Bruk ordet kule om den geometriske romfiguren.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_tredimensjonale_figurer.pdf"
+      }
+    },
+    {
+      "id": "G2-N1-03",
+      "topic": "geometri",
+      "area": "tredimensjonale-figurer",
+      "areaTitle": "Tredimensjonale figurer",
+      "level": 1,
+      "title": "Tell på kuben",
+      "format": "Kort svar",
+      "purpose": "Kjenne antall flater, kanter og hjørner i en kube.",
+      "studentText": "Hvor mange flater, kanter og hjørner har en kube?",
+      "solution": "6 flater, 12 kanter og 8 hjørner",
+      "representationHint": "Bruk gjerne en terning eller en liten eske som modell.",
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "02_tredimensjonale_figurer.pdf"
+      }
+    },
+    {
+      "id": "G2-N2-01",
+      "topic": "geometri",
+      "area": "tredimensjonale-figurer",
+      "areaTitle": "Tredimensjonale figurer",
+      "level": 2,
+      "title": "Sylinderens flater",
+      "format": "Forklaring",
+      "purpose": "Beskrive rette og krumme flater.",
+      "studentText": "En sylinder har to like, flate ender og én krum sideflate. Hvilken form har de to flate endene?",
+      "solution": "Sirkler",
+      "representationHint": null,
+      "teacherNote": "De to sirklene er parallelle og like store.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_tredimensjonale_figurer.pdf"
+      }
+    },
+    {
+      "id": "G2-N2-02",
+      "topic": "geometri",
+      "area": "tredimensjonale-figurer",
+      "areaTitle": "Tredimensjonale figurer",
+      "level": 2,
+      "title": "Prisme eller pyramide",
+      "format": "Klassifisering",
+      "purpose": "Skille mellom prisme og pyramide.",
+      "studentText": "En romfigur har to like trekantede endeflater og tre rektangulære sideflater. Hva heter romfiguren?",
+      "solution": "Trekantet prisme",
+      "representationHint": null,
+      "teacherNote": "De to like endeflatene gjør figuren til et prisme.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_tredimensjonale_figurer.pdf"
+      }
+    },
+    {
+      "id": "G2-N2-03",
+      "topic": "geometri",
+      "area": "tredimensjonale-figurer",
+      "areaTitle": "Tredimensjonale figurer",
+      "level": 2,
+      "title": "Sammenlign kube og firkantet prisme",
+      "format": "Sammenligning",
+      "purpose": "Sammenligne romfigurer ved hjelp av flater.",
+      "studentText": "Hva er likt, og hva er ulikt, ved en kube og et firkantet prisme?",
+      "solution": "Begge har 6 flater, 12 kanter og 8 hjørner. Alle flatene i en kube er kvadrater, mens et firkantet prisme kan ha rektangulære flater med ulike størrelser.",
+      "representationHint": null,
+      "teacherNote": "Godta tilsvarende presise sammenligninger.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_tredimensjonale_figurer.pdf"
+      }
+    },
+    {
+      "id": "G2-N3-01",
+      "topic": "geometri",
+      "area": "tredimensjonale-figurer",
+      "areaTitle": "Tredimensjonale figurer",
+      "level": 3,
+      "title": "Finn romfiguren",
+      "format": "Logisk resonnering",
+      "purpose": "Bestemme en romfigur fra flere kjennetegn.",
+      "studentText": "Jeg har én kvadratisk grunnflate. Fire trekantede sideflater møtes i ett toppunkt. Hvilken romfigur er jeg?",
+      "solution": "Firkantet pyramide",
+      "representationHint": null,
+      "teacherNote": "Grunnflaten bestemmer navnet på pyramiden.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_tredimensjonale_figurer.pdf"
+      }
+    },
+    {
+      "id": "G2-N3-02",
+      "topic": "geometri",
+      "area": "tredimensjonale-figurer",
+      "areaTitle": "Tredimensjonale figurer",
+      "level": 3,
+      "title": "Hva kan rulle?",
+      "format": "Forklaring",
+      "purpose": "Knytte overflate til hvordan romfigurer beveger seg.",
+      "studentText": "En kule, en sylinder og en kube skyves bortover gulvet. Hvilke kan rulle jevnt, og hvorfor?",
+      "solution": "Kulen kan rulle i alle retninger. Sylinderen kan rulle på den krumme sideflaten. Kuben ruller ikke jevnt fordi den har flate sider og kanter.",
+      "representationHint": null,
+      "teacherNote": "Fokuser på sammenhengen mellom krum overflate og rulling.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_tredimensjonale_figurer.pdf"
+      }
+    },
+    {
+      "id": "G2-N3-03",
+      "topic": "geometri",
+      "area": "tredimensjonale-figurer",
+      "areaTitle": "Tredimensjonale figurer",
+      "level": 3,
+      "title": "To mulige figurer",
+      "format": "Resonnering",
+      "purpose": "Forstå at én egenskap ikke alltid bestemmer figuren entydig.",
+      "studentText": "En romfigur har seks flater. Kan du vite sikkert at den er en kube? Forklar og gi et annet eksempel.",
+      "solution": "Nei. Et firkantet prisme har også seks flater. For å vite at det er en kube må vi blant annet vite at alle flatene er like store kvadrater.",
+      "representationHint": null,
+      "teacherNote": "Andre gyldige romfigurer med seks flater kan godtas.",
+      "source": {
+        "kind": "gruppen",
+        "document": "02_tredimensjonale_figurer.pdf"
+      }
+    },
+    {
+      "id": "G3-N1-01",
+      "topic": "geometri",
+      "area": "fra-3d-til-2d",
+      "areaTitle": "Fra tredimensjonal til todimensjonal",
+      "level": 1,
+      "title": "Avtrykk av en terning",
+      "format": "Kort svar",
+      "purpose": "Koble en romfigurs flate til en plan figur.",
+      "studentText": "Du setter én flate av en terning på et ark og tegner rundt kanten. Hvilken todimensjonal figur får du?",
+      "solution": "Kvadrat",
+      "representationHint": null,
+      "teacherNote": "En terning brukes her som en konkret kube.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_fra_tredimensjonal_til_todimensjonal.pdf"
+      }
+    },
+    {
+      "id": "G3-N1-02",
+      "topic": "geometri",
+      "area": "fra-3d-til-2d",
+      "areaTitle": "Fra tredimensjonal til todimensjonal",
+      "level": 1,
+      "title": "Avtrykk av en boks",
+      "format": "Kort svar",
+      "purpose": "Koble en rektangulær flate til en 2D-figur.",
+      "studentText": "Du tegner rundt bunnen av en vanlig rektangulær skoeske. Hvilken todimensjonal figur får du vanligvis?",
+      "solution": "Rektangel",
+      "representationHint": null,
+      "teacherNote": "En skoeske modelleres som et firkantet prisme.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_fra_tredimensjonal_til_todimensjonal.pdf"
+      }
+    },
+    {
+      "id": "G3-N1-03",
+      "topic": "geometri",
+      "area": "fra-3d-til-2d",
+      "areaTitle": "Fra tredimensjonal til todimensjonal",
+      "level": 1,
+      "title": "Kubens nett",
+      "format": "Kort svar og tegning",
+      "purpose": "Forstå at en kube kan brettes fra kvadrater.",
+      "studentText": "Hvor mange kvadrater må et nett til en kube bestå av? Tegn et mulig nett.",
+      "solution": "6 kvadrater i en sammenhengende plassering som kan brettes til en kube.",
+      "representationHint": null,
+      "teacherNote": "Det finnes flere riktige kubenett.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_fra_tredimensjonal_til_todimensjonal.pdf"
+      }
+    },
+    {
+      "id": "G3-N2-01",
+      "topic": "geometri",
+      "area": "fra-3d-til-2d",
+      "areaTitle": "Fra tredimensjonal til todimensjonal",
+      "level": 2,
+      "title": "Flatene i en sylinder",
+      "format": "Klassifisering",
+      "purpose": "Identifisere 2D-figurene som danner en sylinder.",
+      "studentText": "En sylinder klippes opp og brettes flatt. Hvilke todimensjonale figurer består nettet av?",
+      "solution": "To sirkler og ett rektangel",
+      "representationHint": null,
+      "teacherNote": "Rektangelet kommer fra den krumme sideflaten.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_fra_tredimensjonal_til_todimensjonal.pdf"
+      }
+    },
+    {
+      "id": "G3-N2-02",
+      "topic": "geometri",
+      "area": "fra-3d-til-2d",
+      "areaTitle": "Fra tredimensjonal til todimensjonal",
+      "level": 2,
+      "title": "Flatene i et trekantet prisme",
+      "format": "Klassifisering",
+      "purpose": "Identifisere delene i et prismenett.",
+      "studentText": "Hvilke todimensjonale figurer består nettet til et trekantet prisme av?",
+      "solution": "To trekanter og tre rektangler",
+      "representationHint": null,
+      "teacherNote": "Endeflatene er trekanter, og sideflatene er rektangler.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_fra_tredimensjonal_til_todimensjonal.pdf"
+      }
+    },
+    {
+      "id": "G3-N2-03",
+      "topic": "geometri",
+      "area": "fra-3d-til-2d",
+      "areaTitle": "Fra tredimensjonal til todimensjonal",
+      "level": 2,
+      "title": "Forskjellige rektangelflater",
+      "format": "Kort svar",
+      "purpose": "Koble mål på et prisme til mål på flatene.",
+      "studentText": "En eske er 8 cm lang, 5 cm bred og 3 cm høy. Hvilke tre ulike størrelser kan rektangelflatene ha?",
+      "solution": "8 cm · 5 cm, 8 cm · 3 cm og 5 cm · 3 cm",
+      "representationHint": null,
+      "teacherNote": "Hver størrelse forekommer to ganger på esken.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_fra_tredimensjonal_til_todimensjonal.pdf"
+      }
+    },
+    {
+      "id": "G3-N3-01",
+      "topic": "geometri",
+      "area": "fra-3d-til-2d",
+      "areaTitle": "Fra tredimensjonal til todimensjonal",
+      "level": 3,
+      "title": "Er seks kvadrater nok?",
+      "format": "Vurdering",
+      "purpose": "Forstå at både antall og plassering betyr noe i et nett.",
+      "studentText": "Et nett består av seks like kvadrater. Er det sikkert at nettet kan brettes til en kube? Forklar.",
+      "solution": "Nei. Kvadratene må også være plassert slik at de ikke overlapper og kan bli de seks ulike flatene i kuben.",
+      "representationHint": null,
+      "teacherNote": "Eleven trenger ikke liste alle gyldige eller ugyldige nett.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_fra_tredimensjonal_til_todimensjonal.pdf"
+      }
+    },
+    {
+      "id": "G3-N3-02",
+      "topic": "geometri",
+      "area": "fra-3d-til-2d",
+      "areaTitle": "Fra tredimensjonal til todimensjonal",
+      "level": 3,
+      "title": "Lag et prismenett",
+      "format": "Tegning og forklaring",
+      "purpose": "Konstruere og begrunne et nett.",
+      "studentText": "Tegn et nett til et trekantet prisme. Forklar hvilke flater som blir endeflater og hvilke som blir sideflater.",
+      "solution": "Et gyldig nett med to like trekanter og tre rektangler. Trekantene er endeflater; rektanglene er sideflater.",
+      "representationHint": null,
+      "teacherNote": "Kontroller at flatene henger sammen på en måte som kan brettes.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_fra_tredimensjonal_til_todimensjonal.pdf"
+      }
+    },
+    {
+      "id": "G3-N3-03",
+      "topic": "geometri",
+      "area": "fra-3d-til-2d",
+      "areaTitle": "Fra tredimensjonal til todimensjonal",
+      "level": 3,
+      "title": "Velg riktig innpakning",
+      "format": "Problemløsing",
+      "purpose": "Bruke kunnskap om flater til å vurdere et nett.",
+      "studentText": "En lukket eske har form som et firkantet prisme. En elev tegner bare fire rektangler til nettet. Hva mangler for at nettet skal kunne bli en lukket eske?",
+      "solution": "To endeflater mangler. Nettet må ha seks flater til sammen.",
+      "representationHint": null,
+      "teacherNote": "Endeflatene kan være rektangler eller kvadrater, avhengig av prismet.",
+      "source": {
+        "kind": "gruppen",
+        "document": "03_fra_tredimensjonal_til_todimensjonal.pdf"
+      }
+    },
+    {
+      "id": "G4-N1-01",
+      "topic": "geometri",
+      "area": "vinkler",
+      "areaTitle": "Vinkler",
+      "level": 1,
+      "title": "Rett vinkel",
+      "format": "Kort svar",
+      "purpose": "Kjenne igjen en rett vinkel fra gradtall.",
+      "studentText": "En vinkel er 90 grader. Hva kalles denne vinkelen?",
+      "solution": "Rett vinkel",
+      "representationHint": null,
+      "teacherNote": "En rett vinkel kan markeres med en liten firkant.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_vinkler.pdf"
+      }
+    },
+    {
+      "id": "G4-N1-02",
+      "topic": "geometri",
+      "area": "vinkler",
+      "areaTitle": "Vinkler",
+      "level": 1,
+      "title": "Spiss eller stump",
+      "format": "Klassifisering",
+      "purpose": "Skille mellom spiss og stump vinkel.",
+      "studentText": "Er en vinkel på 40 grader spiss, rett eller stump?",
+      "solution": "Spiss",
+      "representationHint": null,
+      "teacherNote": "En spiss vinkel er mindre enn 90 grader.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_vinkler.pdf"
+      }
+    },
+    {
+      "id": "G4-N1-03",
+      "topic": "geometri",
+      "area": "vinkler",
+      "areaTitle": "Vinkler",
+      "level": 1,
+      "title": "Tegn tre vinkler",
+      "format": "Tegning",
+      "purpose": "Vise forskjellen mellom spiss, rett og stump vinkel.",
+      "studentText": "Tegn én spiss vinkel, én rett vinkel og én stump vinkel. Skriv navn ved hver.",
+      "solution": "Tre tydelig forskjellige vinkler: mindre enn 90 grader, 90 grader og mellom 90 og 180 grader.",
+      "representationHint": null,
+      "teacherNote": "Gradskive er ikke nødvendig dersom typene vises tydelig.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_vinkler.pdf"
+      }
+    },
+    {
+      "id": "G4-N2-01",
+      "topic": "geometri",
+      "area": "vinkler",
+      "areaTitle": "Vinkler",
+      "level": 2,
+      "title": "Sorter vinklene",
+      "format": "Rekkefølge",
+      "purpose": "Sammenligne vinkler ved hjelp av gradtall.",
+      "studentText": "Sorter vinklene fra minst til størst: 120 grader, 35 grader, 90 grader og 70 grader.",
+      "solution": "35 grader, 70 grader, 90 grader, 120 grader",
+      "representationHint": null,
+      "teacherNote": "Knytt gjerne 90 grader til rett vinkel.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_vinkler.pdf"
+      }
+    },
+    {
+      "id": "G4-N2-02",
+      "topic": "geometri",
+      "area": "vinkler",
+      "areaTitle": "Vinkler",
+      "level": 2,
+      "title": "Klokka tre",
+      "format": "Kort svar med forklaring",
+      "purpose": "Kjenne igjen vinkler i en hverdagssituasjon.",
+      "studentText": "Klokka er nøyaktig 3.00. Hvilken type vinkel danner timeviseren og minuttviseren?",
+      "solution": "Rett vinkel",
+      "representationHint": "Tegn en klokke med én viser mot 12 og én mot 3.",
+      "teacherNote": "Den minste vinkelen mellom viserne er 90 grader.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_vinkler.pdf"
+      }
+    },
+    {
+      "id": "G4-N2-03",
+      "topic": "geometri",
+      "area": "vinkler",
+      "areaTitle": "Vinkler",
+      "level": 2,
+      "title": "Mangler i en rett vinkel",
+      "format": "Kort svar",
+      "purpose": "Dele opp en rett vinkel.",
+      "studentText": "En rett vinkel deles i to. Den ene delen er 35 grader. Hvor stor er den andre delen?",
+      "solution": "55 grader",
+      "representationHint": null,
+      "teacherNote": "90 - 35 = 55.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_vinkler.pdf"
+      }
+    },
+    {
+      "id": "G4-N3-01",
+      "topic": "geometri",
+      "area": "vinkler",
+      "areaTitle": "Vinkler",
+      "level": 3,
+      "title": "To vinkler til sammen",
+      "format": "Problemløsing",
+      "purpose": "Resonnere med vinkelsum i en rett vinkel.",
+      "studentText": "To vinkler ligger ved siden av hverandre og danner en rett vinkel. Den ene er dobbelt så stor som den andre. Hvor store er vinklene?",
+      "solution": "30 grader og 60 grader",
+      "representationHint": null,
+      "teacherNote": "Tre like deler utgjør 90 grader, så hver del er 30 grader.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_vinkler.pdf"
+      }
+    },
+    {
+      "id": "G4-N3-02",
+      "topic": "geometri",
+      "area": "vinkler",
+      "areaTitle": "Vinkler",
+      "level": 3,
+      "title": "Finn feilen",
+      "format": "Feilanalyse",
+      "purpose": "Kontrollere klassifisering av en vinkel.",
+      "studentText": "En elev sier at en vinkel på 135 grader er spiss fordi den ser smal ut på tegningen. Har eleven rett? Forklar.",
+      "solution": "Nei. 135 grader er større enn 90 og mindre enn 180 grader, så vinkelen er stump.",
+      "representationHint": null,
+      "teacherNote": "Gradtallet avgjør vinkelen, ikke størrelsen på tegningen.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_vinkler.pdf"
+      }
+    },
+    {
+      "id": "G4-N3-03",
+      "topic": "geometri",
+      "area": "vinkler",
+      "areaTitle": "Vinkler",
+      "level": 3,
+      "title": "En kvart og en halv omdreining",
+      "format": "Sammenligning",
+      "purpose": "Koble dreining til gradtall og vinkeltype.",
+      "studentText": "Hvor mange grader er en kvart omdreining og en halv omdreining? Hva kalles vinkelen ved en kvart omdreining?",
+      "solution": "En kvart omdreining er 90 grader og gir en rett vinkel. En halv omdreining er 180 grader.",
+      "representationHint": null,
+      "teacherNote": "Oppgaven knytter vinkler til bevegelse og retning.",
+      "source": {
+        "kind": "gruppen",
+        "document": "04_vinkler.pdf"
+      }
+    }
+  ]
+}

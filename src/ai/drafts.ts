@@ -1,5 +1,5 @@
 import type { SessionTask, Task, TextTask } from '../types/index.ts'
-import { asTextDraft, isMathDraft, type AiResponseMeta, type AiTaskDraft, type AiTaskMeta, type AiTextDraft } from './contract.ts'
+import { asTextDraft, isMathDraft, readStoredVisual, type AiResponseMeta, type AiTaskDraft, type AiTaskMeta, type AiTextDraft, type TaskResult } from './contract.ts'
 
 // AI-utkast → oppgaver i appen. Alltid merket som AI-generert og «ikke gjennomgått» til
 // læreren sier noe annet. Rene funksjoner (ingen Firebase), så de kan testes i Node.
@@ -65,11 +65,15 @@ export function toTextTask(draft: AiTaskDraft, id: string, meta?: AiResponseMeta
     adaptation: text.adaptation,
     aiGenerated: true,
     reviewed: false,
+    // Geometri: figuren appen tegner (bare gyldige figurer kommer hit – ugyldige avvises på serveren).
+    ...(text.figure && { figure: text.figure }),
     ...(aiMeta && { aiMeta }),
   }
 }
 
+/** Tekstoppgaven slik AI-en får den ved justering – med figuren (plan figur eller vinkel), så den kan beholdes. */
 export function toDraft(task: TextTask): AiTextDraft {
+  const figure = task.figure?.kind === 'shape' || task.figure?.kind === 'angle' ? readStoredVisual(task.figure) : null
   return {
     format: 'text',
     level: task.level,
@@ -77,5 +81,17 @@ export function toDraft(task: TextTask): AiTextDraft {
     solution: task.solution,
     competenceGoal: task.competenceGoal,
     adaptation: task.adaptation,
+    ...(figure && { figure }),
   }
+}
+
+/**
+ * Svaret på «Juster med AI»: en ny versjon av oppgaven (ikke gjennomgått), en feilmelding når serveren avviste
+ * justeringen (den opprinnelige oppgaven beholdes uendret), eller et oppfølgingsspørsmål fra AI-en.
+ */
+export function applyRevision(original: TextTask, result: TaskResult): { task?: TextTask; error?: string; question?: string } {
+  const revised = result.tasks[0]
+  if (revised) return { task: toTextTask(revised, original.id, result.meta) }
+  if (result.warning) return { error: result.warning }
+  return { question: result.message }
 }

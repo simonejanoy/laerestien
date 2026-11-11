@@ -19,8 +19,11 @@ export const aiConfig = {
    * 6: referansebank for multiplikasjon, fagområde, oppgavesettet i bestillingen (10.11.2026).
    * 7: nye oppgaver følger nivåets støttestruktur, og strategier i instruksjonen må være matematisk
    *    gyldige for akkurat regnestykket (10.11.2026).
+   * 8: figurer i geometri – AI-en kan velge en plan figur eller en vinkel som appen tegner selv (feltet
+   *    figur i svaret), figur, spørsmål og fasit må stemme, og eleven bes ikke tegne. Ved «Juster med AI»
+   *    beholdes figuren med mindre læreren uttrykkelig ber om å endre eller fjerne den (11.11.2026).
    */
-  rulesVersion: '7',
+  rulesVersion: '8',
   /** Prøves først. */
   primaryModel: 'gemini-3.8-flash',
   /** Brukes automatisk hvis primærmodellen når tidsgrensen eller svarer 500, 503 eller 504. */

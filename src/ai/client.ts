@@ -90,7 +90,7 @@ export function fallbackNotice(meta: AiResponseMeta | undefined, what: string): 
   return meta?.fallbackUsed ? `${what} ble laget med reservemodellen fordi hovedmodellen var midlertidig utilgjengelig.` : null
 }
 
-export { toDraft, toSessionTask, toTextTask } from './drafts'
+export { applyRevision, toDraft, toSessionTask, toTextTask } from './drafts'
 
 let counter = 0
 /** Unik id for nye AI-oppgaver. */
