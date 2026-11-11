@@ -1,14 +1,14 @@
 import { ChevronRight } from 'lucide-react'
-import { useRef, useState, type KeyboardEvent } from 'react'
+import { useRef, type KeyboardEvent } from 'react'
 import check from '../../assets/student/hake.svg'
 import lightbulb from '../../assets/student/lyspaere.svg'
 import type { Task } from '../../types'
 import { answerOf, formatNumber, hintFor, operatorSymbol } from '../tasks/taskUtils'
 import { AppleGroup } from './AppleGroup'
+import { checkMathAnswer, cleanMathAnswer, initialMathState, retryMathAnswer, type MathTaskState } from './studentTasks'
 import { TaskStepper } from './TaskStepper'
+import { useTaskState, type ControlledTaskState } from './useTaskState'
 import { WrongAnswerDialog } from './WrongAnswerDialog'
-
-const MAX_ATTEMPTS = 3
 
 interface TaskScreenProps {
   task: Task
@@ -16,17 +16,14 @@ interface TaskScreenProps {
   index: number
   total: number
   onNext: () => void
+  /** Bare i lærerens forhåndsvisning: tilstanden holdes utenfor, så den beholdes når læreren blar. */
+  controlled?: ControlledTaskState<MathTaskState>
 }
 
-type Phase = 'answering' | 'correct' | 'revealed'
-
 /** Én oppgave for eleven: svar, sjekk, hint og videre. */
-export function TaskScreen({ task, index, total, onNext }: TaskScreenProps) {
-  const [answer, setAnswer] = useState('')
-  const [phase, setPhase] = useState<Phase>('answering')
-  const [attemptsLeft, setAttemptsLeft] = useState(MAX_ATTEMPTS)
-  const [showHint, setShowHint] = useState(false)
-  const [dialogOpen, setDialogOpen] = useState(false)
+export function TaskScreen({ task, index, total, onNext, controlled }: TaskScreenProps) {
+  const [state, setState] = useTaskState(initialMathState, controlled)
+  const { answer, phase, attemptsLeft, showHint, dialogOpen } = state
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Epler brukes når tallene er små nok til å telle.
@@ -39,20 +36,11 @@ export function TaskScreen({ task, index, total, onNext }: TaskScreenProps) {
       inputRef.current?.focus()
       return
     }
-    if (Number(answer) === answerOf(task)) {
-      setPhase('correct')
-      return
-    }
-    const left = attemptsLeft - 1
-    setAttemptsLeft(left)
-    if (left === 0) setPhase('revealed')
-    else setDialogOpen(true)
+    setState(checkMathAnswer(state, task))
   }
 
   const retry = (withHint: boolean) => {
-    setDialogOpen(false)
-    setAnswer('')
-    if (withHint) setShowHint(true)
+    setState(retryMathAnswer(state, withHint))
     setTimeout(() => inputRef.current?.focus())
   }
 
@@ -69,7 +57,7 @@ export function TaskScreen({ task, index, total, onNext }: TaskScreenProps) {
         aria-label="Ditt svar"
         placeholder="Skriv svar"
         value={answer}
-        onChange={(e) => setAnswer(e.target.value.replace(/\D/g, '').slice(0, 6))}
+        onChange={(e) => setState({ ...state, answer: cleanMathAnswer(e.target.value) })}
         onKeyDown={onKeyDown}
         className="h-[66px] w-[168px] rounded-xl border-2 border-secondary bg-background px-[18px] text-[32px] text-on-background shadow-[0_0_0_4px_rgba(79,117,150,0.18)] outline-none placeholder:text-xl placeholder:font-medium placeholder:text-secondary"
       />
@@ -149,7 +137,7 @@ export function TaskScreen({ task, index, total, onNext }: TaskScreenProps) {
         <div className="flex min-h-[125px] w-full items-center justify-between">
           <button
             type="button"
-            onClick={() => setShowHint(true)}
+            onClick={() => setState({ ...state, showHint: true })}
             className={`flex w-[236px] shrink-0 cursor-pointer items-center justify-center gap-2.5 rounded-lg bg-surface-variant p-2.5 text-body text-primary hover:brightness-95 ${
               phase === 'answering' && !showHint ? '' : 'invisible'
             }`}

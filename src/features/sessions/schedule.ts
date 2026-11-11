@@ -1,7 +1,7 @@
-import type { CalendarSlot, Level, LevelGroup, Session, SessionTask, Weekday } from '../../types'
+import type { CalendarSlot, Session, SessionTask, Weekday } from '../../types'
 import { dateOf, describeSlots, isSameWeek, shiftWeek, weekdays, timeSlots, type WeekRef } from '../calendar/mockData'
-import { isTextSpec, tasksFor, unitSpecs, type UnitSpec } from '../topics/yearPlan'
 import { sessionBase, standardPlan } from './mockData'
+import { buildTasks, levelsFor, planned, type Planned } from './sessionTasks'
 
 // Legger årsplanen (se topics/curriculum.ts) inn i timeplanen for skoleåret 2026/27.
 // Tall økt 1–6 ligger i uke 41–43, økt 7–10 i uke 44 (sessions/mockData.ts) og økt 11–14
@@ -66,38 +66,13 @@ function schoolWeeks(from: WeekRef, to: WeekRef) {
 
 const slotIndex = (slot: CalendarSlot) => weekdays.indexOf(slot.day) * 100 + timeSlots.indexOf(slot.time)
 
-/** Økt nr. `n` (0, 1, 2 …) i en periode som skal inn i timeplanen. */
-interface Planned {
-  id: string
-  spec: UnitSpec
-  heading: string
-  skills: string[]
-  n: number
-}
-
-function planned(key: string): Planned[] {
-  const [unitId, part] = key.split(':')
-  const spec = unitSpecs.find((u) => u.unitId === unitId)
-  if (!spec) return []
-  const all = spec.weeks
-    .flatMap((w) => w.sessions)
-    .map(({ heading, skills }, n) => ({ id: `${unitId}-${n + 1}`, spec, heading, skills, n }))
-  if (part === 'start') return all.slice(0, 6)
-  // Tall økt 11–14 har id-ene okt-5 til okt-8 fra før (økt 7–10 er okt-1-2, okt-3 og okt-4).
-  if (part === 'slutt') return all.slice(10).map((p, i) => ({ ...p, id: `okt-${i + 5}` }))
-  return all
-}
-
 /** Seks elever på hvert nivå i 4A. */
 const STUDENTS_PER_LEVEL = 6
 
-function buildSession({ id, spec, heading, skills }: Planned, at: WeekRef, slot: CalendarSlot): Session {
-  const levels: LevelGroup[] = spec.levels.map((l, i) => ({
-    level: (i + 1) as Level,
-    ...l,
-    taskCount: 5,
-    studentCount: STUDENTS_PER_LEVEL,
-  }))
+function buildSession(plan: Planned, at: WeekRef, slot: CalendarSlot): Session {
+  const { id, spec, heading, skills, profile } = plan
+  // Øktprofilen gir egne nivåbeskrivelser, så de ikke strider mot temaet for økta.
+  const levels = levelsFor(plan, 5, STUDENTS_PER_LEVEL)
   return {
     id,
     topicId: spec.unitId,
@@ -111,6 +86,7 @@ function buildSession({ id, spec, heading, skills }: Planned, at: WeekRef, slot:
     ...at,
     slots: [slot],
     skillIds: skills,
+    ...(profile && { taskProfile: profile }),
     // Nummer og antall økter regnes ut i SessionsProvider.
     numbers: [],
     totalSessions: 0,
@@ -118,19 +94,6 @@ function buildSession({ id, spec, heading, skills }: Planned, at: WeekRef, slot:
     goals: spec.goals.slice(0, 3),
     plan: standardPlan,
   }
-}
-
-function buildTasks({ id, skills, n }: Planned): SessionTask[] {
-  return ([1, 2, 3] as const).flatMap((level) =>
-    tasksFor(skills, level, n).map((task, i): SessionTask => {
-      const taskId = `${id}-n${level}-${i + 1}`
-      if (isTextSpec(task)) {
-        return { kind: 'text', id: taskId, level, text: task.text, solution: task.solution, competenceGoal: '', adaptation: '', aiGenerated: false, reviewed: false }
-      }
-      const [type, a, operator, b, instruction] = task
-      return { id: taskId, level, type, instruction, a, operator, b }
-    }),
-  )
 }
 
 function buildSchedule() {

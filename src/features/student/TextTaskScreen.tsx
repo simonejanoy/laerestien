@@ -1,23 +1,26 @@
 import { ChevronRight } from 'lucide-react'
-import { useState } from 'react'
 import { TaskFigure } from '../../components/ui/TaskFigure'
 import type { TextTask } from '../../types'
+import { initialTextState, type TextTaskState } from './studentTasks'
 import { TaskStepper } from './TaskStepper'
+import { useTaskState, type ControlledTaskState } from './useTaskState'
 
 interface TextTaskScreenProps {
   task: TextTask
   index: number
   total: number
   onNext: () => void
+  /** Bare i lærerens forhåndsvisning: tilstanden holdes utenfor, så den beholdes når læreren blar. */
+  controlled?: ControlledTaskState<TextTaskState>
 }
 
 /**
  * Tekstoppgave for eleven: les, skriv svaret og lever. Appen kan ikke rette fritekst,
  * så eleven får ikke riktig/galt her – læreren ser på svaret.
  */
-export function TextTaskScreen({ task, index, total, onNext }: TextTaskScreenProps) {
-  const [answer, setAnswer] = useState('')
-  const [submitted, setSubmitted] = useState(false)
+export function TextTaskScreen({ task, index, total, onNext, controlled }: TextTaskScreenProps) {
+  const [state, setState] = useTaskState(initialTextState, controlled)
+  const { answer, submitted } = state
   const isLast = index === total - 1
 
   return (
@@ -34,7 +37,7 @@ export function TextTaskScreen({ task, index, total, onNext }: TextTaskScreenPro
           rows={4}
           value={answer}
           readOnly={submitted}
-          onChange={(e) => setAnswer(e.target.value)}
+          onChange={(e) => setState({ ...state, answer: e.target.value })}
           placeholder="Skriv svaret ditt her. Du kan også vise hvordan du tenkte."
           className="w-full resize-y rounded-xl border-2 border-secondary bg-background px-[18px] py-3 text-xl text-on-background outline-none placeholder:text-lg placeholder:text-secondary read-only:bg-tertiary"
         />
@@ -54,7 +57,7 @@ export function TextTaskScreen({ task, index, total, onNext }: TextTaskScreenPro
         <button
           type="button"
           disabled={!submitted && !answer.trim()}
-          onClick={submitted ? onNext : () => setSubmitted(true)}
+          onClick={submitted ? onNext : () => setState({ ...state, submitted: true })}
           className="flex h-[52px] w-[224px] shrink-0 cursor-pointer items-center justify-center gap-[47px] rounded-lg bg-primary text-body text-on-primary hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {submitted ? (isLast ? 'Ferdig' : 'Neste oppgave') : 'Lever svaret'}

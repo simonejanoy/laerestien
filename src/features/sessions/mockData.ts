@@ -1,4 +1,5 @@
-import type { Level, Operator, PlanItem, Session, Task, TaskType } from '../../types'
+import { sessionProfile } from '../topics/yearPlan.ts'
+import type { Level, Operator, PlanItem, Session, Task, TaskType } from '../../types/index.ts'
 
 // Testdata frem til Firestore er på plass. Tekstene er hentet fra Figma.
 
@@ -11,8 +12,8 @@ export const standardPlan: PlanItem[] = [
 /** Standardinnhold for nye økter i temaet. */
 export const sessionBase = {
   topicId: 'tall',
-  title: 'Tall',
-  topic: 'Tall',
+  title: 'Tall og plassverdi',
+  topic: 'Tall og plassverdi',
   area: 'Tall og algebra',
   className: '4A',
   totalSessions: 8,
@@ -34,6 +35,8 @@ export const sessions: Session[] = [
     date: 'Mandag 26. oktober',
     time: '8.30 - 10.30',
     heading: 'Tiere, enere og smarte regnestrategier',
+    // Referanseområde og støttestruktur for AI-oppgavene (se placeValueProfile i topics/yearPlan.ts).
+    taskProfile: sessionProfile('tall', 'Tiere, enere og smarte regnestrategier'),
     description:
       'Elevene utforsker hvordan tall er bygget opp, og deler dem i enere, tiere og hundrere. De øver på å legge sammen tall uten tierovergang ved hjelp av konkreter, tegninger og tallinje.',
     levels: [
@@ -58,12 +61,14 @@ export const sessions: Session[] = [
     date: 'Onsdag 28. oktober',
     time: '10.30 - 11.30',
     heading: 'Addisjon med tierovergang – øve og bruke',
+    // Referanseområde og støttestruktur for AI-oppgavene (se placeValueProfile i topics/yearPlan.ts).
+    taskProfile: sessionProfile('tall', 'Addisjon med tierovergang – øve og bruke'),
     description:
       'Elevene øver på å legge sammen tall med tierovergang og bruker strategier som å fylle opp en tier og dele opp tall. De forklarer hvordan de tenker, og undersøker om svaret er rimelig.',
     levels: [
-      { level: 1, title: 'Tall opptil 100', subtitle: 'Hoderegning uten tierovergang.', description: 'Mestre å dele tall i tiere og enere.', taskCount: 2, studentCount: 12 },
-      { level: 2, title: 'Tall opptil 1000', subtitle: 'Hoderegning uten tierovergang.', description: 'Mestre å dele tall i tiere og enere.', taskCount: 2, studentCount: 12 },
-      { level: 3, title: 'Tall opptil 10 000', subtitle: 'Hoderegning uten tierovergang.', description: 'Mestre å dele tall i tiere og enere.', taskCount: 2, studentCount: 12 },
+      { level: 1, title: 'Tall opptil 100', subtitle: 'Tierovergang med støtte.', description: 'Fylle opp til en hel tier og regne videre.', taskCount: 2, studentCount: 12 },
+      { level: 2, title: 'Tall opptil 1000', subtitle: 'Tierovergang og veksling.', description: 'Dele opp tall og veksle i én eller flere plassverdier.', taskCount: 2, studentCount: 12 },
+      { level: 3, title: 'Tall opptil 10 000', subtitle: 'Veksling med store tall.', description: 'Legge sammen med veksling i store tall og i flere steg.', taskCount: 2, studentCount: 12 },
     ],
     goals: [
       'Legge sammen tosifrede tall med tierovergang.',
@@ -82,6 +87,8 @@ export const sessions: Session[] = [
     date: 'Fredag 30. oktober',
     time: '9.30 - 10.30',
     heading: 'Subtraksjon – ta bort og finne forskjellen',
+    // Referanseområde og støttestruktur for AI-oppgavene (se placeValueProfile i topics/yearPlan.ts).
+    taskProfile: sessionProfile('tall', 'Subtraksjon – ta bort og finne forskjellen'),
     description:
       'Elevene trekker fra ved å ta bort og ved å finne forskjellen mellom to tall. De bruker konkreter og tallinje, og sammenligner hvilke strategier som passer best.',
     levels: [
@@ -107,6 +114,7 @@ export const initialProgress: Record<string, 'completed' | 'skipped'> = {
 const mentalMath = 'Regn ut. Del gjerne tallene i tiere og enere.'
 const columnMath = 'Still opp og regn ut.'
 const keepSum = 'Flytt fra det ene tallet til det andre, slik at det blir en hel tier.'
+const fillTen = 'Regn ut. Fyll først opp til nærmeste tier.'
 
 function task(
   id: string,
@@ -149,12 +157,12 @@ export const initialTasks: Record<string, Task[]> = {
     task('a3-5', 3, H, 199, '+', 145, keepSum),
   ],
   'okt-3': [
-    // Nivå 1 – tall opptil 100
-    task('t1-1', 1, H, 12, '+', 5),
-    task('t1-2', 1, H, 23, '+', 14),
-    task('t1-3', 1, H, 45, '+', 32),
-    task('t1-4', 1, O, 36, '+', 21),
-    task('t1-5', 1, H, 64, '+', 35),
+    // Nivå 1 – tall opptil 100, tierovergang med støtte
+    task('t1-1', 1, H, 38, '+', 6, fillTen),
+    task('t1-2', 1, H, 47, '+', 5, fillTen),
+    task('t1-3', 1, H, 29, '+', 4, fillTen),
+    task('t1-4', 1, H, 56, '+', 7, fillTen),
+    task('t1-5', 1, H, 68, '+', 5, fillTen),
     // Nivå 2 – fra Figma
     task('t2-1', 2, H, 47, '+', 38),
     task('t2-2', 2, O, 268, '+', 157, 'Still opp og regn ut. Husk å veksle.'),
@@ -164,11 +172,11 @@ export const initialTasks: Record<string, Task[]> = {
     task('t2-6', 2, O, 248, '+', 19),
     task('t2-7', 2, H, 356, '+', 28),
     task('t2-8', 2, O, 467, '+', 158),
-    // Nivå 3 – tall opptil 10 000
-    task('t3-1', 3, H, 2000, '+', 3000),
-    task('t3-2', 3, H, 3200, '+', 1500),
-    task('t3-3', 3, O, 2345, '+', 1432),
-    task('t3-4', 3, O, 4508, '+', 2391),
+    // Nivå 3 – tall opptil 10 000, veksling i tier-, hundrer- eller enerplassen
+    task('t3-1', 3, H, 2700, '+', 1500),
+    task('t3-2', 3, H, 3600, '+', 2800),
+    task('t3-3', 3, O, 2345, '+', 1478, 'Still opp og regn ut. Husk å veksle.'),
+    task('t3-4', 3, O, 4568, '+', 2394, 'Still opp og regn ut. Husk å veksle.'),
     task('t3-5', 3, O, 6127, '+', 2864, 'Still opp og regn ut. Husk å veksle.'),
   ],
   'okt-4': [

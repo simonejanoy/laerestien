@@ -1,10 +1,11 @@
 import { LoaderCircle, Sparkles } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { AiError, requestProfile, subjectContext } from '../../ai/client'
+import { AiError, SLOW_AI_HINT, fallbackNotice, requestProfile, subjectContext } from '../../ai/client'
 import type { AnonStudentProfile } from '../../ai/contract'
 import { AiBadge } from '../../components/ui/AiBadge'
 import { Button } from '../../components/ui/Button'
+import { useSlowAiHint } from '../../hooks/useSlowAiHint'
 import { StatPanel } from './parts'
 
 interface AiProfileSuggestionProps {
@@ -25,13 +26,17 @@ export function AiProfileSuggestion({ firstName, classId, profile }: AiProfileSu
   const [draft, setDraft] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+  const slow = useSlowAiHint(loading, 'profile')
 
   const generate = async (event: FormEvent) => {
     event.preventDefault()
     setLoading(true)
     setError(null)
     try {
-      setDraft(await requestProfile({ classId, context: subjectContext(classId), student: profile, teacherNotes: notes.trim() }))
+      const { text, meta } = await requestProfile({ classId, context: subjectContext(classId), student: profile, teacherNotes: notes.trim() })
+      setDraft(text)
+      setNotice(fallbackNotice(meta, 'Forslaget'))
     } catch (err) {
       if (!(err instanceof AiError)) console.error('Uventet feil ved profilforslag:', err)
       setError(err instanceof AiError ? err.message : 'Noe gikk galt. Prøv igjen.')
@@ -68,7 +73,7 @@ export function AiProfileSuggestion({ firstName, classId, profile }: AiProfileSu
             {draft ? 'Lag nytt forslag' : 'Lag forslag med AI'}
           </Button>
           <span aria-live="polite" className="text-xs text-secondary">
-            {loading && 'AI-en lager et forslag …'}
+            {loading && (slow ? SLOW_AI_HINT : 'AI-en lager et forslag …')}
           </span>
         </div>
       </form>
@@ -85,6 +90,7 @@ export function AiProfileSuggestion({ firstName, classId, profile }: AiProfileSu
             <AiBadge label="AI-generert forslag · ikke lagret" />
             Rediger forslaget
           </label>
+          {notice && <p className="text-xs text-secondary">{notice}</p>}
           <textarea id="profilforslag" rows={10} value={draft} onChange={(e) => setDraft(e.target.value)} className={fieldClass} />
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-secondary">

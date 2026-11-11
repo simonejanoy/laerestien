@@ -1,7 +1,8 @@
 import { ArrowUp, LoaderCircle } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import { AiError, requestTasks, toDraft, toTextTask } from '../../ai/client'
+import { AiError, SLOW_AI_HINT, fallbackNotice, requestTasks, toDraft, toTextTask } from '../../ai/client'
 import type { AnonStudentProfile, SubjectContext } from '../../ai/contract'
+import { useSlowAiHint } from '../../hooks/useSlowAiHint'
 import type { TextTask } from '../../types'
 
 interface AiReviseFormProps {
@@ -24,6 +25,8 @@ export function AiReviseForm({ task, context, label, classId, student, onRevised
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [question, setQuestion] = useState('')
+  const [notice, setNotice] = useState<string | null>(null)
+  const slow = useSlowAiHint(loading, 'tasks')
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
@@ -31,6 +34,7 @@ export function AiReviseForm({ task, context, label, classId, student, onRevised
     setLoading(true)
     setError(null)
     setQuestion('')
+    setNotice(null)
     try {
       const result = await requestTasks({
         kind: 'revise',
@@ -41,8 +45,9 @@ export function AiReviseForm({ task, context, label, classId, student, onRevised
         student,
       })
       const revised = result.tasks[0]
+      setNotice(fallbackNotice(result.meta, revised ? 'Den nye versjonen' : 'Svaret'))
       if (revised) {
-        onRevised(toTextTask(revised, task.id), result.message)
+        onRevised(toTextTask(revised, task.id, result.meta), result.message)
         setInstruction('')
       } else {
         // AI-en trenger mer informasjon (f.eks. hva «enklere» betyr).
@@ -78,8 +83,9 @@ export function AiReviseForm({ task, context, label, classId, student, onRevised
         </button>
       </span>
       <span aria-live="polite" className="text-xs">
-        {loading && <span className="text-secondary">AI-en justerer oppgaven …</span>}
+        {loading && <span className="text-secondary">{slow ? SLOW_AI_HINT : 'AI-en justerer oppgaven …'}</span>}
         {question && <span className="text-on-background">Spørsmål fra AI-assistenten: {question}</span>}
+        {!loading && notice && <span className="block text-secondary">{notice}</span>}
       </span>
       {error && (
         <p role="alert" className="text-xs text-error">

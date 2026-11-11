@@ -10,7 +10,7 @@ const skill = (id: string, name: string): Skill => ({ id, name })
 export const topics: Topic[] = [
   {
     id: 'tall',
-    name: 'Tall',
+    name: 'Tall og plassverdi',
     skills: [
       skill('tall.hoderegning', 'Hoderegning'),
       skill('tall.firesifrede', 'Firesifrede tall'),
@@ -23,7 +23,8 @@ export const topics: Topic[] = [
     id: 'multiplikasjon',
     name: 'Multiplikasjon',
     skills: [
-      skill('mult.tabell-2-10', '2-, 3-, 4-, 5- og 10-gangen'),
+      skill('mult.like-grupper', 'Like grupper og gjentatt addisjon'),
+      skill('mult.tabell-2-10', '0-, 1-, 2-, 3-, 4-, 5- og 10-gangen'),
       skill('mult.tabell-6-9', '6-, 7-, 8- og 9-gangen'),
       skill('mult.tiere-hundrere', 'Multiplisere med tiere og hundrere'),
       skill('mult.dele-opp', 'Dele opp og multiplisere'),
@@ -90,7 +91,7 @@ export const topics: Topic[] = [
     skills: [
       skill('mal.volum', 'Måle volum'),
       skill('mal.liter-dl', 'Liter og desiliter'),
-      skill('mal.desimaltall', 'Desimaltall'),
+      skill('mal.lengde', 'Lengde og sammenligne måleenheter'),
       skill('mal.kg-g', 'Kilogram og gram'),
       skill('mal.areal', 'Måle areal'),
       skill('mal.areal-omkrets', 'Areal og omkrets'),

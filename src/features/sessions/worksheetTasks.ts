@@ -1,4 +1,5 @@
-import type { Level, Operator, SessionTask, Task, TaskFigure, TextTask } from '../../types'
+import type { Level, Operator, SessionTask, Task, TaskFigure, TextTask } from '../../types/index.ts'
+import { strategyInstruction } from '../topics/multiplicationStrategies.ts'
 
 // Oppgaver fra arbeidsark på planetpsyd.no, lagt først i øktene de passer til i årsplanen
 // (se topics/curriculum.ts). I Tall følger nivåene tallområdene: nivå 1 er tall 1–20, nivå 2
@@ -86,6 +87,7 @@ function textTask(id: string, level: Level, text: string, solution: string, figu
     adaptation: '',
     aiGenerated: false,
     reviewed: false,
+    source: 'worksheet',
     ...(figure && { figure }),
   }
 }
@@ -109,7 +111,7 @@ const math = (
   b: number,
   type: Task['type'] = 'Hoderegning',
   instruction = type === 'Oppstilling' ? (operator === '-' ? 'Still opp og regn ut. Husk å veksle.' : 'Still opp og regn ut.') : 'Regn ut.',
-): Task => ({ id, level, type, instruction, a, operator, b })
+): Task => ({ id, level, type, instruction, a, operator, b, source: 'worksheet' })
 
 /** `count` oppgaver fra lista, del nummer `part` (0, 1, 2 …). */
 function slice<T>(list: T[], part: number, count: number) {
@@ -247,62 +249,6 @@ const sequenceSessionTasks = (sessionId: string): SessionTask[] => [
   ...numberLines.map((line, i) => numberLineTask(`ark-${sessionId}-tallinje-${i + 1}`, 1, line)),
   ...numberSequences.map((seq, i) => sequenceTask(`ark-${sessionId}-tallrekke-${i + 1}`, i < 5 ? 2 : 3, seq)),
 ]
-
-/** «Tallslange: negative tall» – de to veiene gjennom slangen, fra 1 til −100 og til −50. */
-const snakePaths: [string, number][][] = [
-  [['+', -9], [':', 2], ['+', -8], ['−', 1], ['+', 19], ['+', -24], ['+', 5], ['·', -4], [':', -2], ['+', -74]],
-  [['+', -9], ['+', -52], [':', 5], ['−', 1], ['+', 19], ['+', -24], ['·', -15], [':', -3], ['+', 190], ['+', -50], ['+', -100]],
-]
-
-const signedNumber = (x: number) => (x < 0 ? `(−${-x})` : String(x))
-const plain = (x: number) => (x < 0 ? `−${-x}` : String(x))
-
-export function walkSnake(path: [string, number][]) {
-  const values = [1]
-  for (const [op, x] of path) {
-    const v = values[values.length - 1]
-    values.push(op === '+' ? v + x : op === '−' ? v - x : op === '·' ? v * x : v / x)
-  }
-  return values
-}
-
-const negativeTasks = (sessionId: string): SessionTask[] =>
-  snakePaths.map((path, i) => {
-    const values = walkSnake(path)
-    const steps = path.map(([op, x]) => `${op} ${signedNumber(x)}`).join(' → ')
-    return textTask(
-      `ark-${sessionId}-tallslange-${i + 1}`,
-      3,
-      `Tallslange med negative tall. Start på 1, og gjør stegene etter tur:\n${steps}\nHvilket tall ender du på?`,
-      `${plain(values[values.length - 1])}  (${values.map(plain).join(' → ')})`,
-    )
-  })
-
-// ---------------------------------------------------------------------------------------
-// Avrunding (Tall økt 5 «Runde av til nærmeste tier» og økt 6 «… hundrer»)
-
-/** «Avrundingsoppgaver» – uten eksemplene som er løst på arket (955 og 346). */
-const rounding = {
-  tens: [105, 671, 378, 800, 618, 80, 704, 239, 515, 407, 163, 465, 672, 462, 471, 501, 549, 551, 646, 685, 51],
-  hundreds: [636, 762, 887, 223, 234, 573, 212, 128, 773, 942, 360, 849, 258, 450, 646, 115, 718, 999, 836, 684, 237],
-}
-
-/** Avrunding til nærmeste tier/hundrer. Midt mellom (f.eks. 465 eller 450) rundes opp. */
-export const roundTo = (n: number, step: number) => Math.floor(n / step + 0.5) * step
-
-function roundingTasks(sessionId: string, step: 10 | 100, numbers: number[]): SessionTask[] {
-  const unit = step === 10 ? 'tier' : 'hundrer'
-  return ([1, 2, 3] as const).flatMap((level) =>
-    slice(numbers, level - 1, 6).map((n, i) =>
-      textTask(
-        `ark-${sessionId}-avrunding-${level}-${i + 1}`,
-        level,
-        `Rund av til nærmeste hele ${unit}.\n${n}`,
-        `${roundTo(n, step)}  (${n} ≈ ${roundTo(n, step)})`,
-      ),
-    ),
-  )
-}
 
 // ---------------------------------------------------------------------------------------
 // Regnerekkefølge (Repetisjon høst: «Problemløsing med flere regnearter» og «Dette mestrer jeg»)
@@ -656,58 +602,79 @@ function circleTask(id: string): TextTask {
   )
 }
 
-function multiplicationTasks(sessionId: string, part: number): SessionTask[] {
+/** Bare gangestykker der minst én av faktorene er i `factors` – arkene blander inn andre tabeller og deling. */
+const onlyTables = (list: Fact[], factors: number[]) =>
+  list.filter(([a, op, b]) => op === '*' && (factors.includes(a) || factors.includes(b)))
+
+/**
+ * Gangearkene til Multiplikasjon, økt for økt. Hver økt får bare gangetabellene i overskriften
+ * (se øktprofilene i topics/yearPlan.ts). Ark som ikke passer noen økt, er ikke med.
+ */
+function multiplicationTasks(sessionId: string, session: number): SessionTask[] {
   const id = (sheet: string, i: number) => `ark-${sessionId}-${sheet}-${i + 1}`
   const drill = (list: Fact[], sheet: string, level: Level, from: number, count: number, instruction = 'Regn ut.') =>
     list.slice(from, from + count).map(([a, op, b], i) => math(id(sheet, from + i), level, a, op, b, 'Hoderegning', instruction))
+  /** Strategiøkt: hvert stykke får strategistøtten for nivået (se multiplicationStrategies.ts). */
+  const withStrategy = (tasks: SessionTask[]) =>
+    tasks.map((t) => (t.kind === 'text' ? t : { ...t, instruction: strategyInstruction(t.level, t.a, t.b) ?? t.instruction }))
+  /** Nivå 3 i en strategiøkt: ikke 0, 1 eller 2 som faktor – de gir ingen reell strategiutfordring. */
+  const challenging = (list: Fact[]) => list.filter(([a, , b]) => a > 2 && b > 2)
 
-  switch (part) {
-    case 0: // «Like grupper og gjentatt addisjon»
+  switch (session) {
+    case 1: // «Like grupper og gjentatt addisjon»: figurer og gjentatt addisjon – ingen gangetabell
       return [
         textTask(id('bilde', 0), 1, 'Se på figuren. Lag to regnestykker: ett med pluss og ett med gange.', '4 + 4 = 8 og 2 · 4 = 8  (eller 2 + 2 + 2 + 2 = 8 og 4 · 2 = 8)', { kind: 'grid', rows: ['####', '####'] }),
         textTask(id('bilde', 1), 1, 'Se på figuren. Lag to regnestykker: ett med pluss og ett med gange.', '8 + 8 + 8 = 24 og 3 · 8 = 24  (eller 8 · 3 = 24)', { kind: 'grid', rows: ['########', '########', '########'] }),
-        ...drill(timesSheets.zeroOne, '0-1-gangen', 1, 0, 4),
         ...repeatedAddition.map((sum, i) => {
           const parts = sum.split('+').map(Number)
           const total = parts.reduce((a, b) => a + b, 0)
-          return textTask(
-            id('bytt-til-gange', i),
-            i < 4 ? 2 : 3,
-            `Bytt ut regnestykket med gange, og regn ut.\n${sum.replaceAll('+', ' + ')} = ___`,
-            `${parts.length} · ${parts[0]} = ${total}`,
-          )
+          // Få ledd på nivå 1, flere på nivå 2 og 3 (som i øktprofilen).
+          const level: Level = parts.length <= 3 ? 1 : parts.length <= 5 ? 2 : 3
+          return textTask(id('bytt-til-gange', i), level, `Skriv som gangestykke, og regn ut.\n${sum.replaceAll('+', ' + ')} = ___`, `${parts.length} · ${parts[0]} = ${total}`)
         }),
       ]
-    case 1: // «Gangetegnet og rekker med like mange»
-      return [...drill(timesSheets.zeroOne, '0-1-gangen', 1, 4, 6), ...drill(timesSheets.levelOne, 'niva-1', 2, 0, 6), ...drill(timesSheets.levelOne, 'niva-1', 3, 6, 6)]
-    case 2: // «Hopp-telling med 2, 5 og 10»
-      return [...drill(timesSheets.ten, '10-gangen', 1, 0, 6), ...drill(timesSheets.five, '5-gangen', 2, 0, 6), ...drill(timesSheets.tenMixed, '10-gange-og-deling', 3, 0, 6)]
-    case 3: // «2-, 5- og 10-gangen – øve og bruke»
-      return [...drill(timesSheets.five, '5-gangen', 1, 6, 6), ...drill(timesSheets.ten, '10-gangen', 2, 6, 6), ...drill(timesSheets.tenMixed, '10-gange-og-deling', 3, 6, 6)]
-    case 4: // «Dobling: fra 2-gangen til 4-gangen»
-      return [...drill(timesSheets.four, '4-gangen', 1, 0, 6), ...drill(timesSheets.four, '4-gangen', 2, 6, 6), ...drill(timesSheets.four, '4-gangen', 3, 12, 5), circleTask(id('regnesirkel', 0))]
-    case 5: // «3- og 6-gangen – finne sammenhenger»
+    case 2: // «Gangetegnet og 0- og 1-gangen»
       return [
-        ...drill(timesSheets.three, '3-gangen', 1, 0, 6),
-        ...drill(timesSheets.six, '6-gangen', 2, 0, 6),
-        ...drill(timesSheets.three, '3-gangen', 3, 6, 3),
-        ...drill(timesSheets.six, '6-gangen', 3, 6, 3),
+        // Arket har tall opp til 10. Nivå 3 (store tall med 0 og 1) får bare genererte oppgaver.
+        ...drill(timesSheets.zeroOne, '0-1-gangen', 1, 0, 6),
+        ...drill(timesSheets.zeroOne, '0-1-gangen', 2, 6, 12),
       ]
-    case 6: // «7-, 8- og 9-gangen med smarte strategier»
+    case 3: // «2-, 5- og 10-gangen»
       return [
-        ...drill(timesSheets.seven, '7-gangen', 1, 0, 6),
-        ...drill(timesSheets.eight, '8-gangen', 2, 0, 3),
-        ...drill(timesSheets.nine, '9-gangen', 2, 0, 3),
-        ...drill(timesSheets.eightDivision, '8-gange-og-deling', 3, 0, 3),
-        ...drill(timesSheets.bigTable, 'store-gangetabell', 3, 0, 3),
+        ...drill(onlyTables(timesSheets.ten, [10]), '10-gangen', 1, 0, 6),
+        ...drill(onlyTables(timesSheets.five, [5]), '5-gangen', 2, 0, 6),
+        ...drill(onlyTables(timesSheets.levelOne, [2]), '2-gangen', 3, 0, 3),
+        ...drill(onlyTables(timesSheets.tenMixed, [10]), '10-gangen-blandet', 3, 0, 3),
       ]
-    default: // «Tekstoppgaver med gange»
+    case 4: // «3- og 4-gangen – doble og halvere»
       return [
-        ...drill(timesSheets.mixed, 'gangetabell', 1, 0, 6),
-        ...boltTasks.slice(0, 3).map((t, i) => textTask(id('bolter', i), 2, t.text, t.solution)),
-        ...drill(timesSheets.mixed, 'gangetabell', 2, 6, 3),
-        ...columnTimes.map(([a, op, b], i) => math(id('oppstilt', i), 3, a, op, b, 'Oppstilling', 'Still opp og regn ut.')),
+        ...drill(onlyTables(timesSheets.three, [3]), '3-gangen', 1, 0, 6),
+        ...drill(onlyTables(timesSheets.four, [4]), '4-gangen', 2, 0, 6),
+        ...drill(onlyTables(timesSheets.three, [3]), '3-gangen', 3, 6, 3),
+        ...drill(onlyTables(timesSheets.four, [4]), '4-gangen', 3, 6, 3),
+        circleTask(id('regnesirkel', 0)),
       ]
+    case 5: // «6-gangen og sammenhenger i tabellen»
+      return [
+        ...drill(onlyTables(timesSheets.six, [6]), '6-gangen', 1, 0, 6),
+        ...drill(onlyTables(timesSheets.six, [6]), '6-gangen', 2, 6, 6),
+        ...drill(onlyTables(timesSheets.six, [6]), '6-gangen', 3, 12, 6),
+      ]
+    case 6: // «7-, 8- og 9-gangen med smarte strategier»: strategistøtte per stykke og nivå
+      return withStrategy([
+        ...drill(onlyTables(timesSheets.seven, [7]), '7-gangen', 1, 0, 6),
+        ...drill(onlyTables(timesSheets.eight, [8]), '8-gangen', 2, 0, 3),
+        ...drill(onlyTables(timesSheets.nine, [9]), '9-gangen', 2, 0, 3),
+        ...drill(challenging(onlyTables(timesSheets.seven, [7])), '7-gangen-utfordring', 3, 5, 2),
+        ...drill(challenging(onlyTables(timesSheets.eight, [8])), '8-gangen-utfordring', 3, 2, 2),
+        ...drill(challenging(onlyTables(timesSheets.nine, [9])), '9-gangen-utfordring', 3, 6, 2),
+      ])
+    case 8: // «Dele opp og multiplisere»: tosifret · ensifret, stilt opp
+      return columnTimes.map(([a, op, b], i) => math(id('oppstilt', i), 3, a, op, b, 'Oppstilling', 'Still opp og regn ut.'))
+    case 9: // «Bruke blokkmodeller»: like grupper i hverdagen
+      return boltTasks.slice(0, 3).map((t, i) => textTask(id('bolter', i), 2, t.text, t.solution))
+    default:
+      return []
   }
 }
 
@@ -764,7 +731,7 @@ export function measure(value: string) {
 
 const compareSign = (a: string, b: string) => (measure(a) > measure(b) ? '>' : measure(a) < measure(b) ? '<' : '=')
 
-/** «Lengde cm/mm»: oppgave 1 (tegne linjer) er gjort om til «hvor mange mm», oppgave 2 er sammenligning. */
+/** «Lengde cm/mm» (økta om lengde, maling-3): oppgave 1 (tegne linjer) er gjort om til «hvor mange mm», oppgave 2 er sammenligning. */
 const lengthsToMm = ['2 cm 5 mm', '9 cm 3 mm', '20 cm', '20 mm', '10 cm 10 mm', '100 mm']
 const lengthComparisons: [string, string][] = [
   ['5 m 5 mm', '55 cm'], ['3 cm 50 mm', '35 mm'], ['20 cm 20 mm', '200 mm'],
@@ -791,11 +758,22 @@ const unitComparisons: Record<'lengde' | 'volum' | 'masse', [string, string, str
   ],
 }
 
+/** Rader med bare disse enhetene (f.eks. kg og g i økta om masse). */
+const withUnits = (rows: [string, string, string][], allowed: string[]) =>
+  rows.filter((row) => row.every((value) => value.trim().split(/\s+/).filter((_, i) => i % 2 === 1).every((u) => allowed.includes(u))))
+
 const comparisonTask = (id: string, [a, b, c]: [string, string, string]) =>
   textTask(id, 3, `Sett inn riktig tegn: <, > eller =.\n${a} ___ ${b} ___ ${c}`, `${a} ${compareSign(a, b)} ${b} ${compareSign(b, c)} ${c}`)
 
+/** Volum: liter, dl og ml. Masse: bare kg og g (tonn og mg hører ikke til økta). */
 const measureCompareTasks = (sessionId: string, kind: 'volum' | 'masse'): SessionTask[] =>
-  unitComparisons[kind].map((row, i) => comparisonTask(`ark-${sessionId}-sammenlign-${i + 1}`, row))
+  withUnits(unitComparisons[kind], kind === 'volum' ? ['liter', 'dl', 'ml'] : ['kg', 'g']).map((row, i) =>
+    comparisonTask(`ark-${sessionId}-sammenlign-${i + 1}`, row),
+  )
+
+/** Sammenligne areal i cm² og m² (fra «Sammenlign måleenheter») – hører til økta om areal. */
+const areaCompareTasks = (sessionId: string): SessionTask[] =>
+  withUnits(unitComparisons.lengde, ['m²', 'cm²']).map((row, i) => comparisonTask(`ark-${sessionId}-sammenlign-areal-${i + 1}`, row))
 
 /** «Hvem eier bilene?» – fasiten følger av hintene: Ella har den lengste, Tores er gul, Andreas er like lang som Tores, Kari er kortere enn Olav. */
 const carPuzzle = textTask(
@@ -813,7 +791,7 @@ function measureUnitTasks(sessionId: string): SessionTask[] {
     ...lengthComparisons.map(([a, b], i) =>
       textTask(id('sammenlign-lengde', i), 2, `Sett inn riktig tegn: <, > eller =.\n${a} ___ ${b}`, `${a} ${compareSign(a, b)} ${b}  (${measure(a)} mm og ${measure(b)} mm)`),
     ),
-    ...unitComparisons.lengde.map((row, i) => comparisonTask(id('sammenlign', i), row)),
+    ...withUnits(unitComparisons.lengde, ['km', 'm', 'dm', 'cm', 'mm']).map((row, i) => comparisonTask(id('sammenlign', i), row)),
     { ...carPuzzle, id: id('hvem-eier-bilene', 0) },
   ]
 }
@@ -836,31 +814,17 @@ const sharingSessions: [number, string][] = [
   [6, 'divisjon-7'],
 ]
 
-/** Del av gangearkene → økt i Multiplikasjon. */
-const multiplicationSessions: [number, string][] = [
-  [0, 'multiplikasjon-1'],
-  [1, 'multiplikasjon-2'],
-  [2, 'multiplikasjon-3'],
-  [4, 'multiplikasjon-4'],
-  [5, 'multiplikasjon-5'],
-  [6, 'multiplikasjon-6'],
-  [3, 'multiplikasjon-7'],
-  [7, 'multiplikasjon-8'],
-]
+/** Gangearkene → økt nr. 1–9 i Multiplikasjon (økt 7 og 10 har ingen ark som passer). */
+const multiplicationSessions = [1, 2, 3, 4, 5, 6, 8, 9]
 
 export const worksheetTasks: Record<string, SessionTask[]> = collect([
-  // Tall
-  ['tall-5', roundingTasks('tall-5', 10, rounding.tens)],
-  ['tall-6', roundingTasks('tall-6', 100, rounding.hundreds)],
-  // okt-7 er «Oppstilling med tall over 1000»: der får nivå 2 og 3 oppstillingsarkene i stedet.
-  ...sessionIds.map((sessionId, part): [string, SessionTask[]] => [
-    sessionId,
-    sessionId === 'okt-7' ? additionTasks(part).filter((t) => t.level === 1) : additionTasks(part),
-  ]),
+  // Tall. Økt 5 og 6 (tall-5, tall-6) har ingen ark: grunnoppgavene kommer fra undertemaene i årsplanen.
+  // okt-7 «Oppstilling med tall over 1000» og okt-8 «Negative tall og tallinjen» får ikke de generelle
+  // pluss- og minusarkene: okt-7 får oppstillingsarkene på nivå 2 og 3, okt-8 bare oppgavene fra årsplanen.
+  ...sessionIds.slice(0, 2).map((sessionId, part): [string, SessionTask[]] => [sessionId, additionTasks(part)]),
   ['okt-7', columnTasks('okt-7')],
-  ['okt-8', negativeTasks('okt-8')],
   // Multiplikasjon og divisjon
-  ...multiplicationSessions.map(([part, sessionId]): [string, SessionTask[]] => [sessionId, multiplicationTasks(sessionId, part)]),
+  ...multiplicationSessions.map((n): [string, SessionTask[]] => [`multiplikasjon-${n}`, multiplicationTasks(`multiplikasjon-${n}`, n)]),
   ['divisjon-1', timesCrossTasks('divisjon-1')],
   ...sharingSessions.map(([part, sessionId]): [string, SessionTask[]] => [sessionId, sharingTasks(sessionId, part)]),
   // Repetisjon høst
@@ -874,7 +838,7 @@ export const worksheetTasks: Record<string, SessionTask[]> = collect([
   ['maling-1', measureCompareTasks('maling-1', 'volum')],
   ['maling-2', measureCompareTasks('maling-2', 'masse')],
   ['maling-3', measureUnitTasks('maling-3')],
-  ['maling-4', areaTasks('maling-4')],
+  ['maling-4', [...areaTasks('maling-4'), ...areaCompareTasks('maling-4')]],
   ['maling-6', [...clockTasks('maling-6', 0), ...clockTasks('maling-6', 1)]],
   ['repetisjon-var-2', [...clockTasks('repetisjon-var-2', 2), ...clockTasks('repetisjon-var-2', 3)]],
 ])

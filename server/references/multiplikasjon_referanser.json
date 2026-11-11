@@ -1,0 +1,980 @@
+{
+  "schemaVersion": 1,
+  "topic": "multiplikasjon",
+  "description": "Maskinlesbar eksport av Lærestiens originale referanseoppgaver. Referansene er AI-kontekst og skal ikke vises direkte som elevoppgaver.",
+  "referenceCount": 54,
+  "references": [
+    {
+      "id": "M1-N1-01",
+      "topic": "multiplikasjon",
+      "area": "tabell-2-3-4-5-10",
+      "areaTitle": "2-, 3-, 4-, 5- og 10-gangen",
+      "level": 1,
+      "title": "To like grupper",
+      "format": "Illustrasjon og utfylling",
+      "purpose": "Koble like grupper, gjentatt addisjon og multiplikasjon.",
+      "studentText": "Se på gruppene. Fyll inn: 2 + 2 + 2 = __ og 3 x 2 = __.",
+      "solution": "6",
+      "representationHint": "visuell referanse finnes i PDF",
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "01_2_3_4_5_og_10_gangen.pdf"
+      }
+    },
+    {
+      "id": "M1-N1-02",
+      "topic": "multiplikasjon",
+      "area": "tabell-2-3-4-5-10",
+      "areaTitle": "2-, 3-, 4-, 5- og 10-gangen",
+      "level": 1,
+      "title": "Hopp med fem",
+      "format": "Tallinje",
+      "purpose": "Koble 5-gangen til gjentatte hopp.",
+      "studentText": "Tallinjen viser like hopp. Hvilket tall ender du på etter 5 hopp på 5? Skriv også gangestykket.",
+      "solution": "25; 5 x 5 = 25",
+      "representationHint": "visuell referanse finnes i PDF",
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "01_2_3_4_5_og_10_gangen.pdf"
+      }
+    },
+    {
+      "id": "M1-N1-03",
+      "topic": "multiplikasjon",
+      "area": "tabell-2-3-4-5-10",
+      "areaTitle": "2-, 3-, 4-, 5- og 10-gangen",
+      "level": 1,
+      "title": "Rader med prikker",
+      "format": "Rutenett",
+      "purpose": "Lese et rutenett som multiplikasjon.",
+      "studentText": "Det er 4 rader med 3 prikker. Hvor mange prikker er det? Fyll inn: 4 x 3 = __.",
+      "solution": "12",
+      "representationHint": "visuell referanse finnes i PDF",
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "01_2_3_4_5_og_10_gangen.pdf"
+      }
+    },
+    {
+      "id": "M1-N2-01",
+      "topic": "multiplikasjon",
+      "area": "tabell-2-3-4-5-10",
+      "areaTitle": "2-, 3-, 4-, 5- og 10-gangen",
+      "level": 2,
+      "title": "Hoderegning",
+      "format": "Hoderegning",
+      "purpose": "Automatisere de valgte gangetabellene.",
+      "studentText": "Regn ut: 3 x 4, 5 x 6, 10 x 7, 2 x 9 og 4 x 8.",
+      "solution": "12, 30, 70, 18, 32",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "01_2_3_4_5_og_10_gangen.pdf"
+      }
+    },
+    {
+      "id": "M1-N2-02",
+      "topic": "multiplikasjon",
+      "area": "tabell-2-3-4-5-10",
+      "areaTitle": "2-, 3-, 4-, 5- og 10-gangen",
+      "level": 2,
+      "title": "Finn uttrykket",
+      "format": "Rutenett og muntlig forklaring",
+      "purpose": "Utforske den kommutative egenskapen.",
+      "studentText": "Skriv to gangestykker som passer til rutenettet. Forklar hvorfor begge gir samme antall.",
+      "solution": "3 x 5 = 15 og 5 x 3 = 15",
+      "representationHint": "visuell referanse finnes i PDF",
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "01_2_3_4_5_og_10_gangen.pdf"
+      }
+    },
+    {
+      "id": "M1-N2-03",
+      "topic": "multiplikasjon",
+      "area": "tabell-2-3-4-5-10",
+      "areaTitle": "2-, 3-, 4-, 5- og 10-gangen",
+      "level": 2,
+      "title": "Manglende faktor",
+      "format": "Utfylling",
+      "purpose": "Bruke gangetabellkunnskap baklengs.",
+      "studentText": "Fyll inn tallet som mangler: __ x 5 = 35, 4 x __ = 28 og 10 x __ = 90.",
+      "solution": "7, 7, 9",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "01_2_3_4_5_og_10_gangen.pdf"
+      }
+    },
+    {
+      "id": "M1-N3-01",
+      "topic": "multiplikasjon",
+      "area": "tabell-2-3-4-5-10",
+      "areaTitle": "2-, 3-, 4-, 5- og 10-gangen",
+      "level": 3,
+      "title": "Sorter uttrykkene",
+      "format": "Hoderegning og resonnering",
+      "purpose": "Sammenligne produkter og oppdage likeverdige uttrykk.",
+      "studentText": "Regn ut og sorter fra minst til størst: 4 x 7, 3 x 9, 5 x 6, 2 x 14 og 10 x 3. Hva legger du merke til?",
+      "solution": "27; deretter 28 (to uttrykk); deretter 30 (to uttrykk)",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "01_2_3_4_5_og_10_gangen.pdf"
+      }
+    },
+    {
+      "id": "M1-N3-02",
+      "topic": "multiplikasjon",
+      "area": "tabell-2-3-4-5-10",
+      "areaTitle": "2-, 3-, 4-, 5- og 10-gangen",
+      "level": 3,
+      "title": "Lag et rutenett",
+      "format": "Åpen representasjonsoppgave",
+      "purpose": "Representere samme produkt på flere måter.",
+      "studentText": "Produktet er 40. Tegn eller beskriv to ulike rutenett som viser produktet. Skriv gangestykkene.",
+      "solution": "For eksempel 4 x 10 og 5 x 8",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "01_2_3_4_5_og_10_gangen.pdf"
+      }
+    },
+    {
+      "id": "M1-N3-03",
+      "topic": "multiplikasjon",
+      "area": "tabell-2-3-4-5-10",
+      "areaTitle": "2-, 3-, 4-, 5- og 10-gangen",
+      "level": 3,
+      "title": "Sant eller usant",
+      "format": "Resonnering",
+      "purpose": "Bruke sammenhenger mellom gangetabeller.",
+      "studentText": "Vurder påstandene: 4 x 6 er én gruppe på 4 mer enn 3 x 6. 5 x 8 er halvparten av 10 x 8. Begrunn.",
+      "solution": "Begge er sanne",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "01_2_3_4_5_og_10_gangen.pdf"
+      }
+    },
+    {
+      "id": "M2-N1-01",
+      "topic": "multiplikasjon",
+      "area": "tabell-6-7-8-9",
+      "areaTitle": "6-, 7-, 8- og 9-gangen",
+      "level": 1,
+      "title": "Fra 5-gangen til 6-gangen",
+      "format": "Delvis utfylt strategi",
+      "purpose": "Se 6-gangen som 5-gangen pluss én gruppe.",
+      "studentText": "Fyll inn mellomstegene: 6 x 4 = (5 x 4) + (1 x 4) = __ + __ = __.",
+      "solution": "20 + 4 = 24",
+      "representationHint": "visuell referanse finnes i PDF",
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "02_6_7_8_og_9_gangen.pdf"
+      }
+    },
+    {
+      "id": "M2-N1-02",
+      "topic": "multiplikasjon",
+      "area": "tabell-6-7-8-9",
+      "areaTitle": "6-, 7-, 8- og 9-gangen",
+      "level": 1,
+      "title": "Dobbel 4-gangen",
+      "format": "Strategi med støtte",
+      "purpose": "Finne 8-gangen ved å doble 4-gangen.",
+      "studentText": "Bruk 4 x 7 = 28 til å finne 8 x 7. Vis doblingen.",
+      "solution": "56",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "02_6_7_8_og_9_gangen.pdf"
+      }
+    },
+    {
+      "id": "M2-N1-03",
+      "topic": "multiplikasjon",
+      "area": "tabell-6-7-8-9",
+      "areaTitle": "6-, 7-, 8- og 9-gangen",
+      "level": 1,
+      "title": "Fra 10-gangen til 9-gangen",
+      "format": "Delvis utfylt strategi",
+      "purpose": "Se 9-gangen som 10-gangen minus én gruppe.",
+      "studentText": "Fyll inn: 9 x 6 = (10 x 6) - (1 x 6) = __ - __ = __.",
+      "solution": "60 - 6 = 54",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "02_6_7_8_og_9_gangen.pdf"
+      }
+    },
+    {
+      "id": "M2-N2-01",
+      "topic": "multiplikasjon",
+      "area": "tabell-6-7-8-9",
+      "areaTitle": "6-, 7-, 8- og 9-gangen",
+      "level": 2,
+      "title": "Velg en smart strategi",
+      "format": "Hoderegning med mellomsteg",
+      "purpose": "Velge og synliggjøre en hensiktsmessig strategi.",
+      "studentText": "Regn ut 6 x 8, 7 x 6 og 9 x 7. Vis minst ett mellomsteg for hvert uttrykk.",
+      "solution": "48, 42, 63",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "02_6_7_8_og_9_gangen.pdf"
+      }
+    },
+    {
+      "id": "M2-N2-02",
+      "topic": "multiplikasjon",
+      "area": "tabell-6-7-8-9",
+      "areaTitle": "6-, 7-, 8- og 9-gangen",
+      "level": 2,
+      "title": "Sammenlign strategier",
+      "format": "Strategisammenligning",
+      "purpose": "Forstå at ulike strategier kan gi samme produkt.",
+      "studentText": "Mina finner 7 x 8 som (5 x 8) + (2 x 8). Oskar bruker (10 x 8) - (3 x 8). Regn ut med begge strategiene.",
+      "solution": "56 med begge strategier",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "02_6_7_8_og_9_gangen.pdf"
+      }
+    },
+    {
+      "id": "M2-N2-03",
+      "topic": "multiplikasjon",
+      "area": "tabell-6-7-8-9",
+      "areaTitle": "6-, 7-, 8- og 9-gangen",
+      "level": 2,
+      "title": "Finn feilen",
+      "format": "Feilanalyse",
+      "purpose": "Kontrollere mellomsteg og produkt.",
+      "studentText": "En elev skriver 9 x 8 = 10 x 8 - 8 = 82. Finn feilen og rett utregningen.",
+      "solution": "80 - 8 = 72",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "02_6_7_8_og_9_gangen.pdf"
+      }
+    },
+    {
+      "id": "M2-N3-01",
+      "topic": "multiplikasjon",
+      "area": "tabell-6-7-8-9",
+      "areaTitle": "6-, 7-, 8- og 9-gangen",
+      "level": 3,
+      "title": "To veier til samme svar",
+      "format": "Åpen strategioppgave",
+      "purpose": "Fleksibel strategibruk.",
+      "studentText": "Finn 7 x 9 på to ulike måter. Skriv begge regnerekkene og forklar hvilken du synes er enklest.",
+      "solution": "For eksempel 5 x 9 + 2 x 9 = 63; 10 x 9 - 3 x 9 = 63",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "02_6_7_8_og_9_gangen.pdf"
+      }
+    },
+    {
+      "id": "M2-N3-02",
+      "topic": "multiplikasjon",
+      "area": "tabell-6-7-8-9",
+      "areaTitle": "6-, 7-, 8- og 9-gangen",
+      "level": 3,
+      "title": "Manglende mellomsteg",
+      "format": "Utfylling og resonnering",
+      "purpose": "Tolke og fullføre strategiske omskrivinger.",
+      "studentText": "Fyll inn slik at regnerekkene blir sanne: 8 x 9 = (__ x 9) x 2 og 6 x 7 = (5 x 7) + __.",
+      "solution": "4; 7",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "02_6_7_8_og_9_gangen.pdf"
+      }
+    },
+    {
+      "id": "M2-N3-03",
+      "topic": "multiplikasjon",
+      "area": "tabell-6-7-8-9",
+      "areaTitle": "6-, 7-, 8- og 9-gangen",
+      "level": 3,
+      "title": "Vurder en påstand",
+      "format": "Begrepsforklaring",
+      "purpose": "Skille mellom bytting og dobling.",
+      "studentText": "En elev sier: «Når jeg kan 7 x 8, vet jeg også 8 x 7 og 14 x 8.» Hva kan eleven finne direkte, og hva krever et ekstra steg?",
+      "solution": "8 x 7 direkte ved bytte; 14 x 8 krever dobling av 7 x 8 til 112",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "02_6_7_8_og_9_gangen.pdf"
+      }
+    },
+    {
+      "id": "M3-N1-01",
+      "topic": "multiplikasjon",
+      "area": "tiere-hundrere",
+      "areaTitle": "Multiplisere med tiere og hundrere",
+      "level": 1,
+      "title": "Tre grupper med tjue",
+      "format": "Delvis utfylt plassverdistrategi",
+      "purpose": "Koble gangetabell og plassverdi.",
+      "studentText": "3 x 20 kan tenkes som 3 x 2 tiere. Fyll inn: 3 x 2 tiere = __ tiere = __.",
+      "solution": "6 tiere = 60",
+      "representationHint": "visuell referanse finnes i PDF",
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "03_multiplisere_med_tiere_og_hundrere.pdf"
+      }
+    },
+    {
+      "id": "M3-N1-02",
+      "topic": "multiplikasjon",
+      "area": "tiere-hundrere",
+      "areaTitle": "Multiplisere med tiere og hundrere",
+      "level": 1,
+      "title": "Fire hundrere",
+      "format": "Utfylling",
+      "purpose": "Tolke hundrere som enheter.",
+      "studentText": "Fyll inn: 4 x 300 = 4 x 3 hundrere = __ hundrere = __.",
+      "solution": "12 hundrere = 1200",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "03_multiplisere_med_tiere_og_hundrere.pdf"
+      }
+    },
+    {
+      "id": "M3-N1-03",
+      "topic": "multiplikasjon",
+      "area": "tiere-hundrere",
+      "areaTitle": "Multiplisere med tiere og hundrere",
+      "level": 1,
+      "title": "Velg riktig produkt",
+      "format": "Flervalg og kort forklaring",
+      "purpose": "Bruke størrelsesforståelse til å kontrollere produkt.",
+      "studentText": "Sett ring rundt riktig svar: 5 x 40 er 200, 20 eller 2000. Forklar med antall tiere.",
+      "solution": "200; 5 x 4 tiere = 20 tiere",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "03_multiplisere_med_tiere_og_hundrere.pdf"
+      }
+    },
+    {
+      "id": "M3-N2-01",
+      "topic": "multiplikasjon",
+      "area": "tiere-hundrere",
+      "areaTitle": "Multiplisere med tiere og hundrere",
+      "level": 2,
+      "title": "Hoderegning med plassverdi",
+      "format": "Hoderegning med mellomsteg",
+      "purpose": "Multiplisere tiere og hundrere med synlig plassverdi.",
+      "studentText": "Regn ut og skriv et mellomsteg: 6 x 30, 8 x 40, 7 x 200 og 9 x 500.",
+      "solution": "180, 320, 1400, 4500",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "03_multiplisere_med_tiere_og_hundrere.pdf"
+      }
+    },
+    {
+      "id": "M3-N2-02",
+      "topic": "multiplikasjon",
+      "area": "tiere-hundrere",
+      "areaTitle": "Multiplisere med tiere og hundrere",
+      "level": 2,
+      "title": "Sammenlign",
+      "format": "Sammenligning",
+      "purpose": "Sammenligne likeverdige produkter.",
+      "studentText": "Hvilket er størst: 4 x 70 eller 7 x 40? Regn ut og forklar.",
+      "solution": "De er like: 280",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "03_multiplisere_med_tiere_og_hundrere.pdf"
+      }
+    },
+    {
+      "id": "M3-N2-03",
+      "topic": "multiplikasjon",
+      "area": "tiere-hundrere",
+      "areaTitle": "Multiplisere med tiere og hundrere",
+      "level": 2,
+      "title": "Pakker med ark",
+      "format": "Kort anvendelsesoppgave",
+      "purpose": "Bruke hundrere i en kort anvendelse.",
+      "studentText": "Det er 200 ark i hver pakke. Hvor mange ark er det i 6 pakker? Vis med hundrere.",
+      "solution": "1200 ark",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "03_multiplisere_med_tiere_og_hundrere.pdf"
+      }
+    },
+    {
+      "id": "M3-N3-01",
+      "topic": "multiplikasjon",
+      "area": "tiere-hundrere",
+      "areaTitle": "Multiplisere med tiere og hundrere",
+      "level": 3,
+      "title": "Finn faktoren",
+      "format": "Manglende faktor",
+      "purpose": "Bruke sammenhengen mellom faktorer og produkter.",
+      "studentText": "Fyll inn: __ x 60 = 420, 8 x __ = 2400 og __ x 500 = 4500.",
+      "solution": "7, 300, 9",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "03_multiplisere_med_tiere_og_hundrere.pdf"
+      }
+    },
+    {
+      "id": "M3-N3-02",
+      "topic": "multiplikasjon",
+      "area": "tiere-hundrere",
+      "areaTitle": "Multiplisere med tiere og hundrere",
+      "level": 3,
+      "title": "Forklar mønsteret",
+      "format": "Mønster og forklaring",
+      "purpose": "Generalisere fra plassverdi.",
+      "studentText": "Sammenlign 7 x 4, 7 x 40 og 7 x 400. Beskriv hva som skjer med verdien og hvorfor.",
+      "solution": "28, 280, 2800; hver verdi er ti ganger den forrige",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "03_multiplisere_med_tiere_og_hundrere.pdf"
+      }
+    },
+    {
+      "id": "M3-N3-03",
+      "topic": "multiplikasjon",
+      "area": "tiere-hundrere",
+      "areaTitle": "Multiplisere med tiere og hundrere",
+      "level": 3,
+      "title": "Kontroller et svar",
+      "format": "Feilanalyse",
+      "purpose": "Oppdage plassverdifeil.",
+      "studentText": "En elev hevder at 9 x 300 = 270 fordi 9 x 3 = 27. Forklar hva eleven har glemt, og skriv riktig svar.",
+      "solution": "2700; 27 hundrere",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "03_multiplisere_med_tiere_og_hundrere.pdf"
+      }
+    },
+    {
+      "id": "M4-N1-01",
+      "topic": "multiplikasjon",
+      "area": "dele-opp",
+      "areaTitle": "Dele opp og multiplisere",
+      "level": 1,
+      "title": "Del 14 i 10 og 4",
+      "format": "Delvis utfylt oppdeling",
+      "purpose": "Bruke den distributive egenskapen med støtte.",
+      "studentText": "Fyll inn: 6 x 14 = (6 x 10) + (6 x 4) = __ + __ = __.",
+      "solution": "60 + 24 = 84",
+      "representationHint": "visuell referanse finnes i PDF",
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "04_dele_opp_og_multiplisere.pdf"
+      }
+    },
+    {
+      "id": "M4-N1-02",
+      "topic": "multiplikasjon",
+      "area": "dele-opp",
+      "areaTitle": "Dele opp og multiplisere",
+      "level": 1,
+      "title": "Del 23 i 20 og 3",
+      "format": "Delvis utfylt oppdeling",
+      "purpose": "Koble plassverdi og delprodukter.",
+      "studentText": "Fyll inn: 4 x 23 = (4 x 20) + (4 x 3) = __ + __ = __.",
+      "solution": "80 + 12 = 92",
+      "representationHint": "visuell referanse finnes i PDF",
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "04_dele_opp_og_multiplisere.pdf"
+      }
+    },
+    {
+      "id": "M4-N1-03",
+      "topic": "multiplikasjon",
+      "area": "dele-opp",
+      "areaTitle": "Dele opp og multiplisere",
+      "level": 1,
+      "title": "Velg oppdelingen",
+      "format": "Flervalg",
+      "purpose": "Skille korrekt oppdeling fra ufullstendig multiplikasjon.",
+      "studentText": "Hvilken oppdeling passer til 5 x 17? A: 5 x 10 + 5 x 7. B: 5 x 10 + 7. Regn ut.",
+      "solution": "A; 50 + 35 = 85",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "04_dele_opp_og_multiplisere.pdf"
+      }
+    },
+    {
+      "id": "M4-N2-01",
+      "topic": "multiplikasjon",
+      "area": "dele-opp",
+      "areaTitle": "Dele opp og multiplisere",
+      "level": 2,
+      "title": "Finn delproduktene",
+      "format": "Oppdeling med mellomsteg",
+      "purpose": "Bruke oppdeling selvstendig.",
+      "studentText": "Regn ut ved å dele opp: 7 x 16, 8 x 24 og 6 x 35. Vis delproduktene.",
+      "solution": "112, 192, 210",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "04_dele_opp_og_multiplisere.pdf"
+      }
+    },
+    {
+      "id": "M4-N2-02",
+      "topic": "multiplikasjon",
+      "area": "dele-opp",
+      "areaTitle": "Dele opp og multiplisere",
+      "level": 2,
+      "title": "Fullfør modellen",
+      "format": "Modell og beregning",
+      "purpose": "Lese delt rutenett som regnemodell.",
+      "studentText": "Rutenettet viser 9 x 13 delt i 9 x 10 og 9 x 3. Finn begge delproduktene og totalen.",
+      "solution": "90, 27, totalt 117",
+      "representationHint": "visuell referanse finnes i PDF",
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "04_dele_opp_og_multiplisere.pdf"
+      }
+    },
+    {
+      "id": "M4-N2-03",
+      "topic": "multiplikasjon",
+      "area": "dele-opp",
+      "areaTitle": "Dele opp og multiplisere",
+      "level": 2,
+      "title": "Finn feilen",
+      "format": "Feilanalyse",
+      "purpose": "Kontrollere at begge deler multipliseres.",
+      "studentText": "En elev skriver 4 x 26 = 4 x 20 + 6 = 86. Finn feilen og rett regnerekkefølgen.",
+      "solution": "4 x 20 + 4 x 6 = 80 + 24 = 104",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "04_dele_opp_og_multiplisere.pdf"
+      }
+    },
+    {
+      "id": "M4-N3-01",
+      "topic": "multiplikasjon",
+      "area": "dele-opp",
+      "areaTitle": "Dele opp og multiplisere",
+      "level": 3,
+      "title": "To oppdelinger",
+      "format": "Åpen strategioppgave",
+      "purpose": "Velge fleksibel oppdeling.",
+      "studentText": "Regn ut 7 x 18 på to ulike måter ved å dele opp 18. Vis at svarene blir like.",
+      "solution": "For eksempel 7 x 10 + 7 x 8 = 126; 7 x 20 - 7 x 2 = 126",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "04_dele_opp_og_multiplisere.pdf"
+      }
+    },
+    {
+      "id": "M4-N3-02",
+      "topic": "multiplikasjon",
+      "area": "dele-opp",
+      "areaTitle": "Dele opp og multiplisere",
+      "level": 3,
+      "title": "Hvilken metode er smartest?",
+      "format": "Resonnering",
+      "purpose": "Vurdere effektivitet i strategi.",
+      "studentText": "Velg en effektiv oppdeling for 9 x 48. Regn ut og begrunn valget.",
+      "solution": "For eksempel 9 x 50 - 9 x 2 = 450 - 18 = 432",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "04_dele_opp_og_multiplisere.pdf"
+      }
+    },
+    {
+      "id": "M4-N3-03",
+      "topic": "multiplikasjon",
+      "area": "dele-opp",
+      "areaTitle": "Dele opp og multiplisere",
+      "level": 3,
+      "title": "Manglende delprodukt",
+      "format": "Manglende mellomsteg",
+      "purpose": "Tolke en delvis regnerekkefølge.",
+      "studentText": "5 x 37 = (5 x 30) + __ = 185. Finn det manglende delproduktet og forklar hvilken del av 37 det kommer fra.",
+      "solution": "35; fra 5 x 7",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "04_dele_opp_og_multiplisere.pdf"
+      }
+    },
+    {
+      "id": "M5-N1-01",
+      "topic": "multiplikasjon",
+      "area": "blokkmodell",
+      "areaTitle": "Bruke blokkmodeller",
+      "level": 1,
+      "title": "Finn totalen",
+      "format": "Blokkmodell",
+      "purpose": "Lese kjent antall grupper og kjent gruppestørrelse.",
+      "studentText": "Modellen viser 4 like deler med 6 i hver. Hvor mye er det til sammen? Skriv gangestykket.",
+      "solution": "4 x 6 = 24",
+      "representationHint": "visuell referanse finnes i PDF",
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "05_blokkmodeller.pdf"
+      }
+    },
+    {
+      "id": "M5-N1-02",
+      "topic": "multiplikasjon",
+      "area": "blokkmodell",
+      "areaTitle": "Bruke blokkmodeller",
+      "level": 1,
+      "title": "Finn hver del",
+      "format": "Blokkmodell",
+      "purpose": "Finne ukjent gruppestørrelse.",
+      "studentText": "Modellen har totalt 30 fordelt på 5 like deler. Hvor mye er det i hver del?",
+      "solution": "6",
+      "representationHint": "visuell referanse finnes i PDF",
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "05_blokkmodeller.pdf"
+      }
+    },
+    {
+      "id": "M5-N1-03",
+      "topic": "multiplikasjon",
+      "area": "blokkmodell",
+      "areaTitle": "Bruke blokkmodeller",
+      "level": 1,
+      "title": "Koble modell og uttrykk",
+      "format": "Blokkmodell og flervalg",
+      "purpose": "Velge riktig regneart fra en modell.",
+      "studentText": "Hvilket uttrykk passer til modellen: 3 x 8, 3 + 8 eller 8 - 3? Regn ut.",
+      "solution": "3 x 8 = 24",
+      "representationHint": "visuell referanse finnes i PDF",
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "05_blokkmodeller.pdf"
+      }
+    },
+    {
+      "id": "M5-N2-01",
+      "topic": "multiplikasjon",
+      "area": "blokkmodell",
+      "areaTitle": "Bruke blokkmodeller",
+      "level": 2,
+      "title": "Ukjent antall grupper",
+      "format": "Lag blokkmodell",
+      "purpose": "Finne ukjent antall grupper.",
+      "studentText": "Totalen er 42. Hver del er 7. Hvor mange like deler må modellen ha? Tegn eller beskriv modellen.",
+      "solution": "6 deler",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "05_blokkmodeller.pdf"
+      }
+    },
+    {
+      "id": "M5-N2-02",
+      "topic": "multiplikasjon",
+      "area": "blokkmodell",
+      "areaTitle": "Bruke blokkmodeller",
+      "level": 2,
+      "title": "Fra tekst til modell",
+      "format": "Tekst og blokkmodell",
+      "purpose": "Oversette en kort situasjon til modell.",
+      "studentText": "Det er 8 esker med 5 spillbrikker i hver. Tegn en blokkmodell og finn totalen.",
+      "solution": "40 spillbrikker",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "05_blokkmodeller.pdf"
+      }
+    },
+    {
+      "id": "M5-N2-03",
+      "topic": "multiplikasjon",
+      "area": "blokkmodell",
+      "areaTitle": "Bruke blokkmodeller",
+      "level": 2,
+      "title": "Finn den skjulte verdien",
+      "format": "Blokkmodell",
+      "purpose": "Se sammenhengen mellom multiplikasjon og divisjon.",
+      "studentText": "Modellen viser 6 like deler og en total på 54. Skriv et regnestykke som finner verdien i én del.",
+      "solution": "54 : 6 = 9",
+      "representationHint": "visuell referanse finnes i PDF",
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "05_blokkmodeller.pdf"
+      }
+    },
+    {
+      "id": "M5-N3-01",
+      "topic": "multiplikasjon",
+      "area": "blokkmodell",
+      "areaTitle": "Bruke blokkmodeller",
+      "level": 3,
+      "title": "Lag to spørsmål",
+      "format": "Åpen modelleringsoppgave",
+      "purpose": "Variere hvilken størrelse som er ukjent.",
+      "studentText": "Bruk modellen med 7 deler og 8 i hver. Lag ett spørsmål der totalen er ukjent, og ett der antall deler er ukjent.",
+      "solution": "Eksempel: 7 x 8 = 56; 56 : 8 = 7",
+      "representationHint": "visuell referanse finnes i PDF",
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "05_blokkmodeller.pdf"
+      }
+    },
+    {
+      "id": "M5-N3-02",
+      "topic": "multiplikasjon",
+      "area": "blokkmodell",
+      "areaTitle": "Bruke blokkmodeller",
+      "level": 3,
+      "title": "Sammenlign modeller",
+      "format": "Modellsammenligning",
+      "purpose": "Sammenligne ulike faktoriseringer av samme produkt.",
+      "studentText": "Modell A har 4 deler med 9 i hver. Modell B har 6 deler med 6 i hver. Sammenlign totalene og forklar.",
+      "solution": "Begge har total 36",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "05_blokkmodeller.pdf"
+      }
+    },
+    {
+      "id": "M5-N3-03",
+      "topic": "multiplikasjon",
+      "area": "blokkmodell",
+      "areaTitle": "Bruke blokkmodeller",
+      "level": 3,
+      "title": "Rett modellen",
+      "format": "Feilanalyse",
+      "purpose": "Kontrollere samsvar mellom modell og uttrykk.",
+      "studentText": "En elev tegner 5 like deler med 7 i hver til uttrykket 5 x 8. Forklar hva som er feil, og beskriv en korrekt modell.",
+      "solution": "Hver del må være 8, eller modellen må vise uttrykket 5 x 7",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "05_blokkmodeller.pdf"
+      }
+    },
+    {
+      "id": "M6-N1-01",
+      "topic": "multiplikasjon",
+      "area": "kombinasjoner",
+      "areaTitle": "Antall ulike kombinasjoner",
+      "level": 1,
+      "title": "To topper og tre bukser",
+      "format": "Delvis utfylt kombinasjonstabell",
+      "purpose": "Se kombinasjoner som like mange valg i hver gruppe.",
+      "studentText": "Du kan velge mellom 2 topper og 3 bukser. Fullfør tabellen. Hvor mange antrekk kan du lage?",
+      "solution": "6 kombinasjoner",
+      "representationHint": "visuell referanse finnes i PDF",
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "06_antall_ulike_kombinasjoner.pdf"
+      }
+    },
+    {
+      "id": "M6-N1-02",
+      "topic": "multiplikasjon",
+      "area": "kombinasjoner",
+      "areaTitle": "Antall ulike kombinasjoner",
+      "level": 1,
+      "title": "Is og strøssel",
+      "format": "Systematisk liste",
+      "purpose": "Liste kombinasjoner uten å hoppe over eller gjenta.",
+      "studentText": "Det finnes 3 smaker og 2 typer strøssel. Tegn streker eller lag en liste som viser alle valgene. Hvor mange kombinasjoner?",
+      "solution": "6 kombinasjoner",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "06_antall_ulike_kombinasjoner.pdf"
+      }
+    },
+    {
+      "id": "M6-N1-03",
+      "topic": "multiplikasjon",
+      "area": "kombinasjoner",
+      "areaTitle": "Antall ulike kombinasjoner",
+      "level": 1,
+      "title": "Velg gangestykket",
+      "format": "Kort anvendelse",
+      "purpose": "Koble to valggrupper til multiplikasjon.",
+      "studentText": "Fire luer kan kombineres med to skjerf. Hvilket gangestykke finner antallet kombinasjoner?",
+      "solution": "4 x 2 = 8",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "06_antall_ulike_kombinasjoner.pdf"
+      }
+    },
+    {
+      "id": "M6-N2-01",
+      "topic": "multiplikasjon",
+      "area": "kombinasjoner",
+      "areaTitle": "Antall ulike kombinasjoner",
+      "level": 2,
+      "title": "Matpakkevalg",
+      "format": "Tabell eller liste",
+      "purpose": "Bruke systematisk representasjon og produktregel.",
+      "studentText": "Velg én av 3 typer brød og ett av 4 pålegg. Lag en tabell eller liste, og finn antallet ulike matpakker.",
+      "solution": "12 kombinasjoner",
+      "representationHint": "visuell referanse finnes i PDF",
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "06_antall_ulike_kombinasjoner.pdf"
+      }
+    },
+    {
+      "id": "M6-N2-02",
+      "topic": "multiplikasjon",
+      "area": "kombinasjoner",
+      "areaTitle": "Antall ulike kombinasjoner",
+      "level": 2,
+      "title": "Sykkelvalg",
+      "format": "Kort anvendelse",
+      "purpose": "Gå fra situasjon til produkt.",
+      "studentText": "En sykkel finnes i 5 farger og med 2 typer kurv. Hvor mange varianter finnes? Vis hvorfor med et gangestykke.",
+      "solution": "10 varianter",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "06_antall_ulike_kombinasjoner.pdf"
+      }
+    },
+    {
+      "id": "M6-N2-03",
+      "topic": "multiplikasjon",
+      "area": "kombinasjoner",
+      "areaTitle": "Antall ulike kombinasjoner",
+      "level": 2,
+      "title": "Finn den manglende valgmengden",
+      "format": "Manglende faktor",
+      "purpose": "Bruke multiplikasjon baklengs i kombinasjoner.",
+      "studentText": "Det finnes 18 kombinasjoner av 3 størrelser og et ukjent antall farger. Hvor mange farger finnes?",
+      "solution": "6 farger",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "06_antall_ulike_kombinasjoner.pdf"
+      }
+    },
+    {
+      "id": "M6-N3-01",
+      "topic": "multiplikasjon",
+      "area": "kombinasjoner",
+      "areaTitle": "Antall ulike kombinasjoner",
+      "level": 3,
+      "title": "Tre valg",
+      "format": "Trestruktur eller systematisk liste",
+      "purpose": "Utvide produktregelen til tre uavhengige valg.",
+      "studentText": "Du velger én av 2 drikker, én av 3 frukter og én av 2 typer knekkebrød. Hvor mange komplette måltider kan lages? Vis systematisk.",
+      "solution": "12 kombinasjoner",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "06_antall_ulike_kombinasjoner.pdf"
+      }
+    },
+    {
+      "id": "M6-N3-02",
+      "topic": "multiplikasjon",
+      "area": "kombinasjoner",
+      "areaTitle": "Antall ulike kombinasjoner",
+      "level": 3,
+      "title": "Sammenlign utvalg",
+      "format": "Flerstegsoppgave",
+      "purpose": "Sammenligne produkter i en anvendelse.",
+      "studentText": "Butikk A har 4 modeller i 3 farger. Butikk B har 2 modeller i 7 farger. Hvilken butikk har flest kombinasjoner, og hvor mange flere?",
+      "solution": "Butikk B: 14 mot 12, altså 2 flere",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "06_antall_ulike_kombinasjoner.pdf"
+      }
+    },
+    {
+      "id": "M6-N3-03",
+      "topic": "multiplikasjon",
+      "area": "kombinasjoner",
+      "areaTitle": "Antall ulike kombinasjoner",
+      "level": 3,
+      "title": "Lag et utvalg med 24 kombinasjoner",
+      "format": "Åpen problemløsing",
+      "purpose": "Faktorisere et antall i en åpen situasjon.",
+      "studentText": "Finn to eller tre valgmengder som gir nøyaktig 24 kombinasjoner. Vis med multiplikasjon og forklar hva valgene kan være.",
+      "solution": "For eksempel 6 x 4 eller 2 x 3 x 4",
+      "representationHint": null,
+      "teacherNote": null,
+      "source": {
+        "kind": "gruppen",
+        "document": "06_antall_ulike_kombinasjoner.pdf"
+      }
+    }
+  ]
+}
