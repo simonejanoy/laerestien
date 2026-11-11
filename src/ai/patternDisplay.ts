@@ -205,6 +205,39 @@ export type ExpectedAnswer =
   | { kind: 'item'; value: string }
   /** Flere figurer eller farger i rekkefølge (de neste leddene i et mønster). */
   | { kind: 'items'; values: string[] }
+  /** Regning: regnetegnet som mangler («10 __ 5 = 50» → ·). */
+  | { kind: 'operator'; value: '+' | '−' | '·' | ':' }
+  /**
+   * Regning: flere spørsmål i samme oppgave («Hvilken regneart passer? Hvor mange boller blir det?», «Hvor mange stemmer
+   * fikk håndball? Hva fikk flest stemmer?»). Hvert spørsmål får sitt eget svarfelt og rettes for seg.
+   */
+  | { kind: 'parts'; parts: QuestionPart[] }
+
+/** Svaret på ett spørsmål: et tall (tallboks), et regnetegn (fire knapper) eller et navn fra diagrammet eller tabellen (knapper). */
+export type PartAnswer = { kind: 'number'; value: number } | { kind: 'operator'; value: '+' | '−' | '·' | ':' } | { kind: 'choice'; value: string }
+
+/** Ett spørsmål i oppgaven (nøyaktig slik det står i teksten) og svaret på det. */
+export interface QuestionPart {
+  question: string
+  answer: PartAnswer
+}
+
+/** Om svaret på ett spørsmål er riktig: tallet, regnetegnet (også x, *, / og -) eller navnet (små og store bokstaver likt). */
+export function partCorrect(answer: PartAnswer, value: string): boolean {
+  const v = value.trim()
+  if (answer.kind === 'number') return /^\d+$/.test(v) && Number(v) === answer.value
+  if (answer.kind === 'operator') return normalizeOperator(v) === answer.value
+  return v.toLowerCase() === answer.value.toLowerCase()
+}
+
+/** Svaret på ett spørsmål slik eleven ser det. */
+export const formatPart = (answer: PartAnswer) => String(answer.value)
+
+/** Svarene på delene lagres som én tekst, én del per linje. */
+export const joinParts = (values: string[]) => values.map((v) => v.replace(/\n/g, ' ').trim()).join('\n')
+
+/** Regnetegnet slik appen skriver det: «x», «*» og «×» er ·, «/» er :, og «-» er −. */
+export const normalizeOperator = (sign: string) => ({ '+': '+', '-': '−', '−': '−', '·': '·', x: '·', X: '·', '×': '·', '*': '·', ':': ':', '/': ':' })[sign.trim()] ?? null
 
 /** Figurer skrevet med ord: eleven har ikke ●, ■ og ▲ på tastaturet. */
 const ITEM_WORDS: Record<string, string> = {
@@ -248,6 +281,11 @@ function answerNumbers(answer: string, given: Set<number>, expected?: number): n
  * («trekant» for ▲) og tallrekker skrevet med komma, mellomrom eller «og».
  */
 export function answerStatus(expected: ExpectedAnswer, answer: string, taskText = ''): 'correct' | 'wrong' | 'several' {
+  if (expected.kind === 'operator') return normalizeOperator(answer) === expected.value ? 'correct' : 'wrong'
+  if (expected.kind === 'parts') {
+    const values = answer.split('\n')
+    return expected.parts.every((p, i) => partCorrect(p.answer, values[i] ?? '')) ? 'correct' : 'wrong'
+  }
   const given = new Set(numbersIn(taskText))
   if (expected.kind === 'number') {
     const candidates = [...new Set(answerNumbers(answer, given, expected.value))]
@@ -279,7 +317,8 @@ export const isCorrect = (expected: ExpectedAnswer, answer: string, taskText = '
 export function formatExpected(expected: ExpectedAnswer): string {
   if (expected.kind === 'number') return String(expected.value)
   if (expected.kind === 'numbers') return expected.values.join(', ')
-  if (expected.kind === 'item') return expected.value
+  if (expected.kind === 'item' || expected.kind === 'operator') return expected.value
+  if (expected.kind === 'parts') return expected.parts.map((p) => formatPart(p.answer)).join('; ')
   return expected.values.join(expected.values.every((v) => v in PATTERN_COLORS) ? ', ' : ' ')
 }
 
@@ -293,6 +332,11 @@ export function readExpected(value: unknown): ExpectedAnswer | undefined {
   if (v.kind === 'numbers' && Array.isArray(v.values) && v.values.length > 0 && v.values.every(isNumber)) return { kind: 'numbers', values: v.values }
   if (v.kind === 'item' && isItem(v.value)) return { kind: 'item', value: v.value }
   if (v.kind === 'items' && Array.isArray(v.values) && v.values.length > 0 && v.values.every(isItem)) return { kind: 'items', values: v.values }
+  if (v.kind === 'operator' && typeof v.value === 'string' && ['+', '−', '·', ':'].includes(v.value)) return { kind: 'operator', value: v.value as '+' | '−' | '·' | ':' }
+  if (v.kind === 'parts' && Array.isArray(v.parts) && v.parts.length > 0) {
+    const parts = (v.parts as unknown[]).map(readPart)
+    if (parts.every((p): p is QuestionPart => p !== null)) return { kind: 'parts', parts }
+  }
   return undefined
 }
 
@@ -329,4 +373,17 @@ export function withoutDotSentences(text: string): string {
       return kept.trim() || !line.trim() ? [kept] : []
     })
     .join('\n')
+}
+
+/** Leser ett spørsmål med svar, eller null. */
+function readPart(value: unknown): QuestionPart | null {
+  if (typeof value !== 'object' || value === null) return null
+  const { question, answer } = value as { question?: unknown; answer?: { kind?: unknown; value?: unknown } }
+  if (typeof question !== 'string' || !question.trim() || typeof answer !== 'object' || answer === null) return null
+  if (answer.kind === 'number' && typeof answer.value === 'number' && Number.isInteger(answer.value) && answer.value >= 0) return { question, answer: { kind: 'number', value: answer.value } }
+  if (answer.kind === 'operator' && typeof answer.value === 'string' && ['+', '−', '·', ':'].includes(answer.value)) {
+    return { question, answer: { kind: 'operator', value: answer.value as '+' | '−' | '·' | ':' } }
+  }
+  if (answer.kind === 'choice' && typeof answer.value === 'string' && answer.value.trim()) return { question, answer: { kind: 'choice', value: answer.value } }
+  return null
 }

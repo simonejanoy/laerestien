@@ -9,13 +9,15 @@ import {
   type TaskRequest,
   type TaskResult,
 } from '../src/ai/contract.ts'
-import { isReferenceArea, topicOfArea, type DivisionArea, type GeometryArea, type MeasurementArea, type NumbersAndOperationsArea, type PatternArea, type ProblemSolvingArea, type ReferenceArea } from '../src/ai/contract.ts'
+import { isReferenceArea, topicOfArea, type DivisionArea, type GeometryArea, type ArithmeticArea, type MeasurementArea, type NumbersAndOperationsArea, type PatternArea, type ProblemSolvingArea, type ReferenceArea } from '../src/ai/contract.ts'
 import { strategyProblem } from '../src/features/topics/multiplicationStrategies.ts'
 import { divisionProblem, wishRequiresRoundUp } from './divisionChecks.ts'
 import { geometryProblem } from './geometryChecks.ts'
 import { measurementProblem } from './measurementChecks.ts'
 import { numbersProblem } from './numbersAndOperationsChecks.ts'
 import { patternProblem, withPatternDisplay } from './patternChecks.ts'
+import { arithmeticProblem } from './arithmeticChecks.ts'
+import { problemSolvingReferences } from './references/problemSolving.ts'
 import type { ExpectedAnswer } from '../src/ai/patternDisplay.ts'
 import { problemSolvingProblem } from './problemSolvingChecks.ts'
 import { visualProblem } from './visualChecks.ts'
@@ -109,6 +111,10 @@ export type RemovalReason =
   | 'wrongPattern'
   | 'ambiguousRule'
   | 'invalidCode'
+  | 'invalidDiagram'
+  | 'invalidTable'
+  | 'invalidUnknown'
+  | 'unreasonableAnswer'
 
 export interface GeneralCheck {
   result: TaskResult
@@ -272,6 +278,10 @@ const REMOVAL_TEXT: Record<RemovalReason, string> = {
   wrongPattern: 'hadde et mønster, et figurtall eller en tallfølge der regelen ikke passer alle leddene',
   ambiguousRule: 'hadde for få ledd eller figurer til at regelen er entydig',
   invalidCode: 'hadde kode utenfor kodeformatet (ekte programmeringsspråk, ukjente kommandoer, uklart vilkår, nøstede løkker eller feil innrykk)',
+  invalidDiagram: 'hadde et søylediagram uten skala, uten navn på radene eller med verdier som ikke kan vises med hele ■',
+  invalidTable: 'hadde en tabell uten tydelige kolonnenavn, med ulikt antall kolonner eller med en «Til sammen» som ikke stemmer',
+  invalidUnknown: 'skrev ukjent tall med bokstav eller __, brukte □ for et regnetegn, eller hadde en likning uten én entydig løsning',
+  unreasonableAnswer: 'hadde et svar som ikke er rimelig ut fra situasjonen',
 }
 
 const emptyRemoved = (): Record<RemovalReason, number> => ({
@@ -322,6 +332,10 @@ const emptyRemoved = (): Record<RemovalReason, number> => ({
   wrongPattern: 0,
   ambiguousRule: 0,
   invalidCode: 0,
+  invalidDiagram: 0,
+  invalidTable: 0,
+  invalidUnknown: 0,
+  unreasonableAnswer: 0,
 })
 
 /** «Tatt bort: 2 som var like …, 1 som …» – eller tom streng. */
@@ -445,9 +459,9 @@ export function requiresCarry(task: AiTaskDraft): boolean {
 // Intern systemtekst: hører hjemme i serverloggen, aldri i synlige felt.
 
 const INTERNAL_TEXT =
-  /reserve\s?(kandidat|oppgave)\w*|utfyllings?(forsøk|runde)\w*|\brefill\w*|\bfallback\w*|reservemodell\w*|\bprompt\w*|referanse[- ]?(id|oppgave)\w*|\b(?:[MTDGP]|TR|MA|MO)\d-N\d-\d{2}\b|\bkandidat(en|er|ene|nummer|nr)?\b/i
+  /reserve\s?(kandidat|oppgave)\w*|utfyllings?(forsøk|runde)\w*|\brefill\w*|\bfallback\w*|reservemodell\w*|\bprompt\w*|referanse[- ]?(id|oppgave)\w*|\b(?:[MTDGP]|TR|MA|MO|RE)\d-N\d-\d{2}\b|\bkandidat(en|er|ene|nummer|nr)?\b/i
 
-/** Om teksten inneholder interne ord eller ID-er (reservekandidat, utfyllingsforsøk, prompt, M4-N2-01, D3-N2-01, P2-N1-03, TR2-N2-01, MA4-N2-01, MO4-N2-01 …). */
+/** Om teksten inneholder interne ord eller ID-er (reservekandidat, utfyllingsforsøk, prompt, M4-N2-01, D3-N2-01, P2-N1-03, TR2-N2-01, MA4-N2-01, MO4-N2-01, RE4-N2-01 …). */
 export const containsInternalText = (text: string) => INTERNAL_TEXT.test(text)
 
 /** Teksten uten setningene som inneholder interne ord. */
@@ -565,6 +579,9 @@ export interface CandidateCheck {
  *   - Mønster og algoritmer: bare tekstoppgaver; gjentakende mønstre, figurtall og tallfølger regnes ut (regelen må passe
  *     alle leddene og være entydig, og svarene må følge den), og pseudokoden kjøres (kodeformat, innrykk, løkker, vilkår,
  *     grensetilfeller og sluttverdi). Tallområdet er referansenes eller oppgavesettets på nivået (se patternChecks.ts).
+ *   - Regning: bare tekstoppgaver; diagrammer og tabeller som tekst leses og regnes ut (skala, verdier, summer, forskjeller,
+ *     «Til sammen», tidsintervaller og påstander), regnearten må passe situasjonen, overslag må bruke avrundede tall, og □
+ *     kontrolleres ved å sette inn svaret (se arithmeticChecks.ts). Kopier sammenlignes også med Problemløsing og Tall og regning.
  * - uten fagområde logges gangestykker utenfor øktas tabeller (som før)
  * Kontrollene er de samme for første generering og for utfylling.
  */
@@ -609,8 +626,8 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
   // Løsningsforslaget må være entydig, og ja/nei i vurderingsoppgaver må stemme (alle økter).
   // Geometri, Problemløsing og Tall og regning har påstander i ord («Er modellen riktig?», «1,3 er mindre enn 0,9»):
   // da kreves én entydig ja/nei-konklusjon (påstander om desimaltall og lengder kontrolleres i numbersAndOperationsChecks.ts).
-  const verbalClaims = !!profile?.area && ['geometri', 'problemlosing', 'tall-og-regning', 'maling', 'monster-og-algoritmer'].includes(topicOfArea(profile.area))
-  const measureClaims = !!profile?.area && ['maling', 'monster-og-algoritmer'].includes(topicOfArea(profile.area))
+  const verbalClaims = !!profile?.area && ['geometri', 'problemlosing', 'tall-og-regning', 'maling', 'monster-og-algoritmer', 'regning'].includes(topicOfArea(profile.area))
+  const measureClaims = !!profile?.area && ['maling', 'monster-og-algoritmer', 'regning'].includes(topicOfArea(profile.area))
   tasks = tasks.filter((t) => {
     const problem = assessmentProblem(t, { verbalClaims, measureClaims })
     return !problem || remove(t, problem)
@@ -646,6 +663,7 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
     const numbersAndOperations = topic === 'tall-og-regning'
     const measurement = topic === 'maling'
     const patterns = topic === 'monster-og-algoritmer'
+    const arithmetic = topic === 'regning'
     // Mønster og algoritmer: det korte svaret kontrollen regnet ut, per godkjent oppgave (appen retter det automatisk).
     const expectedOf = new Map<AiTaskDraft, ExpectedAnswer>()
     const patternContext = patterns
@@ -654,7 +672,7 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
           secondaryAreas: (profile?.secondaryAreas ?? []).filter((a): a is PatternArea => isReferenceArea(a) && topicOfArea(a) === 'monster-og-algoritmer'),
         }
       : null
-    // Største tall i oppgavesettet per nivå: tallområdet i Mønster og algoritmer er referansenes eller oppgavesettets.
+    // Største tall i oppgavesettet per nivå: tallområdet i Mønster og algoritmer og Regning er referansenes eller oppgavesettets.
     const existingMax = (level: AiLevel) =>
       Math.max(0, ...(levelInfo(level)?.existing ?? []).flatMap((t) => (t.text ? numbersIn(t.text).split(',').filter(Boolean).map(Number) : [t.a ?? 0, t.b ?? 0])))
     const numbersContext = numbersAndOperations
@@ -688,7 +706,10 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
     // Tekstene som finnes på nivået (oppgavesettet og godkjente kandidater), til kontrollen av nesten like oppgaver.
     // Tekster med figur sammenlignes bare med tekster med samme figur (samme spørsmål til en annen figur er en ny oppgave).
     const textsOn = new Map<AiLevel, { text: string; figure: string }[]>()
-    const addText = (level: AiLevel, text: string, figure = '') => textsOn.set(level, [...(textsOn.get(level) ?? []), { text, figure }])
+    // Regning: søylene i et diagram (■■■■) er tallene i oppgaven – de sammenlignes som antall, ellers ser alle diagrammer
+    // med samme skala like ut for kontrollen av nesten like oppgaver.
+    const comparable = (text: string) => (arithmetic ? text.replace(/■+/g, (bar) => String(bar.length)) : text)
+    const addText = (level: AiLevel, text: string, figure = '') => textsOn.set(level, [...(textsOn.get(level) ?? []), { text: comparable(text), figure }])
     for (const level of levels) {
       for (const task of level.existing ?? []) if (task.text && (!task.figure || task.figureKind)) addText(level.level, task.text, task.figureKind ?? '')
     }
@@ -701,7 +722,7 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
       if (!allowSwapped && inSet.has(keys.swapped)) return remove(task, 'swappedFactors')
       if (
         !isMathDraft(task) &&
-        (textsOn.get(task.level) ?? []).some((t) => t.figure === visualSignature(task.figure) && isNearDuplicate(task.studentText, t.text))
+        (textsOn.get(task.level) ?? []).some((t) => t.figure === visualSignature(task.figure) && isNearDuplicate(comparable(task.studentText), t.text))
       ) {
         return remove(task, 'nearDuplicate')
       }
@@ -744,6 +765,14 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
       }
       // Mønster og algoritmer: mønstre, figurtall og tallfølger regnes ut, og pseudokoden kjøres (se patternChecks.ts).
       // Synlig nøling i oppgaveteksten avvises også.
+      // Regning: diagrammer og tabeller som tekst, regneart, overslag og ukjent tall □ (se arithmeticChecks.ts).
+      if (arithmetic) {
+        if (!isMathDraft(task) && HESITATION.test(task.studentText)) return remove(task, 'unclearSolution')
+        const found: { expected?: ExpectedAnswer } = {}
+        const problem = arithmeticProblem(task, { area: area as ArithmeticArea, existingMax: existingMax(task.level), found })
+        if (problem) return remove(task, problem)
+        if (found.expected) expectedOf.set(task, found.expected)
+      }
       if (patternContext) {
         if (!isMathDraft(task) && HESITATION.test(task.studentText)) return remove(task, 'unclearSolution')
         const found: { expected?: ExpectedAnswer } = {}
@@ -767,6 +796,11 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
         ...(measurement
           ? [...numbersAndOperationsReferences.filter((r) => r.area === 'desimaltall-tideler' || r.area === 'desimaltall-lengde'), ...geometryReferences.filter(isAreaOrPerimeterReference)]
           : []),
+        // Regning overlapper med Problemløsing (velge regneart, flere steg) og Tall og regning (ukjent tall, sammenhenger
+        // mellom regneartene): kandidaten må heller ikke kopiere de referansene.
+        ...(arithmetic && (area === 'fire-regnearter' || area === 'algebra')
+          ? [...problemSolvingReferences, ...numbersAndOperationsReferences.filter((r) => r.area === 'sammenheng-addisjon-subtraksjon' || r.area === 'sammenheng-multiplikasjon-divisjon')]
+          : []),
       ]
       // Figuroppgaver som spør om «figuren» eller «vinkelen» har innholdet i figuren appen tegner, ikke i teksten:
       // et kort spørsmål som «Hvor mange sider har figuren?» er ikke en kopi av en referanse uten figur.
@@ -782,7 +816,7 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
         // Divisjon og Problemløsing: de samme tallene som en referanse og lignende formulering er samme oppgave
         // (samme gangefakta i et annet format, f.eks. «__ · 8 = 56» og «Regn ut 56 : 8», er lov).
         // Mønstre med bare figurer har ingen tall: «samme tall» betyr da ingenting, og bare formuleringen sammenlignes (over).
-        const sameNumbersApply = division || problemSolving || numbersAndOperations || measurement || (patterns && numbersIn(task.studentText) !== '')
+        const sameNumbersApply = division || problemSolving || numbersAndOperations || measurement || ((patterns || arithmetic) && numbersIn(task.studentText) !== '')
         if (sameNumbersApply && references.some((r) => numbersIn(task.studentText) === numbersIn(r.studentText) && textSimilarity(task.studentText, r.studentText) >= SAME_NUMBERS_SIMILARITY)) {
           return remove(task, 'copiedReference')
         }
@@ -797,7 +831,8 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
       // mellomsteg og svaralternativer hører hjemme på nivå 1 (se problemSolvingChecks.ts).
       // Måling: nivå 1 kan ha to korte spørsmål («Trenger du å vite arealet eller omkretsen? …»), som referansene.
       // Mønster og algoritmer har egne nivåregler (kodelinjer og mønstre gjør teksten lengre, se patternChecks.ts).
-      if (!multiplication && !problemSolving && !patterns && task.level === 1 && !isMathDraft(task)) {
+      // Regning: diagrammer og tabeller gjør teksten lengre, og to korte spørsmål er vanlig på nivå 1 (se arithmeticChecks.ts).
+      if (!multiplication && !problemSolving && !patterns && !arithmetic && task.level === 1 && !isMathDraft(task)) {
         const tooLong = measurement ? task.studentText.length > 180 : isLongOrMultiPart(task.studentText)
         if (tooLong || ERROR_ANALYSIS.test(task.studentText)) return remove(task, 'levelMismatch')
       }
@@ -808,6 +843,8 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
     })
     // Mønster og algoritmer: godkjente oppgaver får prikkantallene appen tegner og inputbokser i tallrekka.
     if (patterns) tasks = tasks.map((t) => (isMathDraft(t) ? t : { ...withPatternDisplay(t), ...(expectedOf.has(t) && { expected: expectedOf.get(t) }) }))
+    // Regning: godkjente oppgaver får svaret appen retter automatisk (regnetegn, tomme ruter i tabeller og □).
+    if (arithmetic) tasks = tasks.map((t) => (isMathDraft(t) || !expectedOf.has(t) ? t : { ...t, expected: expectedOf.get(t) }))
   } else {
     const outside = tasks.filter((t) => outsideTables(t, factorsOf(t.level))).length
     if (outside) issues.push(`${outside} gangestykker utenfor øktas gangetabeller`)

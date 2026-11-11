@@ -94,3 +94,18 @@ export function mergeTasks(...lists: SessionTask[][]): SessionTask[] {
     return true
   })
 }
+
+/**
+ * Lagrede oppgavesett går foran grunnoppgavene. Et sett lagret før en grunnoppgave fikk svaret som rettes automatisk
+ * (`expected`) eller inputboksene i tallrekka (`answerBoxes`), mangler dem. En lagret grunnoppgave med samme ID, tekst og
+ * fasit som en grunnoppgave i økta får dem derfra. Oppgaver læreren har endret, og AI-oppgaver, endres ikke.
+ */
+export function refreshStoredTasks(stored: SessionTask[], fresh: SessionTask[]): SessionTask[] {
+  const byId = new Map(fresh.map((t) => [t.id, t]))
+  return stored.map((task) => {
+    const base = byId.get(task.id)
+    if (task.kind !== 'text' || base?.kind !== 'text' || task.aiGenerated || task.text !== base.text || task.solution !== base.solution) return task
+    if ((task.expected || !base.expected) && (task.answerBoxes || !base.answerBoxes)) return task
+    return { ...task, ...(!task.expected && base.expected && { expected: base.expected }), ...(!task.answerBoxes && base.answerBoxes && { answerBoxes: base.answerBoxes }) }
+  })
+}

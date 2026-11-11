@@ -1,5 +1,6 @@
 import { readStoredVisual } from '../../ai/contract.ts'
-import { answerStatus, blankRowIn, dotLayout, drawableColors } from '../../ai/patternDisplay.ts'
+import { answerStatus, blankRowIn, dotLayout, drawableColors, joinBoxAnswers, partCorrect, splitBoxAnswers } from '../../ai/patternDisplay.ts'
+import { slotCount } from '../../ai/taskText.ts'
 import type { Operator, SessionTask, Task, TextTask } from '../../types/index.ts'
 import { answerOf, answerProblem, expressionOf, formatNumber } from '../tasks/taskUtils.ts'
 
@@ -85,6 +86,12 @@ export interface TextTaskState {
   result?: 'correct' | 'retry' | 'revealed' | 'several'
   /** Antall feil svar så langt. */
   wrongTries?: number
+  /** Regning: forklaringen eleven skriver under tabellen eller likningen (rettes ikke). */
+  explanation?: string
+  /** Oppgaver med a) og b), og Regning med flere spørsmål: svaret på hver del (svaret over er delene samlet). */
+  parts?: string[]
+  /** Regning med flere spørsmål: om hver del var riktig ved siste retting. */
+  partResults?: boolean[]
 }
 
 export type TaskAnswerState = MathTaskState | TextTaskState
@@ -125,7 +132,7 @@ export function hasAnswerState(state: TaskAnswerState | undefined) {
   if (isMathState(state)) {
     return state.answer !== '' || state.phase !== 'answering' || state.attemptsLeft !== MAX_ATTEMPTS || state.showHint || state.dialogOpen
   }
-  return state.answer !== '' || state.submitted || state.result !== undefined || (state.wrongTries ?? 0) > 0
+  return state.answer !== '' || state.submitted || state.result !== undefined || (state.wrongTries ?? 0) > 0 || !!state.explanation || !!state.parts?.some(Boolean)
 }
 
 /** Tekstoppgaver som rettes automatisk: eleven får ett nytt forsøk etter første feil svar. */
@@ -134,6 +141,13 @@ export const TEXT_ATTEMPTS = 2
 /** «Sjekk svaret mitt» på en oppgave med et svar som rettes automatisk: riktig, ett forsøk til, eller riktig svar vises. */
 export function checkTextAnswer(state: TextTaskState, task: TextTask): TextTaskState {
   if (!task.expected) return { ...state, submitted: true }
+  if (task.expected.kind === 'parts') {
+    // Hver del rettes for seg. Er alle riktige: «Riktig!». Ellers ett nytt forsøk, og så vises riktig svar.
+    const partResults = task.expected.parts.map((p, i) => partCorrect(p.answer, state.parts?.[i] ?? ''))
+    if (partResults.every(Boolean)) return { ...state, partResults, submitted: true, result: 'correct' }
+    const wrongTries = (state.wrongTries ?? 0) + 1
+    return wrongTries >= TEXT_ATTEMPTS ? { ...state, partResults, wrongTries, submitted: true, result: 'revealed' } : { ...state, partResults, wrongTries, result: 'retry' }
+  }
   const status = answerStatus(task.expected, state.answer, task.text)
   if (status === 'correct') return { ...state, submitted: true, result: 'correct' }
   if (status === 'several') return { ...state, result: 'several' }
@@ -149,3 +163,22 @@ export const showsSolution = (task: TextTask) => !task.aiGenerated || task.revie
 
 /** Overskriften over løsningsforslaget: et eksempel på en forklaring når oppgaven ber eleven forklare. */
 export const solutionHeading = (task: TextTask) => (/\b(forklar|begrunn)/i.test(task.text) ? 'Eksempel på en forklaring' : 'Løsningsforslag')
+
+/**
+ * Regning: hvor mange felt eleven fyller ut i selve teksten (tomme ruter i tabeller og □ i likninger), og om de vises
+ * som inputbokser. I Regning (`textBoxes`) vises de alltid som bokser – også når oppgaven mangler svaret som rettes
+ * automatisk (f.eks. et oppgavesett lagret før det fantes, eller en oppgave læreren har redigert). Ellers bare når
+ * svaret har like mange tall som feltene.
+ */
+export function textSlots(task: TextTask, shownText: string, textBoxes: boolean): { total: number; inText: boolean } {
+  const { cells, boxes } = slotCount(shownText)
+  const total = cells + boxes
+  const matches = task.expected?.kind === 'numbers' && task.expected.values.length === total
+  return { total, inText: total > 0 && (textBoxes || matches) }
+}
+
+/** Svaret etter at eleven har skrevet i boks nr. `index` (bare sifre, høyst seks). Boksene lagres som «13, 10». */
+export function typeInSlot(answer: string, total: number, index: number, value: string): string {
+  const values = splitBoxAnswers(answer, total)
+  return joinBoxAnswers(values.map((v, k) => (k === index ? value.replace(/\D/g, '').slice(0, 6) : v)))
+}

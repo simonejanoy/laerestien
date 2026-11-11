@@ -288,6 +288,10 @@ export type MeasurementArea = (typeof MEASUREMENT_AREAS)[number]
 export const PATTERN_AREAS = ['utforske-monster', 'figurtall', 'tallfolger', 'koder-lokker', 'koder-vilkar'] as const
 export type PatternArea = (typeof PATTERN_AREAS)[number]
 
+/** Fagområdene i Regning, i progresjonsrekkefølge. Seks økter: to per fagområde i uke 1 og 3, og begge i uke 2 om regneartene. */
+export const ARITHMETIC_AREAS = ['diagrammer', 'tabeller', 'fire-regnearter', 'algebra'] as const
+export type ArithmeticArea = (typeof ARITHMETIC_AREAS)[number]
+
 /** Temaene som har en referansebank på serveren, med fagområdene sine. */
 export const REFERENCE_TOPICS = {
   multiplikasjon: MULTIPLICATION_AREAS,
@@ -298,10 +302,11 @@ export const REFERENCE_TOPICS = {
   'tall-og-regning': NUMBERS_AND_OPERATIONS_AREAS,
   maling: MEASUREMENT_AREAS,
   'monster-og-algoritmer': PATTERN_AREAS,
+  regning: ARITHMETIC_AREAS,
 } as const
 export type ReferenceTopic = keyof typeof REFERENCE_TOPICS
 /** Et fagområde i en av referansebankene. Områdene har unike ID-er på tvers av temaene. */
-export type ReferenceArea = MultiplicationArea | PlaceValueArea | DivisionArea | GeometryArea | ProblemSolvingArea | NumbersAndOperationsArea | MeasurementArea | PatternArea
+export type ReferenceArea = MultiplicationArea | PlaceValueArea | DivisionArea | GeometryArea | ProblemSolvingArea | NumbersAndOperationsArea | MeasurementArea | PatternArea | ArithmeticArea
 
 export const TOPIC_TITLES: Record<ReferenceTopic, string> = {
   multiplikasjon: 'Multiplikasjon',
@@ -312,6 +317,7 @@ export const TOPIC_TITLES: Record<ReferenceTopic, string> = {
   'tall-og-regning': 'Tall og regning',
   maling: 'Måling',
   'monster-og-algoritmer': 'Mønster og algoritmer',
+  regning: 'Regning',
 }
 
 export const AREA_TITLES: Record<ReferenceArea, string> = {
@@ -352,6 +358,10 @@ export const AREA_TITLES: Record<ReferenceArea, string> = {
   tallfolger: 'Mønster i tallfølger',
   'koder-lokker': 'Koder med løkker',
   'koder-vilkar': 'Koder med vilkår',
+  diagrammer: 'Lese og tolke diagrammer',
+  tabeller: 'Lese og tolke tabeller',
+  'fire-regnearter': 'De fire regneartene',
+  algebra: 'Utforske algebra',
 }
 
 export const isMultiplicationArea = (value: unknown): value is MultiplicationArea =>

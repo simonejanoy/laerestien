@@ -513,7 +513,7 @@ describe('13. andre temaer og referansebanker er uendret', () => {
     assert.equal(hash(file('tall_og_plassverdi')), '21ba85a512aeffed')
     assert.equal(hash(file('divisjon')), '137f3e1f03a7d25f')
     assert.equal(hash(file('geometri')), 'f5051a7c950ae47c')
-    assert.equal(referenceBanks.filter((r) => !['problemlosing', 'tall-og-regning', 'maling', 'monster-og-algoritmer'].includes(r.topic)).length, 54 + 45 + 36 + 36)
+    assert.equal(referenceBanks.filter((r) => !['problemlosing', 'tall-og-regning', 'maling', 'monster-og-algoritmer', 'regning'].includes(r.topic)).length, 54 + 45 + 36 + 36)
     for (const [area, level, own] of [['tabell-6-7-8-9', 2, multiplicationReferences], ['modeller', 3, divisionReferences]] as const) {
       assert.deepEqual(selectReferences(referenceBanks, { area, level, seed: 11 }).map((r) => r.id), selectReferences(own, { area, level, seed: 11 }).map((r) => r.id))
     }
@@ -523,14 +523,15 @@ describe('13. andre temaer og referansebanker er uendret', () => {
     // Tall og regning, Måling, Mønster og algoritmer og repetisjonsøkter med undertema derfra er endret senere
     // (se numbersAndOperationsAi.test.ts, measurementAi.test.ts og patternAi.test.ts).
     const touched = (s: Planned) => s.skills.some((k) => k.startsWith('prob.') || k.startsWith('tr.') || k.startsWith('mal.') || k.startsWith('mon.'))
-    const all = unitSpecs.filter((u) => !['problemlosing', 'tall-og-regning', 'maling', 'monster-og-algoritmer'].includes(u.unitId)).flatMap((u) => planned(u.unitId))
+    // Regning er endret senere (se arithmeticAi.test.ts); repetisjonsøktene med undertema derfra er uendret.
+    const all = unitSpecs.filter((u) => !['problemlosing', 'tall-og-regning', 'maling', 'monster-og-algoritmer', 'regning'].includes(u.unitId)).flatMap((u) => planned(u.unitId))
     // geometri-6 «Vinkler i trekanter» er endret senere: rene tekstoppgaver i stedet for regnestykker (se geometryAi.test.ts).
     const others = all
       .filter((s) => !touched(s) && s.id !== 'geometri-6')
       .map((s) => ({ id: s.id, heading: s.heading, skills: s.skills, profile: s.profile ?? null, levels: levelsFor(s, 5, 6), tasks: buildTasks(s) }))
     // Regnet ut fra koden før Mønster og algoritmer ble endret (git HEAD), og de samme etterpå.
-    assert.equal(others.length, 58)
-    assert.equal(hash(JSON.stringify(others)), '3efbb4aa115823b8')
+    assert.equal(others.length, 52)
+    assert.equal(hash(JSON.stringify(others)), 'f580d9a495a185b8')
     assert.deepEqual(all.filter(touched).map((s) => s.id), ['repetisjon-vinter-3', 'repetisjon-vinter-4', 'repetisjon-var-2', 'repetisjon-var-3', 'repetisjon-var-4'])
     // «Dette mestrer jeg» (bare Problemløsing): samme overskrift, undertema, nivåer, oppgave-ID-er og regnestykker fra Regning.
     const kept = all

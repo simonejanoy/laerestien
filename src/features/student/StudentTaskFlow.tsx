@@ -18,7 +18,7 @@ interface StudentTaskFlowProps {
   onNext: () => void
   /** Uten denne (som for eleven) holder hver oppgaveskjerm sin egen tilstand. */
   preview?: PreviewAnswers
-  /** Perioden i årsplanen økta hører til (Session.topicId). Mønster og algoritmer har egen melding for tekstsvar. */
+  /** Perioden i årsplanen økta hører til (Session.topicId). Mønster og algoritmer og Regning har egen melding for tekstsvar. */
   topicId?: string
 }
 
@@ -43,7 +43,9 @@ export function StudentTaskFlow({ tasks, index, onNext, preview, topicId }: Stud
           index={index}
           total={tasks.length}
           onNext={onNext}
-          patternTopic={topicId === 'monster-og-algoritmer'}
+          honestDone={topicId === 'monster-og-algoritmer' || topicId === 'regning'}
+          splitParts={topicId === 'regning'}
+          textBoxes={topicId === 'regning'}
           controlled={preview && { state: saved && !isMathState(saved) ? saved : initialTextState(), onChange }}
         />
       ) : (

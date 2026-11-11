@@ -541,22 +541,23 @@ describe('14. andre temaer og referansebanker er uendret', () => {
     assert.equal(hash(file('divisjon')), '137f3e1f03a7d25f')
     assert.equal(hash(file('geometri')), 'f5051a7c950ae47c')
     assert.equal(hash(file('problemlosing')), '380ddf92250336a8')
-    assert.equal(referenceBanks.filter((r) => !['maling', 'monster-og-algoritmer'].includes(r.topic)).length, 54 + 45 + 36 + 36 + 36 + 36)
+    assert.equal(referenceBanks.filter((r) => !['maling', 'monster-og-algoritmer', 'regning'].includes(r.topic)).length, 54 + 45 + 36 + 36 + 36 + 36)
     for (const [area, level] of [['tabell-6-7-8-9', 2], ['desimaltall-lengde', 3], ['vinkler', 1]] as const) {
-      const own = referenceBanks.filter((r) => !['maling', 'monster-og-algoritmer'].includes(r.topic))
+      const own = referenceBanks.filter((r) => !['maling', 'monster-og-algoritmer', 'regning'].includes(r.topic))
       assert.deepEqual(selectReferences(referenceBanks, { area, level, seed: 11 }).map((r) => r.id), selectReferences(own, { area, level, seed: 11 }).map((r) => r.id))
     }
   })
 
   it('alle økter i de andre temaene og arbeidsarkene er uendret – i repetisjon bare oppgavene fra Måling', () => {
     // Mønster og algoritmer og repetisjonsøkter med undertema derfra er endret senere (se patternAi.test.ts).
-    const all = unitSpecs.filter((u) => !['maling', 'monster-og-algoritmer'].includes(u.unitId)).flatMap((u) => planned(u.unitId))
+    // Regning er endret senere (se arithmeticAi.test.ts); repetisjonsøktene med undertema derfra er uendret.
+    const all = unitSpecs.filter((u) => !['maling', 'monster-og-algoritmer', 'regning'].includes(u.unitId)).flatMap((u) => planned(u.unitId))
     const touched = (s: Planned) => s.skills.some((k) => k.startsWith('mal.') || k.startsWith('mon.'))
     // geometri-6 «Vinkler i trekanter» er endret senere: rene tekstoppgaver i stedet for regnestykker (se geometryAi.test.ts).
     const others = all.filter((s) => !touched(s) && s.id !== 'geometri-6').map((s) => ({ id: s.id, heading: s.heading, skills: s.skills, profile: s.profile ?? null, levels: levelsFor(s, 5, 6), tasks: buildTasks(s) }))
     // Verdiene er regnet ut fra koden før Mønster og algoritmer ble endret (git HEAD) og er de samme etterpå.
-    assert.equal(others.length, 71)
-    assert.equal(hash(JSON.stringify(others)), '94692bd6e814c3e4')
+    assert.equal(others.length, 65)
+    assert.equal(hash(JSON.stringify(others)), '98dab0333ada2b21')
     assert.equal(hash(JSON.stringify(Object.fromEntries(Object.entries(worksheetTasks).filter(([id]) => !id.startsWith('maling-') && !id.startsWith('monster-og-algoritmer-'))))), 'b573e51e205df96d')
   })
 

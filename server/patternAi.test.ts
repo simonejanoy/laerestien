@@ -471,7 +471,7 @@ describe('11. visning: kodelinjer og mønsterfigurer vises med linjeskift og inn
 
   it('elevvisningen og lærervisningen beholder linjeskift og mellomrom i oppgaveteksten', () => {
     // whitespace-pre-wrap bevarer både linjeskift og innrykket på fire mellomrom (og bryter lange linjer).
-    assert.match(read('src/features/student/TextTaskScreen.tsx'), /<h2 className="[^"]*whitespace-pre-wrap[^"]*">\{text\}<\/h2>/)
+    assert.match(read('src/features/student/TextTaskScreen.tsx'), /<h2 className="[^"]*whitespace-pre-wrap[^"]*">\{questionParts \? body : text\}<\/h2>/)
     // Teksten eleven ser er oppgaveteksten – bare uten fargelinja når fargene vises som sirkler.
     assert.match(read('src/features/student/TextTaskScreen.tsx'), /task\.figure\?\.kind === 'colors' \? withoutColorRow\(task\.text, task\.figure\.items\) : task\.figure\?\.kind === 'dots' \? withoutDotSentences\(task\.text\) : task\.text/)
     assert.match(read('src/features/tasks/TextTaskCard.tsx'), /<p className="[^"]*whitespace-pre-wrap[^"]*">\{task\.text\}<\/p>/)
@@ -574,21 +574,22 @@ describe('14. andre temaer og referansebanker er uendret', () => {
     assert.equal(hash(file('problemlosing')), '380ddf92250336a8')
     assert.equal(hash(file('tall_og_regning')), 'bc0636c64aaef7f8')
     assert.equal(hash(file('maling')), 'c6c767c2c1daa00d')
-    assert.equal(referenceBanks.filter((r) => r.topic !== 'monster-og-algoritmer').length, 54 + 45 + 36 + 36 + 36 + 36 + 45)
+    assert.equal(referenceBanks.filter((r) => !['monster-og-algoritmer', 'regning'].includes(r.topic)).length, 54 + 45 + 36 + 36 + 36 + 36 + 45)
     for (const [area, level] of [['tabell-6-7-8-9', 2], ['desimaltall-lengde', 3], ['vinkler', 1], ['tid', 2]] as const) {
-      const own = referenceBanks.filter((r) => r.topic !== 'monster-og-algoritmer')
+      const own = referenceBanks.filter((r) => !['monster-og-algoritmer', 'regning'].includes(r.topic))
       assert.deepEqual(selectReferences(referenceBanks, { area, level, seed: 11 }).map((r) => r.id), selectReferences(own, { area, level, seed: 11 }).map((r) => r.id))
     }
   })
 
   it('alle økter i de andre temaene og arbeidsarkene er uendret – i repetisjon bare oppgavene fra Mønster i tallfølger', () => {
-    const all = unitSpecs.filter((u) => u.unitId !== 'monster-og-algoritmer').flatMap((u) => planned(u.unitId))
+    // Regning er endret senere (se arithmeticAi.test.ts); repetisjonsøktene med undertema derfra er uendret.
+    const all = unitSpecs.filter((u) => !['monster-og-algoritmer', 'regning'].includes(u.unitId)).flatMap((u) => planned(u.unitId))
     const touched = (s: Planned) => s.skills.some((k) => k.startsWith('mon.'))
     // geometri-6 «Vinkler i trekanter» er endret senere: rene tekstoppgaver i stedet for regnestykker (se geometryAi.test.ts).
     const others = all.filter((s) => !touched(s) && s.id !== 'geometri-6').map((s) => ({ id: s.id, heading: s.heading, skills: s.skills, profile: s.profile ?? null, levels: levelsFor(s, 5, 6), tasks: buildTasks(s) }))
     // Verdiene er regnet ut fra koden før Mønster og algoritmer ble endret (git HEAD) og er de samme etterpå.
-    assert.equal(others.length, 78)
-    assert.equal(hash(JSON.stringify(others)), 'ed8f14facdee891d')
+    assert.equal(others.length, 72)
+    assert.equal(hash(JSON.stringify(others)), 'c5e29d9b294e618a')
     assert.equal(hash(JSON.stringify(Object.fromEntries(Object.entries(worksheetTasks).filter(([id]) => !id.startsWith('monster-og-algoritmer-'))))), '6aa5b88e9063a764')
     // Repetisjonsøkta: oppgavene fra Regning (tabeller og diagrammer) er de samme som før.
     const v3 = all.find((s) => s.id === 'repetisjon-var-3')!
@@ -761,7 +762,7 @@ describe('16. tallrekker med inputbokser', () => {
     assert.match(screen, /const row = task\.answerBoxes \? blankRowIn\(text\) : null/)
     assert.match(screen, /<ol className="flex flex-wrap/)
     assert.match(screen, /inputMode="numeric"/)
-    assert.match(screen, /\{!row && !choices && \(/)
+    assert.match(screen, /\{!row && !choices && !operatorButtons && !inText && !parts && !questionParts && \(/)
     assert.match(screen, /disabled=\{!submitted && !ready\}/)
   })
 })
@@ -916,7 +917,7 @@ describe('19. automatisk tilbakemelding i Mønster og algoritmer', () => {
     assert.equal(solutionHeading({ ...base, text: 'Hvor mange prikker har figur 4?' }), 'Løsningsforslag')
     const screen = readFileSync(new URL('../src/features/student/TextTaskScreen.tsx', import.meta.url), 'utf8')
     assert.match(screen, /\{showsSolution\(task\) && \(/)
-    assert.match(screen, /result === 'correct' \? 'Riktig!' : `Riktig svar: \$\{formatExpected\(task\.expected\)\}`/)
+    assert.match(screen, /result === 'correct' \? 'Riktig!' : questionParts \? 'Se riktig svar ved hvert spørsmål\.' : `Riktig svar: \$\{formatExpected\(task\.expected\)\}`/)
   })
 
   it('grunnoppgavene i øktene har svar som rettes, og svaret stemmer med fasiten', () => {
@@ -932,8 +933,8 @@ describe('19. automatisk tilbakemelding i Mønster og algoritmer', () => {
       }
     }
     assert.ok(counted >= 60, String(counted))
-    // Bare Mønster og algoritmer: repetisjonsøkta og andre temaer har ingen automatisk retting.
-    const others = unitSpecs.flatMap((u) => planned(u.unitId)).filter((s) => s.spec.unitId !== 'monster-og-algoritmer')
+    // Bare Mønster og algoritmer (og Regning, se arithmeticAi.test.ts): repetisjonsøktene og andre temaer har ingen automatisk retting.
+    const others = unitSpecs.flatMap((u) => planned(u.unitId)).filter((s) => !['monster-og-algoritmer', 'regning'].includes(s.spec.unitId))
     assert.ok(others.flatMap((s) => [...(worksheetTasks[s.id] ?? []), ...buildTasks(s)]).every((t) => t.kind !== 'text' || !t.expected))
   })
 
@@ -1024,12 +1025,12 @@ describe('20. figurmønstre med svaralternativer, skjult prikklinje, ett svar og
     assert.match(screen(), /Skriv bare ett svar\./)
   })
 
-  it('oppgaver som ikke rettes automatisk: ny melding og knapp bare i Mønster og algoritmer', () => {
+  it('oppgaver som ikke rettes automatisk: ny melding og knapp bare i Mønster og algoritmer (og Regning)', () => {
     const s = screen()
-    assert.match(s, /patternTopic \? 'Ferdig! Fortell læreren hva du svarte\.' : 'Svaret ditt er levert\. Læreren ser på det\.'/)
-    assert.match(s, /patternTopic \? 'Ferdig med oppgaven' : 'Lever svaret'/)
+    assert.match(s, /honestDone \? 'Ferdig! Fortell læreren hva du svarte\.' : 'Svaret ditt er levert\. Læreren ser på det\.'/)
+    assert.match(s, /honestDone \? 'Ferdig med oppgaven' : 'Lever svaret'/)
     const flow = readFileSync(new URL('../src/features/student/StudentTaskFlow.tsx', import.meta.url), 'utf8')
-    assert.match(flow, /patternTopic=\{topicId === 'monster-og-algoritmer'\}/)
+    assert.match(flow, /honestDone=\{topicId === 'monster-og-algoritmer' \|\| topicId === 'regning'\}/)
     const preview = readFileSync(new URL('../src/features/tasks/StudentPreviewDialog.tsx', import.meta.url), 'utf8')
     assert.match(preview, /topicId=\{session\.topicId\}/)
     // Repetisjonsøktene hører til egne perioder og får meldingen som før.
