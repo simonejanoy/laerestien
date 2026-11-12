@@ -112,11 +112,12 @@ export function selectReferences(bank: readonly ReferenceTask[], { area, seconda
 
 /**
  * Referansen slik AI-en får den: ID, format, hensikt, eventuell representasjon, tekst og fasit.
- * I Problemløsing og Tall og regning er den visuelle støtten beskrevet med ord (f.eks. en tekstbasert blokkmodell) – ikke en figur som mangler.
+ * I Problemløsing, Tall og regning og Strategier i divisjon er den visuelle støtten beskrevet med ord (f.eks. en tekstbasert
+ * blokkmodell) – ikke en figur som mangler. I Strategier i divisjon følger divisjonstypen med når referansen har en.
  * Løsningsforslaget, lærernotatet og flervalgsmetadataene sendes ikke (alternativene står i elevteksten).
  */
 export function toAiReference(ref: ReferenceTask): AiReferenceTask {
-  const inText = ref.topic === 'problemlosing' || ref.topic === 'tall-og-regning'
+  const inText = ref.topic === 'problemlosing' || ref.topic === 'tall-og-regning' || ref.topic === 'strategier-i-divisjon'
   return {
     id: ref.id,
     taskType: ref.format,
@@ -124,5 +125,8 @@ export function toAiReference(ref: ReferenceTask): AiReferenceTask {
     ...(ref.representationHint && (inText ? { support: ref.representationHint } : { representation: ref.representationHint })),
     studentText: ref.studentText,
     solution: ref.solution,
+    ...(ref.divisionType && { divisionType: DIVISION_TYPE_NAMES[ref.divisionType] }),
   }
 }
+
+const DIVISION_TYPE_NAMES = { deling: 'delingsdivisjon', maling: 'målingsdivisjon', begge: 'begge (eleven skal skille delingsdivisjon og målingsdivisjon)' } as const

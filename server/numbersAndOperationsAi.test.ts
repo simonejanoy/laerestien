@@ -499,18 +499,19 @@ describe('13. andre temaer og referansebanker er uendret', () => {
     assert.equal(hash(file('divisjon')), '137f3e1f03a7d25f')
     assert.equal(hash(file('geometri')), 'f5051a7c950ae47c')
     assert.equal(hash(file('problemlosing')), '380ddf92250336a8')
-    assert.equal(referenceBanks.filter((r) => r.topic !== 'tall-og-regning').length, 54 + 45 + 36 + 36 + 36)
+    assert.equal(referenceBanks.filter((r) => !['tall-og-regning', 'strategier-i-divisjon'].includes(r.topic)).length, 54 + 45 + 36 + 36 + 36)
     for (const [area, level, own] of [['tabell-6-7-8-9', 2, multiplicationReferences], ['multiplikasjon-divisjon', 2, divisionReferences], ['addisjon-subtraksjon', 1, placeValueReferences]] as const) {
       assert.deepEqual(selectReferences(referenceBanks, { area, level, seed: 11 }).map((r) => r.id), selectReferences(own, { area, level, seed: 11 }).map((r) => r.id))
     }
   })
 
   it('alle økter i de andre temaene og arbeidsarkene er uendret – i repetisjon bare oppgavene fra Tall og regning', () => {
-    const all = unitSpecs.filter((u) => u.unitId !== 'tall-og-regning').flatMap((u) => planned(u.unitId))
-    const touched = (s: Planned) => s.skills.some((k) => k.startsWith('tr.'))
+    // Strategier i divisjon og repetisjonsøkta med undertema derfra er endret senere (se divisionStrategiesAi.test.ts).
+    const all = unitSpecs.filter((u) => !['tall-og-regning', 'strategier-i-divisjon'].includes(u.unitId)).flatMap((u) => planned(u.unitId))
+    const touched = (s: Planned) => s.skills.some((k) => k.startsWith('tr.') || k.startsWith('sdiv.'))
     const others = all.filter((s) => !touched(s)).map((s) => ({ id: s.id, heading: s.heading, skills: s.skills, profile: s.profile ?? null, levels: levelsFor(s, 5, 6), tasks: buildTasks(s) }))
-    assert.equal(others.length, 76)
-    assert.equal(hash(JSON.stringify(others)), '79eb6494412dbd1c')
+    assert.equal(others.length, 69)
+    assert.equal(hash(JSON.stringify(others)), '2fdd11b976c0b55c')
     // De to repetisjonsøktene: samme overskrift, undertema, antall oppgaver, og oppgavene fra Problemløsing er de samme.
     const v3 = all.find((s) => s.id === 'repetisjon-vinter-3')!
     assert.deepEqual(v3.skills, ['prob.flersteg', 'tr.add-sub', 'tr.mult-div'])

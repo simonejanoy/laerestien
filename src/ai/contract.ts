@@ -263,6 +263,13 @@ export type ProblemSolvingArea = (typeof PROBLEM_SOLVING_AREAS)[number]
 export const NUMBERS_AND_OPERATIONS_AREAS = ['sammenheng-addisjon-subtraksjon', 'sammenheng-multiplikasjon-divisjon', 'desimaltall-tideler', 'desimaltall-lengde'] as const
 export type NumbersAndOperationsArea = (typeof NUMBERS_AND_OPERATIONS_AREAS)[number]
 
+/**
+ * Fagområdene i Strategier i divisjon, i progresjonsrekkefølge. Målingsdivisjon og delingsdivisjon har ikke eget område
+ * (det har Divisjon): de er bygd inn i oppdeling, gode delestrategier og divisjon med 10 og 100.
+ */
+export const DIVISION_STRATEGIES_AREAS = ['plassverdi-deling', 'gode-delestrategier', 'sammenhenger-divisjon', 'dividere-10-100', 'del-av-hel-mengde'] as const
+export type DivisionStrategiesArea = (typeof DIVISION_STRATEGIES_AREAS)[number]
+
 /** Temaene som har en referansebank på serveren, med fagområdene sine. */
 export const REFERENCE_TOPICS = {
   multiplikasjon: MULTIPLICATION_AREAS,
@@ -271,10 +278,18 @@ export const REFERENCE_TOPICS = {
   geometri: GEOMETRY_AREAS,
   problemlosing: PROBLEM_SOLVING_AREAS,
   'tall-og-regning': NUMBERS_AND_OPERATIONS_AREAS,
+  'strategier-i-divisjon': DIVISION_STRATEGIES_AREAS,
 } as const
 export type ReferenceTopic = keyof typeof REFERENCE_TOPICS
 /** Et fagområde i en av referansebankene. Områdene har unike ID-er på tvers av temaene. */
-export type ReferenceArea = MultiplicationArea | PlaceValueArea | DivisionArea | GeometryArea | ProblemSolvingArea | NumbersAndOperationsArea
+export type ReferenceArea =
+  | MultiplicationArea
+  | PlaceValueArea
+  | DivisionArea
+  | GeometryArea
+  | ProblemSolvingArea
+  | NumbersAndOperationsArea
+  | DivisionStrategiesArea
 
 export const TOPIC_TITLES: Record<ReferenceTopic, string> = {
   multiplikasjon: 'Multiplikasjon',
@@ -283,6 +298,7 @@ export const TOPIC_TITLES: Record<ReferenceTopic, string> = {
   geometri: 'Geometri',
   problemlosing: 'Problemløsing',
   'tall-og-regning': 'Tall og regning',
+  'strategier-i-divisjon': 'Strategier i divisjon',
 }
 
 export const AREA_TITLES: Record<ReferenceArea, string> = {
@@ -313,6 +329,11 @@ export const AREA_TITLES: Record<ReferenceArea, string> = {
   'sammenheng-multiplikasjon-divisjon': 'Sammenhengen mellom multiplikasjon og divisjon',
   'desimaltall-tideler': 'Desimaltall med tideler',
   'desimaltall-lengde': 'Desimaltall i lengdemåling',
+  'plassverdi-deling': 'Dele i hundrere, tiere og enere',
+  'gode-delestrategier': 'Dele tall på gode måter',
+  'sammenhenger-divisjon': 'Sammenhenger i divisjon',
+  'dividere-10-100': 'Dividere med 10 og 100',
+  'del-av-hel-mengde': 'Del av en hel og del av en mengde',
 }
 
 export const isMultiplicationArea = (value: unknown): value is MultiplicationArea =>
@@ -341,6 +362,8 @@ export interface AiReferenceTask {
   representation?: string
   /** Problemløsing: visuell støtte beskrevet med ord (f.eks. en tekstbasert blokkmodell) – ikke en figur som mangler. */
   support?: string
+  /** Strategier i divisjon: «delingsdivisjon», «målingsdivisjon» eller «begge», når referansen har en divisjonstype. */
+  divisionType?: string
 }
 
 /** Én oppgave som allerede finnes på nivået – til oppsummeringen og duplikatkontrollen. Ingen elevdata. */

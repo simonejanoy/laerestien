@@ -9,9 +9,10 @@ import {
   type TaskRequest,
   type TaskResult,
 } from '../src/ai/contract.ts'
-import { isReferenceArea, topicOfArea, type DivisionArea, type GeometryArea, type NumbersAndOperationsArea, type ProblemSolvingArea, type ReferenceArea } from '../src/ai/contract.ts'
+import { isReferenceArea, topicOfArea, type DivisionArea, type DivisionStrategiesArea, type GeometryArea, type NumbersAndOperationsArea, type ProblemSolvingArea, type ReferenceArea } from '../src/ai/contract.ts'
 import { strategyProblem } from '../src/features/topics/multiplicationStrategies.ts'
 import { divisionProblem, wishRequiresRoundUp } from './divisionChecks.ts'
+import { strategiesProblem } from './divisionStrategiesChecks.ts'
 import { geometryProblem } from './geometryChecks.ts'
 import { numbersProblem } from './numbersAndOperationsChecks.ts'
 import { problemSolvingProblem } from './problemSolvingChecks.ts'
@@ -96,6 +97,8 @@ export type RemovalReason =
   | 'tooManyDecimals'
   | 'wrongConversion'
   | 'missingUnit'
+  | 'wrongRelation'
+  | 'missingPlaceValue'
 
 export interface GeneralCheck {
   result: TaskResult
@@ -252,6 +255,8 @@ const REMOVAL_TEXT: Record<RemovalReason, string> = {
   tooManyDecimals: 'brukte hundredeler eller flere desimaler',
   wrongConversion: 'hadde feil omgjøring mellom måleenheter, eller sammenlignet lengder uten å gjøre dem om til samme enhet',
   missingUnit: 'manglet enhet i fasiten',
+  wrongRelation: 'beskrev en sammenheng i divisjon feil (f.eks. at svaret dobles når tallet vi deler på dobles)',
+  missingPlaceValue: 'forklarte divisjon med 10 eller 100 med en regel som «stryk en null» i stedet for tiere og hundrere',
 }
 
 const emptyRemoved = (): Record<RemovalReason, number> => ({
@@ -295,6 +300,8 @@ const emptyRemoved = (): Record<RemovalReason, number> => ({
   tooManyDecimals: 0,
   wrongConversion: 0,
   missingUnit: 0,
+  wrongRelation: 0,
+  missingPlaceValue: 0,
 })
 
 /** «Tatt bort: 2 som var like …, 1 som …» – eller tom streng. */
@@ -418,9 +425,9 @@ export function requiresCarry(task: AiTaskDraft): boolean {
 // Intern systemtekst: hører hjemme i serverloggen, aldri i synlige felt.
 
 const INTERNAL_TEXT =
-  /reserve\s?(kandidat|oppgave)\w*|utfyllings?(forsøk|runde)\w*|\brefill\w*|\bfallback\w*|reservemodell\w*|\bprompt\w*|referanse[- ]?(id|oppgave)\w*|\b(?:[MTDGP]|TR)\d-N\d-\d{2}\b|\bkandidat(en|er|ene|nummer|nr)?\b/i
+  /reserve\s?(kandidat|oppgave)\w*|utfyllings?(forsøk|runde)\w*|\brefill\w*|\bfallback\w*|reservemodell\w*|\bprompt\w*|referanse[- ]?(id|oppgave)\w*|\b(?:[MTDGP]|TR|SD)\d-N\d-\d{2}\b|\bkandidat(en|er|ene|nummer|nr)?\b/i
 
-/** Om teksten inneholder interne ord eller ID-er (reservekandidat, utfyllingsforsøk, prompt, M4-N2-01, D3-N2-01, P2-N1-03, TR2-N2-01 …). */
+/** Om teksten inneholder interne ord eller ID-er (reservekandidat, utfyllingsforsøk, prompt, M4-N2-01, D3-N2-01, P2-N1-03, TR2-N2-01, SD3-N1-02 …). */
 export const containsInternalText = (text: string) => INTERNAL_TEXT.test(text)
 
 /** Teksten uten setningene som inneholder interne ord. */
@@ -526,6 +533,9 @@ export interface CandidateCheck {
  *   - Tall og regning: sammenhengen mellom regneartene og regnefamilier (samme kontroll som i Divisjon), rest,
  *     desimaltall med komma og én desimal, tideler, sammenligninger, lengder og enheter (se numbersAndOperationsChecks.ts).
  *     Sammenhengen mellom gange og dele sammenlignes også med referansene i divisjonsbanken (kopier).
+ *   - Strategier i divisjon: oppdeling i hundrere, tiere og enere, halvering og oppdeling i kjente stykker, divisjonstype
+ *     (samme kontroll som i Divisjon), sammenhenger, divisjon med 10 og 100 forklart med plassverdi, del av en hel og del av
+ *     en mengde, og ingen rest (se divisionStrategiesChecks.ts). Kandidatene sammenlignes også med hele divisjonsbanken (kopier).
  * - uten fagområde logges gangestykker utenfor øktas tabeller (som før)
  * Kontrollene er de samme for første generering og for utfylling.
  */
@@ -568,9 +578,10 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
     return !problem || remove(t, problem)
   })
   // Løsningsforslaget må være entydig, og ja/nei i vurderingsoppgaver må stemme (alle økter).
-  // Geometri, Problemløsing og Tall og regning har påstander i ord («Er modellen riktig?», «1,3 er mindre enn 0,9»):
-  // da kreves én entydig ja/nei-konklusjon (påstander om desimaltall og lengder kontrolleres i numbersAndOperationsChecks.ts).
-  const verbalClaims = !!profile?.area && ['geometri', 'problemlosing', 'tall-og-regning'].includes(topicOfArea(profile.area))
+  // Geometri, Problemløsing, Tall og regning og Strategier i divisjon har påstander i ord («Er modellen riktig?», «1,3 er
+  // mindre enn 0,9», «Når jeg dobler tallet jeg deler på …»): da kreves én entydig ja/nei-konklusjon (påstandene kontrolleres
+  // i numbersAndOperationsChecks.ts og divisionStrategiesChecks.ts).
+  const verbalClaims = !!profile?.area && ['geometri', 'problemlosing', 'tall-og-regning', 'strategier-i-divisjon'].includes(topicOfArea(profile.area))
   tasks = tasks.filter((t) => {
     const problem = assessmentProblem(t, { verbalClaims })
     return !problem || remove(t, problem)
@@ -604,6 +615,13 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
     const geometry = topic === 'geometri'
     const problemSolving = topic === 'problemlosing'
     const numbersAndOperations = topic === 'tall-og-regning'
+    const divisionStrategies = topic === 'strategier-i-divisjon'
+    const strategiesContext = divisionStrategies
+      ? {
+          area: area as DivisionStrategiesArea,
+          secondaryAreas: (profile?.secondaryAreas ?? []).filter((a): a is DivisionStrategiesArea => isReferenceArea(a) && topicOfArea(a) === 'strategier-i-divisjon'),
+        }
+      : null
     const numbersContext = numbersAndOperations
       ? {
           area: area as NumbersAndOperationsArea,
@@ -682,17 +700,25 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
         const problem = numbersProblem(task, numbersContext)
         if (problem) return remove(task, problem)
       }
+      // Strategier i divisjon: oppdeling i hundrere, tiere og enere, halvering og andre delestrategier, divisjonstype (som
+      // i Divisjon), sammenhenger, divisjon med 10 og 100, del av en hel og en mengde – og ingen rest (se divisionStrategiesChecks.ts).
+      if (strategiesContext) {
+        if (!isMathDraft(task) && HESITATION.test(task.studentText)) return remove(task, 'unclearSolution')
+        const problem = strategiesProblem(task, strategiesContext)
+        if (problem) return remove(task, problem)
+      }
       // Økter der tierovergang er det uttrykkelige målet: minst én addisjon med veksling.
       if (profile?.requiresCarry && !requiresCarry(task)) return remove(task, 'missingCarry')
       if (!hasWishes && outsideTables(task, factorsOf(task.level))) return remove(task, 'outsideTables')
       // En strategi i instruksjonen må passe akkurat dette regnestykket – også når læreren har ønsker.
       if (isMathDraft(task) && strategyProblem(task.instruction, task.a, task.b)) return remove(task, 'invalidStrategy')
       if (solutionProblem(task, problemSolving)) return remove(task, 'wrongSolution')
-      // Sammenhengen mellom gange og dele i Tall og regning overlapper med Divisjon: kandidaten må heller ikke kopiere
-      // en referanse om multiplikasjon og divisjon i divisjonsbanken.
+      // Sammenhengen mellom gange og dele i Tall og regning og hele Strategier i divisjon overlapper med Divisjon: kandidaten
+      // må heller ikke kopiere en referanse i divisjonsbanken (i Tall og regning: om multiplikasjon og divisjon).
       const references = [
         ...(levelInfo(task.level)?.referenceTasks ?? []),
         ...(area === 'sammenheng-multiplikasjon-divisjon' ? divisionReferences.filter((r) => r.area === 'multiplikasjon-divisjon') : []),
+        ...(divisionStrategies ? divisionReferences : []),
       ]
       // Figuroppgaver som spør om «figuren» eller «vinkelen» har innholdet i figuren appen tegner, ikke i teksten:
       // et kort spørsmål som «Hvor mange sider har figuren?» er ikke en kopi av en referanse uten figur.
@@ -707,7 +733,7 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
         }
         // Divisjon og Problemløsing: de samme tallene som en referanse og lignende formulering er samme oppgave
         // (samme gangefakta i et annet format, f.eks. «__ · 8 = 56» og «Regn ut 56 : 8», er lov).
-        if ((division || problemSolving || numbersAndOperations) && references.some((r) => numbersIn(task.studentText) === numbersIn(r.studentText) && textSimilarity(task.studentText, r.studentText) >= SAME_NUMBERS_SIMILARITY)) {
+        if ((division || problemSolving || numbersAndOperations || divisionStrategies) && references.some((r) => numbersIn(task.studentText) === numbersIn(r.studentText) && textSimilarity(task.studentText, r.studentText) >= SAME_NUMBERS_SIMILARITY)) {
           return remove(task, 'copiedReference')
         }
       } else if (placeValue) {
@@ -719,8 +745,10 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
       // Nivå 1 i Tall og plassverdi og Divisjon: hovedsakelig ett faglig steg – ikke flerstegs- eller
       // feilanalyseoppgaver (gjelder også med «Andre ønsker»). Problemløsing har egne nivåregler: synlige
       // mellomsteg og svaralternativer hører hjemme på nivå 1 (se problemSolvingChecks.ts).
+      // Strategier i divisjon har to korte spørsmål på nivå 1 («Hvor mange tiere er det i 70? Hva er 70 : 10?»): der er
+      // bare vurderingsoppgaver for mye (se divisionStrategiesChecks.ts).
       if (!multiplication && !problemSolving && task.level === 1 && !isMathDraft(task)) {
-        if (isLongOrMultiPart(task.studentText) || ERROR_ANALYSIS.test(task.studentText)) return remove(task, 'levelMismatch')
+        if ((!divisionStrategies && isLongOrMultiPart(task.studentText)) || ERROR_ANALYSIS.test(task.studentText)) return remove(task, 'levelMismatch')
       }
       inResponse.add(keys.exact)
       inResponse.add(keys.swapped)

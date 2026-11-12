@@ -1,4 +1,4 @@
-import { visualSignature, type AiVisual, type DivisionArea, type DivisionType, type GeometryArea, type NumbersAndOperationsArea, type PlaceValueArea, type ProblemSolvingArea } from '../../ai/contract.ts'
+import { visualSignature, type AiVisual, type DivisionArea, type DivisionStrategiesArea, type DivisionType, type GeometryArea, type NumbersAndOperationsArea, type PlaceValueArea, type ProblemSolvingArea } from '../../ai/contract.ts'
 import type { Level, LevelGroup, LevelProfile, Operator, TaskProfile, TaskType, TopicDetails } from '../../types/index.ts'
 import { OPEN_STRATEGY, strategyInstruction } from './multiplicationStrategies.ts'
 import { columnTasks, fourDigitTasks, mentalStrategyTasks, negativeNumberTasks, type FourDigitVariant } from './placeValueTasks.ts'
@@ -90,6 +90,11 @@ const divide = (divisors: number[], n: number, instruction: string, minQ = 2, ma
     const d = pick(divisors, i + n)
     return [type, d * vary(n, i, minQ, maxQ), '/', d, instruction]
   })
+
+/** Brøkdelene med ord: 4 → «fjerdedel» (Strategier i divisjon). */
+const FRACTION_NAMES: Record<number, string> = {
+  2: 'halvdel', 3: 'tredjedel', 4: 'fjerdedel', 5: 'femtedel', 6: 'sjettedel', 7: 'sjudedel', 8: 'åttedel', 9: 'niendedel', 10: 'tidel',
+}
 
 /** Velger regel etter nivå. */
 const byLevel =
@@ -1195,55 +1200,92 @@ const skillTasks: Record<string, Generator> = {
   'tr.tideler': (level, n, profile) => (profile?.taskVariant === 'tallinje' ? numberLineTenths : writeTenths)(level, n),
   'tr.desimal-lengde': (level, n, profile) => (profile?.taskVariant === 'skrive' ? writeLengths : convertLengths)(level, n),
 
-  // Strategier i divisjon
+  // Strategier i divisjon. Alle delestykkene går opp, og tallområdet følger referansebanken på hvert nivå.
+  // Nivå 1: hver plassverdi går opp i tallet vi deler på (84 : 4), så tierne og enerne kan deles hver for seg.
+  // Nivå 2 og 3: også når en tier eller hundrer må veksles – da deles tallet i deler som går opp (52 = 40 + 12).
   'sdiv.hte': byLevel(
-    (n) => divide([2, 3, 4], n, 'Del tierne og enerne hver for seg.', 11, 24),
-    (n) => divide([2, 3, 4, 5], n, 'Del tierne og enerne hver for seg.', 21, 48),
-    (n) => divide([3, 4, 5, 6, 7, 8], n, 'Del hundrerne, tierne og enerne hver for seg.', 25, 120),
+    (n) =>
+      five((i): TaskSpec => {
+        const d = pick([2, 3, 4], i + n)
+        const most = Math.floor(9 / d)
+        return [H, d * (10 * vary(n, i, 1, most) + vary(n + 1, i, 1, most)), '/', d, 'Del tierne og enerne hver for seg.']
+      }),
+    (n) => divide([2, 3, 4, 5], n, 'Del opp tallet i deler som går opp, f.eks. tiere og enere.', 21, 48),
+    (n) => divide([3, 4, 5, 6, 7, 8], n, 'Del opp tallet i deler som går opp, og sjekk svaret med gange.', 25, 120),
   ),
+  // Halvering: å dele på 2, 4 og 8 er å halvere én, to og tre ganger (tall under 100, som i referansene).
   'sdiv.gode-mater': byLevel(
     (n) => divide([2], n, 'Del på 2 ved å halvere.', 11, 49),
-    (n) => divide([4], n, 'Del på 4: halver to ganger.', 11, 30),
-    (n) => divide([8], n, 'Del på 8: halver tre ganger.', 11, 25),
+    (n) => divide([4], n, 'Del på 4: halver to ganger.', 6, 24),
+    (n) => divide([8], n, 'Del på 8: halver tre ganger.', 5, 12),
   ),
+  // Et kjent delestykke og et nytt med det samme tallet vi deler på. Nivå 1: dobbelt eller ti ganger så mye å dele,
+  // med små tall. Nivå 2 og 3: ti ganger så mye å dele.
   'sdiv.sammenhenger': (level, n) =>
     five((i): TaskSpec => {
-      const d = pick(level === 1 ? [2, 5] : level === 2 ? [3, 4, 6] : [7, 8, 9], i + n)
+      if (level === 1) {
+        const d = pick([2, 3, 4], i + n)
+        const base = d * (i % 2 === 0 ? vary(n, i, 1, Math.floor(9 / d)) : vary(n, i, 2, 6))
+        const factor = i % 2 === 0 ? 10 : 2
+        return [H, base * factor, '/', d, `${base} : ${d} = ${base / d}. Hva er ${base * factor} : ${d}?`]
+      }
+      const d = pick(level === 2 ? [3, 4, 6] : [7, 8, 9], i + n)
       const base = d * vary(n, i, 2, 9)
       return [H, base * 10, '/', d, `${base} : ${d} = ${base / d}. Hva er ${base * 10} : ${d}?`]
     }),
+  // Antall tiere og hundrere – ikke «hva skjer med sifrene».
   'sdiv.10-100': byLevel(
-    (n) => five((i): TaskSpec => [H, 10 * vary(n, i, 2, 9), '/', 10, 'Regn ut. Hva skjer med sifrene når du deler på 10?']),
-    (n) => five((i): TaskSpec => [H, 10 * vary(n, i, 11, 99), '/', 10, 'Regn ut. Hva skjer med sifrene når du deler på 10?']),
-    (n) => five((i): TaskSpec => [H, 100 * vary(n, i, 2, 99), '/', 100, 'Regn ut. Hva skjer med sifrene når du deler på 100?']),
+    (n) => five((i): TaskSpec => [H, 10 * vary(n, i, 2, 9), '/', 10, 'Hvor mange tiere er det i tallet? Regn ut.']),
+    (n) => five((i): TaskSpec => [H, 10 * vary(n, i, 11, 99), '/', 10, 'Regn ut. Tenk: hvor mange tiere er det i tallet?']),
+    (n) => five((i): TaskSpec => [H, 100 * vary(n, i, 2, 99), '/', 100, 'Regn ut. Tenk: hvor mange hundrere er det i tallet?']),
   ),
   // Samme ferdighet som i høstens divisjon, men med andre tall.
   'sdiv.malings-delings': (level, n) => skillTasks['div.delings-malings'](level, n + 3),
+  // Del av en hel: brøken skrives med ord og som tall i parentes, «en fjerdedel (1/4)». Teller 1 på nivå 1 og 2.
   'sdiv.del-av-hel': byLevel(
     (n) =>
       five((i): TextSpec => {
         const d = pick([2, 3, 4, 6, 8], i + n)
-        return { text: `En pizza er delt i ${d} like store biter. Du spiser 1 bit. Hvor stor del av pizzaen har du spist? Skriv som brøk.`, solution: `1/${d}` }
+        return {
+          text: `En pizza er delt i ${d} like store biter. Du spiser 1 bit. Hvor stor del av pizzaen har du spist? Skriv svaret med ord og som brøk.`,
+          solution: `En ${FRACTION_NAMES[d]} (1/${d})`,
+        }
       }),
     (n) =>
       five((i): TextSpec => {
-        const d = pick([4, 5, 6, 8, 10], i + n)
-        const k = vary(n, i, 2, d - 1)
-        return { text: `En sjokolade har ${d} like store biter. Du spiser ${k} biter. Hvor stor del har du spist? Skriv som brøk.`, solution: `${k}/${d}` }
+        const d = pick([2, 3, 4, 5], i + n)
+        const length = d * vary(n, i, 2, 10)
+        return {
+          text: `En planke er ${length} dm lang. Snekkeren sager av en ${FRACTION_NAMES[d]} (1/${d}) av planken. Hvor lang er biten som blir sagd av?`,
+          solution: `${length / d} dm  (${length} : ${d} = ${length / d})`,
+        }
       }),
     (n) =>
       five((i): TextSpec => {
         const a = pick([2, 3, 4, 5], i + n)
-        const b = a + vary(n, i, 1, 6)
-        return { text: `Hvilken brøk er størst: 1/${a} eller 1/${b}? Forklar hvorfor.`, solution: `1/${a}  (jo færre biter en hel deles i, jo større blir hver bit)` }
+        const b = a + vary(n, i, 1, 10 - a)
+        return {
+          text: `Hvilken bit er størst: en ${FRACTION_NAMES[a]} (1/${a}) eller en ${FRACTION_NAMES[b]} (1/${b}) av den samme pizzaen? Forklar hvorfor.`,
+          solution: `En ${FRACTION_NAMES[a]} (1/${a}), fordi jo færre like store biter en hel deles i, jo større blir hver bit.`,
+        }
       }),
   ),
+  // Del av en mengde: mengden går opp i nevneren. Teller 2 bare på nivå 3, der eleven også forklarer.
   'sdiv.del-av-mengde': (level, n) =>
-    five((i): TaskSpec => {
-      const d = pick(level === 1 ? [2, 4] : level === 2 ? [3, 4, 5] : [5, 8, 10], i + n)
-      const a = d * vary(n, i, level === 3 ? 5 : 2, level === 3 ? 20 : 10)
-      return [H, a, '/', d, `Hva er 1/${d} av ${a}?`]
-    }),
+    level === 3
+      ? five((i): TextSpec => {
+          const d = pick([3, 5], i + n)
+          const total = d * vary(n, i, 3, 12)
+          return {
+            text: `Hva er to ${FRACTION_NAMES[d]}er (2/${d}) av ${total}? Forklar hvordan du tenker.`,
+            solution: `${(2 * total) / d}  (${total} : ${d} = ${total / d}, og 2 · ${total / d} = ${(2 * total) / d})`,
+          }
+        })
+      : five((i): TaskSpec => {
+          const d = pick(level === 1 ? [2, 4] : [3, 4, 5], i + n)
+          const total = d * vary(n, i, 2, 10)
+          return [H, total, '/', d, `Hva er en ${FRACTION_NAMES[d]} (1/${d}) av ${total}?`]
+        }),
 
   // Måling
   // Volum i liter og desiliter (ikke kuber – de ble bare gangestykker).
@@ -1996,6 +2038,93 @@ const numbersProfile = (area: NumbersAndOperationsArea, focus: string, { taskVar
   ) as Record<Level, LevelProfile>,
 })
 
+// ---------------------------------------------------------------------------------------
+// Strategier i divisjon: fem fagområder i progresjon – dele i hundrere, tiere og enere, gode delestrategier,
+// sammenhenger i divisjon, dividere med 10 og 100, og del av en hel og del av en mengde. Målingsdivisjon og
+// delingsdivisjon er bygd inn i gode delestrategier (egen økt). Tallområdet følger referansebanken. Alle delestykkene går opp.
+
+const STRATEGIES_SUPPORT: Record<Level, string> = {
+  1: 'Tydelig støtte: oppdelingen, strategien eller brøken er gitt, og eleven tar ett faglig steg.',
+  2: 'Mindre støtte: eleven deler opp, velger strategi eller skriver divisjonsstykket selv.',
+  3: 'Resonnering: forklare, vurdere en påstand, finne feil eller vise to måter – ikke bare større tall.',
+}
+
+type StrategiesLevels = DivisionStrategiesArea | 'divisjonstyper'
+
+const STRATEGIES_LEVELS: Record<StrategiesLevels, [LevelText, LevelText, LevelText]> = {
+  'plassverdi-deling': [
+    { title: 'Dele opp med støtte', subtitle: 'Hver plassverdi går opp.', description: 'Dele tiere og enere (og hundrere) hver for seg når oppdelingen er gitt.', numbers: 'Tosifrede og tresifrede tall der hver plassverdi går opp, f.eks. 84 : 4 og 369 : 3' },
+    { title: 'Dele opp selv', subtitle: 'Også med veksling.', description: 'Dele opp i hundrere, tiere og enere selv, og dele på en annen måte når tierne ikke går opp (52 = 40 + 12).', numbers: 'Tall opptil 500 delt på 2–5, f.eks. 286 : 2 og 52 : 4' },
+    { title: 'Dele opp og forklare', subtitle: 'Plassverdien i svaret.', description: 'Forklare oppdelingen, finne feil der plassverdien forsvinner, og vise to oppdelinger.', numbers: 'Tall opptil 1000 delt på 3–8, f.eks. 96 : 3, 156 : 6 og 408 : 4' },
+  ],
+  'gode-delestrategier': [
+    { title: 'Gode måter med støtte', subtitle: 'Halvere og dele ut.', description: 'Halvere for å dele på 2 og 4, dele ut én og én eller trekke fra om igjen.', numbers: 'Tall under 100 delt på 2–6' },
+    { title: 'Velge strategi', subtitle: 'Kjente stykker og halvering.', description: 'Dele opp i kjente stykker, halvere to ganger og skille delingsdivisjon og målingsdivisjon.', numbers: 'Tall under 100 delt på 4–8, f.eks. 91 : 7 og 96 : 8' },
+    { title: 'Vurdere strategier', subtitle: 'Når passer hva?', description: 'Sammenligne strategier, forklare når halvering passer og lage fortellinger til begge divisjonstypene.', numbers: 'Tall under 100 delt på 3–8' },
+  ],
+  divisjonstyper: [
+    { title: 'To måter å dele på med støtte', subtitle: 'Dele ut og lage grupper.', description: 'Dele ut likt når antall grupper er kjent, og finne antall grupper når størrelsen på hver gruppe er kjent.', numbers: 'Divisjon som går opp: tall under 50, 2–5 grupper eller 2–5 i hver' },
+    { title: 'To måter å dele på', subtitle: 'Skille typene.', description: 'Løse delingsdivisjon og målingsdivisjon og skrive divisjonsstykket.', numbers: 'Divisjon som går opp: tall under 100' },
+    { title: 'To måter å dele på – forklare', subtitle: 'Begrunne typen.', description: 'Avgjøre og begrunne typen, og lage fortellinger til begge typene.', numbers: 'Divisjon som går opp: tall under 100' },
+  ],
+  'sammenhenger-divisjon': [
+    { title: 'Sammenhenger med støtte', subtitle: 'Dobbelt og ti ganger så mye.', description: 'Bruke et kjent delestykke når tallet som deles dobles eller blir ti ganger så stort, og dele på 1 og på tallet selv.', numbers: 'Små tall, f.eks. 12 : 3 → 24 : 3 og 8 : 2 → 80 : 2' },
+    { title: 'Bruke sammenhenger', subtitle: 'Endre ett av tallene.', description: 'Finne nye svar når tallet som deles eller tallet vi deler på endres, og finne delestykker med samme svar.', numbers: 'Tall opptil 600, f.eks. 48 : 6 → 48 : 3 og 35 : 5 → 350 : 5' },
+    { title: 'Forklare sammenhenger', subtitle: 'Påstander og mønstre.', description: 'Vurdere påstander, fortsette mønstre og forklare sammenhengen med en modell.', numbers: 'Tall opptil 1000, f.eks. 40 : 5 og 40 : 10' },
+  ],
+  'dividere-10-100': [
+    { title: 'Tiere og hundrere med støtte', subtitle: 'Hele tiere og hundrere.', description: 'Finne antall tiere eller hundrere i et tall og skrive divisjonsstykket.', numbers: 'Hele tiere under 100 og hele hundrere under 1000' },
+    { title: 'Dele med 10 og 100', subtitle: 'Tresifrede og firesifrede tall.', description: 'Dele med 10 og 100 og forklare svaret med antall tiere eller hundrere.', numbers: 'Tall opptil 2000 som går opp i 10 eller 100, f.eks. 340 : 10 og 1200 : 100' },
+    { title: 'Forklare med plassverdi', subtitle: 'Ikke bare stryke nuller.', description: 'Finne feil, finne tallet som mangler og forklare med tiere og hundrere hvorfor svaret blir som det blir.', numbers: 'Tall under 10 000 som går opp i 10 eller 100, f.eks. 2500 : 100' },
+  ],
+  'del-av-hel-mengde': [
+    { title: 'Del av en hel og en mengde', subtitle: 'Halvdeler, tredjedeler og fjerdedeler.', description: 'Navngi en brøkdel av én gjenstand, og finne en halvdel, tredjedel eller fjerdedel av en mengde.', numbers: 'Mengder under 50 og brøker med teller 1, skrevet «en fjerdedel (1/4)»' },
+    { title: 'Skille hel og mengde', subtitle: 'Brøkdeler og lengder.', description: 'Skille del av en hel fra del av en mengde, finne en brøkdel av en lengde og skrive divisjonsstykket.', numbers: 'Mengder og lengder under 100 og brøker med teller 1' },
+    { title: 'Forklare brøkdeler', subtitle: 'To tredjedeler og påstander.', description: 'Finne to tredjedeler av en mengde, vurdere påstander om brøkdeler og forklare forskjellen på del og antall.', numbers: 'Mengder under 100 og brøker med teller 1 eller 2' },
+  ],
+}
+
+const STRATEGIES_FORMATS: Record<DivisionStrategiesArea, string[]> = {
+  'plassverdi-deling': ['Hoderegning (delestykke) der instruksjonen sier hvordan tallet deles opp', 'Korte tekstoppgaver med utfylling av delene, oppdeling eller forklaring'],
+  'gode-delestrategier': ['Hoderegning (delestykke) med en strategi i instruksjonen (halvere, dele opp)', 'Korte tekstoppgaver fra hverdagen med delingsdivisjon eller målingsdivisjon'],
+  'sammenhenger-divisjon': ['Hoderegning der instruksjonen gir et kjent delestykke', 'Korte tekstoppgaver som bygger på et kjent delestykke'],
+  'dividere-10-100': ['Hoderegning med 10 eller 100 der instruksjonen spør om antall tiere eller hundrere', 'Korte tekstoppgaver med tikroner, hundrelapper eller esker med 10'],
+  'del-av-hel-mengde': ['Korte tekstoppgaver om del av én gjenstand, en lengde eller en mengde', 'Hoderegning: «Hva er en femtedel (1/5) av 40?»'],
+}
+
+const STRATEGIES_AVOID: Record<DivisionStrategiesArea, string> = {
+  'plassverdi-deling': 'Oppdelinger der plassverdien forsvinner (96 : 3 regnet som 9 : 3 og 6 : 3)',
+  'gode-delestrategier': 'Halvering når tallet vi deler på ikke er 2, 4 eller 8',
+  'sammenhenger-divisjon': 'Enkeltstående delestykker uten et kjent stykke å bygge på, og feil beskrevne sammenhenger',
+  'dividere-10-100': 'Regler som «stryk en null» eller «flytt kommaet» uten tiere og hundrere',
+  'del-av-hel-mengde': 'Brøker med teller større enn 1 (teller 2 bare på nivå 3), og mengder som ikke går opp i nevneren',
+}
+
+/** Øktprofil i Strategier i divisjon. Varianten «divisjonstyper» er økta om målingsdivisjon og delingsdivisjon. */
+const strategiesProfile = (area: DivisionStrategiesArea, focus: string, { taskVariant }: { taskVariant?: 'divisjonstyper' } = {}): TaskProfile => ({
+  focus,
+  area,
+  ...(taskVariant && { taskVariant }),
+  operations: ['/'],
+  formats: STRATEGIES_FORMATS[area],
+  steps: 'Ett faglig steg på nivå 1. Nivå 2 kan ha to steg (f.eks. dele opp og legge sammen), og nivå 3 ber om forklaring eller begrunnelse.',
+  avoid: [
+    STRATEGIES_AVOID[area],
+    'Divisjon med rest (alle delestykkene i temaet går opp)',
+    'Divisjon med 0',
+    'Desimaltall og negative tall',
+    'Henvisninger til figurer eller bilder som ikke vises («se figuren under»)',
+    'Andre tema enn økta',
+  ],
+  figures: false,
+  levels: Object.fromEntries(
+    STRATEGIES_LEVELS[taskVariant ?? area].map((text, i) => {
+      const level = (i + 1) as Level
+      return [level, { ...text, support: STRATEGIES_SUPPORT[level] }]
+    }),
+  ) as Record<Level, LevelProfile>,
+})
+
 /** Måleøkt. */
 const measureProfile = (
   focus: string,
@@ -2597,15 +2726,57 @@ export const unitSpecs: UnitSpec[] = [
     description:
       'Elevene deler større tall ved å dele opp i hundrere, tiere og enere, finner gode måter å dele på, deler med 10 og 100 og finner del av en hel og del av en mengde.',
     weeks: [
-      { title: 'Uke 1 - dele opp tall', sessions: [s('Dele tall i hundrere, tiere og enere', 'sdiv.hte'), s('Dele tall på gode måter', 'sdiv.gode-mater')] },
-      { title: 'Uke 2 - sammenhenger', sessions: [s('Sammenhenger i divisjon', 'sdiv.sammenhenger'), s('Dividere med 10 og 100', 'sdiv.10-100')] },
-      { title: 'Uke 3 - deler', sessions: [s('Målingsdivisjon og delingsdivisjon', 'sdiv.malings-delings'), s('Del av en hel og del av en mengde', 'sdiv.del-av-hel', 'sdiv.del-av-mengde')] },
+      {
+        title: 'Uke 1 - dele opp tall',
+        sessions: [
+          p(
+            'Dele tall i hundrere, tiere og enere',
+            ['sdiv.hte'],
+            strategiesProfile('plassverdi-deling', 'Dele hver plassverdi for seg (369 : 3 = 100 + 20 + 3), også når en tier må veksles (52 : 4 = 40 : 4 + 12 : 4).'),
+          ),
+          p(
+            'Dele tall på gode måter',
+            ['sdiv.gode-mater'],
+            strategiesProfile('gode-delestrategier', 'Halvere for å dele på 2, 4 og 8, og dele opp i kjente stykker (91 : 7 = 70 : 7 + 21 : 7).'),
+          ),
+        ],
+      },
+      {
+        title: 'Uke 2 - sammenhenger',
+        sessions: [
+          p(
+            'Sammenhenger i divisjon',
+            ['sdiv.sammenhenger'],
+            strategiesProfile('sammenhenger-divisjon', 'Bruke et kjent delestykke: dobbelt så mye å dele gir dobbelt svar, dobbelt så mange grupper gir halvparten i hver, og like endringer gir samme svar.'),
+          ),
+          p('Dividere med 10 og 100', ['sdiv.10-100'], strategiesProfile('dividere-10-100', 'Dele med 10 og 100 som å finne antall tiere og hundrere: 340 : 10 = 34 fordi 340 er 34 tiere.')),
+        ],
+      },
+      {
+        title: 'Uke 3 - deler',
+        sessions: [
+          p(
+            'Målingsdivisjon og delingsdivisjon',
+            ['sdiv.malings-delings'],
+            strategiesProfile(
+              'gode-delestrategier',
+              'Delingsdivisjon (antall grupper er kjent, dele ut likt) og målingsdivisjon (størrelsen på hver gruppe er kjent, finne antall grupper) – og hva svaret betyr.',
+              { taskVariant: 'divisjonstyper' },
+            ),
+          ),
+          p(
+            'Del av en hel og del av en mengde',
+            ['sdiv.del-av-hel', 'sdiv.del-av-mengde'],
+            strategiesProfile('del-av-hel-mengde', 'Del av en hel (én gjenstand eller lengde delt i like store deler) og del av en mengde (ting delt i like store grupper), med brøken skrevet «en fjerdedel (1/4)».'),
+          ),
+        ],
+      },
     ],
     goals: ['Dele større tall ved å dele opp i hundrere, tiere og enere.', 'Velge en god måte å dele på.', 'Dele med 10 og 100.', 'Finne del av en hel og del av en mengde.'],
     levels: [
-      { title: 'Dele opp', subtitle: 'Tosifrede tall.', description: 'Dele tiere og enere hver for seg.' },
-      { title: 'Gode måter', subtitle: 'Halvere og bruke sammenhenger.', description: 'Velge strategi.' },
-      { title: 'Store tall', subtitle: 'Tresifrede tall og brøk.', description: 'Dele og sjekke svaret med gange.' },
+      { title: 'Med støtte', subtitle: 'Ett faglig steg.', description: 'Dele opp med hjelp, halvere og finne en enkel brøkdel.' },
+      { title: 'Velge strategi', subtitle: 'Dele opp selv.', description: 'Velge en god måte å dele på og bruke sammenhenger.' },
+      { title: 'Forklare og vurdere', subtitle: 'Påstander og feil.', description: 'Forklare, vurdere påstander og finne feil.' },
     ],
   },
   {

@@ -153,6 +153,7 @@ const bankReference = (ref: AiReferenceTask, i: number) =>
     `   Format: ${ref.taskType || 'Ikke oppgitt.'}`,
     ref.representation && `   Representasjon: Originalen har en figur som ikke er med her (${ref.representation}). Appen kan ikke vise figurer.`,
     ref.support && `   Visuell støtte (beskrevet med ord, ingen figur): ${ref.support}`,
+    ref.divisionType && `   Divisjonstype: ${ref.divisionType}`,
     `   Oppgavetekst: «${ref.studentText}»`,
     ref.solution && `   Fasit: «${ref.solution}»`,
   )
@@ -266,6 +267,24 @@ const AREA_GUIDANCE: Partial<Record<ReferenceArea, string[]>> = {
     'Bruk lengder i m, dm, cm og mm med høyst én desimal i enheten svaret oppgis i: 1 m = 10 dm = 100 cm, 1 dm = 10 cm, 1 cm = 10 mm. Ikke lag oppgaver som krever hundredeler (f.eks. 1,25 m).',
     'Enheten skal stå både i oppgaven og i fasiten. Sammenlignes lengder i ulike enheter, skal fasiten gjøre dem om til samme enhet, f.eks. «4,5 cm er 45 mm, og 45 mm er mer enn 42 mm.».',
   ],
+  'plassverdi-deling': [
+    'Delene i oppdelingen skal til sammen være tallet som deles, og hver del skal gå opp i tallet vi deler på: 369 : 3 = 300 : 3 + 60 : 3 + 9 : 3 = 100 + 20 + 3 = 123. Plassverdien skal følge med – 96 : 3 er 90 : 3 og 6 : 3, ikke 9 : 3 og 6 : 3.',
+    'Nivå 1: hver plassverdi går opp (84 : 4, 369 : 3). Nivå 2: også når en tier må veksles – da deles tallet i deler som går opp (52 = 40 + 12). Svaret skal stå i fasiten.',
+  ],
+  'gode-delestrategier': [
+    'Strategien skal passe regnestykket: halvering bare når tallet vi deler på er 2, 4 eller 8 (én, to eller tre halveringer), og oppdeling i deler som går opp (91 : 7 = 70 : 7 + 21 : 7). Strategien skal gi riktig svar.',
+    'Delingsdivisjon: antall grupper er kjent, og eleven finner hvor mange det blir i hver gruppe. Målingsdivisjon: størrelsen på hver gruppe er kjent, og eleven finner antall grupper. Nevner fasiten typen, skal den passe spørsmålet.',
+  ],
+  'sammenhenger-divisjon': [
+    'Bygg på et kjent delestykke med svar (f.eks. «48 : 6 = 8. Hva er 48 : 3?»). Sammenhengene må være riktige: dobles tallet som deles, dobles svaret; dobles tallet vi deler på, blir svaret halvparten så stort; ganges begge tallene med det samme, er svaret likt.',
+  ],
+  'dividere-10-100': [
+    'Tallet som deles skal gå opp i 10 eller 100, så svaret er et helt tall. Forklar med antall tiere eller hundrere (f.eks. «340 er 34 tiere»), ikke med regler som «stryk en null» eller «flytt kommaet». Fasiten skal nevne tierne eller hundrerne.',
+  ],
+  'del-av-hel-mengde': [
+    'Del av en hel: én gjenstand eller én lengde deles i like store deler, og svaret er en brøkdel (eller en lengde med enhet). Del av en mengde: et antall ting deles i like store grupper, og svaret er et antall. Mengden skal gå opp i nevneren.',
+    'Appen har ingen brøkvisning: skriv brøken med ord og med tall i parentes, f.eks. «en fjerdedel (1/4)». Bruk teller 1 – teller 2 bare på nivå 3 (f.eks. «to tredjedeler (2/3)»).',
+  ],
   modeller: [
     'Eleven skal faktisk bruke eller tolke en modell: like grupper, tallinje, rutenett eller blokkmodell. Appen kan ikke vise figurer, så beskriv modellen i teksten (f.eks. «En blokk med totalen 35 er delt i 5 like store deler») eller be eleven tegne en bestemt modell. Å bare nevne ordet «modell» er ikke nok.',
   ],
@@ -279,6 +298,7 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
   const geometry = topic === 'geometri'
   const problemSolving = topic === 'problemlosing'
   const numbersAndOperations = topic === 'tall-og-regning'
+  const divisionStrategies = topic === 'strategier-i-divisjon'
   const secondary = profile.secondaryAreas ?? []
   const allowsRemainder = area === 'divisjon-med-rest' || secondary.includes('divisjon-med-rest')
   // Todimensjonale figurer og vinkler: hver oppgave skal ha en figur appen tegner, og figurer finnes bare i tekstoppgaver.
@@ -309,10 +329,10 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
       '- Alle oppgavene skal være delingsdivisjon: antall grupper er kjent, og eleven finner hvor mange det blir i hver gruppe. Ikke lag målingsdivisjon.',
     profile.divisionType === 'maling' &&
       '- Alle oppgavene skal være målingsdivisjon: størrelsen på hver gruppe er kjent, og eleven finner antall grupper. Ikke lag delingsdivisjon.',
-    division && !allowsRemainder && '- Alle delestykkene skal gå opp. Ikke lag oppgaver med rest.',
+    (division || divisionStrategies) && !allowsRemainder && '- Alle delestykkene skal gå opp. Ikke lag oppgaver med rest.',
     '- Ikke lag en oppgave som er lik en oppgave som allerede finnes på nivået.',
     !geometry &&
-      (multiplication || division || area === 'sammenheng-multiplikasjon-divisjon'
+      (multiplication || division || divisionStrategies || area === 'sammenheng-multiplikasjon-divisjon'
         ? profile.allowSwappedFactors
           ? '- Byttede faktorer (f.eks. 3 · 7 og 7 · 3) er ulike oppgaver i denne økta, fordi den handler om at faktorene kan bytte plass.'
           : '- Byttede faktorer (f.eks. 3 · 7 og 7 · 3) regnes som samme oppgave.'
@@ -323,12 +343,16 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
         ? '- Hold deg til fagområdet i økta og tallområdet i referansene på nivået. Bruk hele tall – ikke desimaltall, negative tall, brøk eller andre tema.'
         : numbersAndOperations
         ? '- Hold deg til fagområdet i økta og tallområdet i referansene på nivået. Ikke negative tall, ikke hundredeler, og ikke et nytt deltema – heller ikke når ønskene ber om det (f.eks. gir «bruk penger» ikke kroner og øre i en økt om tideler).'
+        : divisionStrategies
+        ? '- Hold deg til fagområdet i økta og tallområdet i referansene på nivået. Bruk hele tall – ikke desimaltall, negative tall, rest eller deling med 0, og ikke et nytt deltema – heller ikke når ønskene ber om det (f.eks. gir «bruk penger» hele kroner som går opp, ikke øre eller rest).'
         : geometry
         ? '- Hold deg til geometriområdet i økta. Ikke ta inn areal, omkrets eller andre deltema, og ikke bytt til en annen regneart eller et annet tema – heller ikke når ønskene ber om det.'
         : division
         ? '- Hold deg til gangetabellen og tallområdet på nivået: divisor og antall hele grupper høyst 10. Bruk hele tall – ikke desimaltall, negative tall eller deling med 0.'
         : '- Hold deg til tallområdet og regneartene i økta, og ikke ta inn et nytt deltema (f.eks. avrunding) som læreren ikke har bedt om.',
-    numbersAndOperations
+    divisionStrategies
+      ? '- Nivå 1: tydelig støtte og ett faglig steg (oppdelingen, strategien eller brøken er gitt). Nivå 2: eleven deler opp, velger strategi eller skriver divisjonsstykket selv. Nivå 3: forklare, vurdere en påstand, finne feil eller vise to måter – oppgaveteksten ber eleven forklare eller begrunne. Nivåforskjellen skal ikke bare være større tall. Alle nivåene har samme faglige fokus.'
+      : numbersAndOperations
       ? '- Nivå 1: tydelig støtte, ett faglig steg (fyll inn, skriv tallet, gjør om med hjelp). Nivå 2: eleven bruker sammenhengen selv – ukjent tall, sammenligning, omgjøring eller addisjon over én hel. Nivå 3: vurdere en påstand, finne feil, forklare eller løse på to måter – oppgaveteksten ber eleven forklare eller begrunne. Nivåforskjellen skal ikke bare være større tall. Alle nivåene har samme faglige fokus.'
       : problemSolving
       ? '- Nivåforskjellen handler om støtte og resonnement, ikke bare større tall. Nivå 1: kort tekst, ett steg eller synlige mellomsteg, ferdig modell eller tydelig tegneinstruksjon. Nivå 2: eleven velger framgangsmåte selv, to steg uten synlig støtte, enkel begrunnelse. Nivå 3: vurdere andres løsninger, finne feil, forklare, eller løse problemer der svaret må tolkes ut fra situasjonen – oppgaveteksten ber eleven forklare, begrunne eller vurdere. Alle nivåene har samme faglige fokus.'

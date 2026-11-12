@@ -53,7 +53,7 @@ export const DIVISION_BY_ZERO = new RegExp(
 export const DECIMAL = /\d[,.]\d/
 export const NEGATIVE = /(^|[\s(=])[-−]\d|minusgrad|kuldegrad|under null/i
 const BLANK_PRODUCT = /(_+|□|\?)\s*[·x×*]\s*\d+\s*=\s*\d+|\d+\s*[·x×*]\s*(_+|□|\?)\s*=\s*\d+/
-const DIVISION_SIGNAL =
+export const DIVISION_SIGNAL =
   /\d\s+[:/]\s+(\d|_)|\d[:/]\d|_+\s*[:/]|\b(del|dele|deler|deles|delt|delte)\b|\bfordel|\blikt\b|\bi hver\b|\bpå hver|\bved hvert?\b|\bmed \d+ (\p{L}+ )?i hver|til overs|\brest\b|divisjon|delestykk|\bgrupper?\b|\bhopp\w*|\brader\b|kolonner|blokk|plass til|regnefamili/iu
 const MULTIPLICATION_WORD = /\d\s*[·x×*]\s*(\d|_)|_+\s*[·x×*]|gange|multiplik/i
 const DIVISION_WORD = /\d\s+[:/]\s+(\d|_)|\d[:/]\d|_+\s*[:/]|\bdel(e|er|es|t|estykke\w*)?\b|divisjon/i
@@ -152,6 +152,30 @@ function namedType(text: string): DivisionType | null {
   const deling = /delingsdivisjon/i.test(text)
   const maling = /målingsdivisjon/i.test(text)
   return deling === maling ? null : deling ? 'deling' : 'maling'
+}
+
+/**
+ * Divisjonstypen: spørsmålet i oppgaveteksten og typen fasiten (eller tilpasningen) nevner må være enige, og begge
+ * må passe den forventede typen når den er kjent (økta i Divisjon, eller divisjonstypen til en referanse i Strategier
+ * i divisjon). Brukes av Divisjon og Strategier i divisjon.
+ */
+export function divisionTypeConflict(studentText: string, namedIn: string, expected?: DivisionType): boolean {
+  const asked = divisionTypeOf(studentText)
+  const named = namedType(namedIn)
+  if (asked && named && asked !== named) return true
+  return !!expected && ((asked !== null && asked !== expected) || (named !== null && named !== expected))
+}
+
+/**
+ * Oppgaver med to deler som skal skilles («A: … B: …», f.eks. én delingsdivisjon og én målingsdivisjon): typen
+ * fasiten gir hver del («A er målingsdivisjon»), må passe spørsmålet i den delen.
+ */
+export function partsTypeConflict(studentText: string, solution: string): boolean {
+  return [...studentText.matchAll(/^\s*([A-D])[:)]\s*(.+)$/gm)].some(([, letter, part]) => {
+    const asked = divisionTypeOf(part)
+    const named = new RegExp(`\\b${letter}\\b[^.]*?\\b(delingsdivisjon|målingsdivisjon)`, 'i').exec(solution)?.[1]
+    return !!asked && !!named && namedType(named) !== asked
+  })
 }
 
 /** Om teksten faktisk ber eleven bruke eller tolke en representasjon – ikke bare nevner ordet «modell». */
@@ -290,10 +314,7 @@ export function divisionProblem(task: AiTaskDraft, { area, secondaryAreas = [], 
 
   // Divisjonstypen: oppgavetekst, fasit og tilpasning må være enige – og passe økta.
   if (!isMathDraft(task) || /hvor mange/i.test(task.instruction)) {
-    const asked = divisionTypeOf(studentText)
-    const named = namedType(`${solution} ${task.adaptation}`)
-    if (asked && named && asked !== named) return 'wrongDivisionType'
-    if (single && divisionType && ((asked && asked !== divisionType) || (named && named !== divisionType))) return 'wrongDivisionType'
+    if (divisionTypeConflict(studentText, `${solution} ${task.adaptation}`, single ? divisionType : undefined)) return 'wrongDivisionType'
   }
 
   if (!single) return null

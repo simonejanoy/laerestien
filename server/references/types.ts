@@ -1,4 +1,4 @@
-import type { AiLevel, ReferenceArea, ReferenceTopic } from '../../src/ai/contract.ts'
+import type { AiLevel, DivisionType, ReferenceArea, ReferenceTopic } from '../../src/ai/contract.ts'
 
 // Referansebanken: originale referanseoppgaver som bare brukes som kontekst for Gemini.
 // De legges aldri inn som elevoppgaver, og de returneres aldri direkte til læreren.
@@ -37,6 +37,11 @@ export interface ReferenceTask {
   workedSolution?: string
   /** Problemløsing: «kort» svar eller «forklaring». */
   answerForm?: 'kort' | 'forklaring'
+  /**
+   * Strategier i divisjon: divisjonstypen referansen viser (delingsdivisjon: antall grupper er kjent; målingsdivisjon:
+   * størrelsen på hver gruppe er kjent), eller «begge» når eleven skal skille dem. Oppgavetekst og fasit må være enige.
+   */
+  divisionType?: DivisionType | 'begge'
   /** Flervalg: alternativene i rekkefølge (A, B, C …). De står også i elevteksten. */
   options?: string[]
   /** Flervalg: bokstavene til de riktige alternativene. Mer enn én bare når elevteksten sier det. */

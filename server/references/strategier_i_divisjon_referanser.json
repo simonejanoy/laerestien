@@ -1,0 +1,917 @@
+{
+  "schemaVersion": 1,
+  "topic": "strategier-i-divisjon",
+  "description": "Referansebank for AI-generering av ekstraoppgaver i Strategier i divisjon. Referansene styrer fagområde, innhold, oppgavetype, tallområde, nivå, språk og representasjon. De skal ikke vises direkte til elever. Ingen eksterne oppgaveark er brukt. Oppgavene er skrevet for Lærestien. Progresjon og oppgavetyper følger innholdsplanen for 4. trinn.",
+  "referenceCount": 45,
+  "references": [
+    {
+      "id": "SD1-N1-01",
+      "topic": "strategier-i-divisjon",
+      "area": "plassverdi-deling",
+      "areaTitle": "Dele i hundrere, tiere og enere",
+      "level": 1,
+      "title": "Del tiere og enere",
+      "format": "fyll-inn",
+      "purpose": "Eleven deler tiere og enere hver for seg.",
+      "studentText": "Regn ut 84 : 4. Del først tierne og så enerne: 80 : 4 = __ og 4 : 4 = __. Hva er 84 : 4?",
+      "solution": "80 : 4 = 20 og 4 : 4 = 1. 84 : 4 = 21.",
+      "workedSolution": "8 tiere delt i 4 grupper gir 2 tiere i hver. 4 enere delt i 4 grupper gir 1 ener i hver.",
+      "representationHint": "[ 10 ][ 10 ][ 10 ][ 10 ][ 10 ][ 10 ][ 10 ][ 10 ] [ 1 ][ 1 ][ 1 ][ 1 ]",
+      "teacherNote": "Tiere og enere deles hver for seg.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD1-N1-02",
+      "topic": "strategier-i-divisjon",
+      "area": "plassverdi-deling",
+      "areaTitle": "Dele i hundrere, tiere og enere",
+      "level": 1,
+      "title": "Hundrere, tiere og enere",
+      "format": "fyll-inn",
+      "purpose": "Eleven deler et tresifret tall i plassverdier og deler hver del.",
+      "studentText": "Regn ut 369 : 3. Fyll inn: 300 : 3 = __, 60 : 3 = __ og 9 : 3 = __. Hva er 369 : 3?",
+      "solution": "300 : 3 = 100, 60 : 3 = 20 og 9 : 3 = 3. 369 : 3 = 123.",
+      "workedSolution": "Svarene på delene legges sammen: 100 + 20 + 3 = 123.",
+      "representationHint": null,
+      "teacherNote": "Alle plassverdiene går opp i 3, så ingen veksling trengs.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD1-N1-03",
+      "topic": "strategier-i-divisjon",
+      "area": "plassverdi-deling",
+      "areaTitle": "Dele i hundrere, tiere og enere",
+      "level": 1,
+      "title": "Del pengene",
+      "format": "situasjon",
+      "purpose": "Eleven deler et beløp i tikroner og kroner likt.",
+      "studentText": "Tre venner deler 63 kr likt. Pengene er 6 tikroner og 3 enkroner. Hvor mange kroner får hver venn?",
+      "solution": "Hver venn får 21 kr.",
+      "workedSolution": "6 tikroner delt på 3 gir 2 tikroner hver. 3 enkroner delt på 3 gir 1 krone hver. 20 + 1 = 21.",
+      "representationHint": "[ 10 ][ 10 ][ 10 ][ 10 ][ 10 ][ 10 ] [ 1 ][ 1 ][ 1 ]",
+      "teacherNote": "Delingsdivisjon: antall grupper er kjent.",
+      "answerForm": "kort",
+      "divisionType": "deling",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD1-N2-01",
+      "topic": "strategier-i-divisjon",
+      "area": "plassverdi-deling",
+      "areaTitle": "Dele i hundrere, tiere og enere",
+      "level": 2,
+      "title": "Del opp selv",
+      "format": "oppdeling",
+      "purpose": "Eleven deler et tresifret tall i plassverdier uten oppgitte mellomsteg.",
+      "studentText": "Regn ut 286 : 2. Del tallet i hundrere, tiere og enere, og vis hvordan du regner.",
+      "solution": "200 : 2 = 100, 80 : 2 = 40 og 6 : 2 = 3. 286 : 2 = 143.",
+      "workedSolution": "100 + 40 + 3 = 143.",
+      "representationHint": null,
+      "teacherNote": "Mellomstegene skal vises.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD1-N2-02",
+      "topic": "strategier-i-divisjon",
+      "area": "plassverdi-deling",
+      "areaTitle": "Dele i hundrere, tiere og enere",
+      "level": 2,
+      "title": "Når tierne ikke går opp",
+      "format": "oppdeling",
+      "purpose": "Eleven deler et tall på en annen måte når tierne ikke kan deles likt.",
+      "studentText": "Regn ut 52 : 4. 5 tiere kan ikke deles likt på 4. Del 52 i 40 og 12 og regn ut.",
+      "solution": "40 : 4 = 10 og 12 : 4 = 3. 52 : 4 = 13.",
+      "workedSolution": "Én tier veksles til 10 enere, slik at 52 blir 4 tiere og 12 enere.",
+      "representationHint": null,
+      "teacherNote": "Dette er kjernen i veksling ved deling.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD1-N2-03",
+      "topic": "strategier-i-divisjon",
+      "area": "plassverdi-deling",
+      "areaTitle": "Dele i hundrere, tiere og enere",
+      "level": 2,
+      "title": "Ark til klassene",
+      "format": "situasjon",
+      "purpose": "Eleven bruker plassverdi til å dele et tresifret tall i en situasjon.",
+      "studentText": "Fire klasser deler 484 ark likt. Hvor mange ark får hver klasse? Del opp i hundrere, tiere og enere.",
+      "solution": "Hver klasse får 121 ark.",
+      "workedSolution": "400 : 4 = 100, 80 : 4 = 20, 4 : 4 = 1. 100 + 20 + 1 = 121.",
+      "representationHint": null,
+      "teacherNote": "Delingsdivisjon: antall klasser er kjent.",
+      "answerForm": "kort",
+      "divisionType": "deling",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD1-N3-01",
+      "topic": "strategier-i-divisjon",
+      "area": "plassverdi-deling",
+      "areaTitle": "Dele i hundrere, tiere og enere",
+      "level": 3,
+      "title": "Hva har Eva glemt?",
+      "format": "feilvurdering",
+      "purpose": "Eleven ser at plassverdien må følge med når tallet deles opp.",
+      "studentText": "Eva regner 96 : 3 slik: 9 : 3 = 3 og 6 : 3 = 2, så svaret er 5. Hva har Eva glemt? Regn ut riktig svar.",
+      "solution": "Eva har glemt at 9 er 9 tiere. 90 : 3 = 30 og 6 : 3 = 2. 96 : 3 = 32.",
+      "workedSolution": "Svaret 5 er altfor lite. 3 · 5 = 15, ikke 96.",
+      "representationHint": null,
+      "teacherNote": "Be eleven kontrollere svaret med gange.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD1-N3-02",
+      "topic": "strategier-i-divisjon",
+      "area": "plassverdi-deling",
+      "areaTitle": "Dele i hundrere, tiere og enere",
+      "level": 3,
+      "title": "To oppdelinger",
+      "format": "flere-strategier",
+      "purpose": "Eleven finner to oppdelinger der alle delene går opp i divisoren.",
+      "studentText": "Regn ut 156 : 6. Vis to ulike måter å dele opp 156 på, slik at hver del går opp i 6.",
+      "solution": "156 : 6 = 26. For eksempel 120 + 36 gir 20 + 6, og 60 + 60 + 36 gir 10 + 10 + 6.",
+      "workedSolution": "Det lønner seg å finne deler som er kjente gangestykker med 6.",
+      "representationHint": null,
+      "teacherNote": "Godta alle oppdelinger der delene går opp i 6.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD1-N3-03",
+      "topic": "strategier-i-divisjon",
+      "area": "plassverdi-deling",
+      "areaTitle": "Dele i hundrere, tiere og enere",
+      "level": 3,
+      "title": "Forklar svaret",
+      "format": "forklaring",
+      "purpose": "Eleven forklarer en divisjon med null tiere ved hjelp av plassverdi.",
+      "studentText": "Forklar hvorfor 408 : 4 = 102. Bruk hundrere, tiere og enere i forklaringen.",
+      "solution": "400 : 4 = 100. Det er 0 tiere, så det blir 0 tiere i svaret. 8 : 4 = 2. Til sammen 102.",
+      "workedSolution": "Nullen i svaret viser at det ikke er noen tiere å dele.",
+      "representationHint": null,
+      "teacherNote": "Elever som svarer 12, har hoppet over tierplassen.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD2-N1-01",
+      "topic": "strategier-i-divisjon",
+      "area": "gode-delestrategier",
+      "areaTitle": "Dele tall på gode måter",
+      "level": 1,
+      "title": "Halver to ganger",
+      "format": "halvering",
+      "purpose": "Eleven deler på 4 ved å halvere to ganger.",
+      "studentText": "Del 36 på 4 ved å halvere to ganger: 36 : 2 = __ og __ : 2 = __.",
+      "solution": "36 : 2 = 18 og 18 : 2 = 9. 36 : 4 = 9.",
+      "workedSolution": "Å dele på 4 er det samme som å dele på 2 to ganger.",
+      "representationHint": null,
+      "teacherNote": "Kontroll: 4 · 9 = 36.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD2-N1-02",
+      "topic": "strategier-i-divisjon",
+      "area": "gode-delestrategier",
+      "areaTitle": "Dele tall på gode måter",
+      "level": 1,
+      "title": "Del ut én om gangen",
+      "format": "dele-ut",
+      "purpose": "Eleven deler en mengde ved å dele ut én og én.",
+      "studentText": "20 epler skal fordeles likt i 4 kurver. Legg ett eple i hver kurv om gangen til alle eplene er delt ut. Hvor mange epler blir det i hver kurv?",
+      "solution": "5 epler i hver kurv.",
+      "workedSolution": "Hver runde bruker 4 epler. 20 epler gir 5 runder, så det blir 5 i hver kurv.",
+      "representationHint": "Fire ringer. Tegn ett eple i hver ring om gangen.",
+      "teacherNote": "Delingsdivisjon: antall kurver er kjent.",
+      "answerForm": "kort",
+      "divisionType": "deling",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD2-N1-03",
+      "topic": "strategier-i-divisjon",
+      "area": "gode-delestrategier",
+      "areaTitle": "Dele tall på gode måter",
+      "level": 1,
+      "title": "Trekk fra om igjen",
+      "format": "gjentatt-subtraksjon",
+      "purpose": "Eleven løser målingsdivisjon med gjentatt subtraksjon.",
+      "studentText": "Du har 30 kr. En is koster 6 kr. Trekk fra 6 om gangen til du har 0 kr. Hvor mange is kan du kjøpe?",
+      "solution": "5 is. 30 : 6 = 5.",
+      "workedSolution": "30 − 6 − 6 − 6 − 6 − 6 = 0. Det er 5 seksere.",
+      "representationHint": "30 - 24 - 18 - 12 - 6 - 0",
+      "teacherNote": "Målingsdivisjon: størrelsen på hver del er kjent.",
+      "answerForm": "kort",
+      "divisionType": "maling",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD2-N2-01",
+      "topic": "strategier-i-divisjon",
+      "area": "gode-delestrategier",
+      "areaTitle": "Dele tall på gode måter",
+      "level": 2,
+      "title": "Bruk et kjent stykke",
+      "format": "oppdeling",
+      "purpose": "Eleven deler et tall i en kjent tier-del og en rest som går opp.",
+      "studentText": "Regn ut 91 : 7. Del 91 i 70 og 21.",
+      "solution": "70 : 7 = 10 og 21 : 7 = 3. 91 : 7 = 13.",
+      "workedSolution": "70 og 21 er begge i sjugangen.",
+      "representationHint": null,
+      "teacherNote": "Kontroll: 7 · 13 = 91.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD2-N2-02",
+      "topic": "strategier-i-divisjon",
+      "area": "gode-delestrategier",
+      "areaTitle": "Dele tall på gode måter",
+      "level": 2,
+      "title": "Velg en strategi",
+      "format": "velg-strategi",
+      "purpose": "Eleven velger selv en hensiktsmessig strategi og viser den.",
+      "studentText": "Regn ut 96 : 8. Velg en god måte å regne på, og vis den.",
+      "solution": "96 : 8 = 12. For eksempel 80 : 8 = 10 og 16 : 8 = 2, eller halvering tre ganger: 48, 24, 12.",
+      "workedSolution": "Begge strategiene gir 12.",
+      "representationHint": null,
+      "teacherNote": "Godta alle riktige strategier som vises.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD2-N2-03",
+      "topic": "strategier-i-divisjon",
+      "area": "gode-delestrategier",
+      "areaTitle": "Dele tall på gode måter",
+      "level": 2,
+      "title": "To typer divisjon",
+      "format": "sammenligne-typer",
+      "purpose": "Eleven skiller mellom delingsdivisjon og målingsdivisjon med samme regnestykke.",
+      "studentText": "A: 45 elever skal deles i grupper med 5 elever i hver. Hvor mange grupper blir det?\nB: 45 elever skal deles i 5 like store grupper. Hvor mange elever blir det i hver gruppe?\nSkriv divisjonsstykket og svaret for begge. Hvilken er delingsdivisjon, og hvilken er målingsdivisjon?",
+      "solution": "Begge: 45 : 5 = 9. A er målingsdivisjon (9 grupper). B er delingsdivisjon (9 elever i hver gruppe).",
+      "workedSolution": "I A er størrelsen på gruppene kjent. I B er antall grupper kjent.",
+      "representationHint": null,
+      "teacherNote": "Svaret er det samme tallet, men betyr noe ulikt.",
+      "answerForm": "kort",
+      "divisionType": "begge",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD2-N3-01",
+      "topic": "strategier-i-divisjon",
+      "area": "gode-delestrategier",
+      "areaTitle": "Dele tall på gode måter",
+      "level": 3,
+      "title": "Sammenlign strategier",
+      "format": "sammenligne-strategier",
+      "purpose": "Eleven viser og vurderer to strategier for samme divisjon.",
+      "studentText": "Lars regner 84 : 4 ved å halvere to ganger. Nina deler 84 i 80 og 4. Vis begge strategiene. Hvilken synes du passer best her? Begrunn.",
+      "solution": "84 : 4 = 21. Lars: 84, 42, 21. Nina: 80 : 4 = 20 og 4 : 4 = 1, til sammen 21.",
+      "workedSolution": "Begge strategiene passer. Begrunnelsen må vise at eleven har sammenlignet dem.",
+      "representationHint": null,
+      "teacherNote": "Svaret på hva som passer best er åpent, men regningen skal være riktig.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD2-N3-02",
+      "topic": "strategier-i-divisjon",
+      "area": "gode-delestrategier",
+      "areaTitle": "Dele tall på gode måter",
+      "level": 3,
+      "title": "Når passer halvering?",
+      "format": "forklaring",
+      "purpose": "Eleven vurderer når halvering er en god strategi.",
+      "studentText": "Forklar hvorfor det passer å halvere to ganger for 72 : 4, men ikke for 72 : 3. Regn ut begge.",
+      "solution": "72 : 4 = 18 (72, 36, 18). 72 : 3 = 24. Halvering er å dele på 2. To halveringer er å dele på 4, men ingen halveringer gir deling på 3.",
+      "workedSolution": "72 : 3 kan regnes som 60 : 3 = 20 og 12 : 3 = 4, til sammen 24.",
+      "representationHint": null,
+      "teacherNote": "Se etter at eleven kobler halvering til deling på 2.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD2-N3-03",
+      "topic": "strategier-i-divisjon",
+      "area": "gode-delestrategier",
+      "areaTitle": "Dele tall på gode måter",
+      "level": 3,
+      "title": "Lag to fortellinger",
+      "format": "lag-oppgave",
+      "purpose": "Eleven lager fortellinger til begge typer divisjon og regner ut med en god strategi.",
+      "studentText": "Lag én fortelling med delingsdivisjon og én med målingsdivisjon til 56 : 7. Regn ut med en strategi du velger, og vis den.",
+      "solution": "56 : 7 = 8. Delingsdivisjonen må ha 7 like grupper. Målingsdivisjonen må ha grupper med 7 i hver.",
+      "workedSolution": "For eksempel 35 : 7 = 5 og 21 : 7 = 3, til sammen 8.",
+      "representationHint": null,
+      "teacherNote": "Vurder om fortellingene faktisk viser hver sin type.",
+      "answerForm": "forklaring",
+      "divisionType": "begge",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD3-N1-01",
+      "topic": "strategier-i-divisjon",
+      "area": "sammenhenger-divisjon",
+      "areaTitle": "Sammenhenger i divisjon",
+      "level": 1,
+      "title": "Dobbelt så mye å dele",
+      "format": "sammenheng",
+      "purpose": "Eleven ser at svaret dobles når tallet som deles dobles.",
+      "studentText": "12 : 3 = 4. Tallet 24 er dobbelt så stort som 12. Hva er 24 : 3?",
+      "solution": "24 : 3 = 8.",
+      "workedSolution": "Når det er dobbelt så mye å dele, blir det dobbelt så mye i hver gruppe.",
+      "representationHint": null,
+      "teacherNote": "Kontroll: 3 · 8 = 24.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD3-N1-02",
+      "topic": "strategier-i-divisjon",
+      "area": "sammenhenger-divisjon",
+      "areaTitle": "Sammenhenger i divisjon",
+      "level": 1,
+      "title": "Ti ganger så mye",
+      "format": "sammenheng",
+      "purpose": "Eleven ser at svaret blir ti ganger større når tallet som deles blir ti ganger større.",
+      "studentText": "8 : 2 = 4. Hva er 80 : 2?",
+      "solution": "80 : 2 = 40.",
+      "workedSolution": "8 enere delt i 2 gir 4 enere. 8 tiere delt i 2 gir 4 tiere.",
+      "representationHint": null,
+      "teacherNote": "Tallet vi deler på er det samme.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD3-N1-03",
+      "topic": "strategier-i-divisjon",
+      "area": "sammenhenger-divisjon",
+      "areaTitle": "Sammenhenger i divisjon",
+      "level": 1,
+      "title": "Del på 1 og på seg selv",
+      "format": "sammenheng",
+      "purpose": "Eleven oppdager hva som skjer når vi deler på 1 og på tallet selv.",
+      "studentText": "Regn ut 15 : 15, 15 : 1, 9 : 9 og 9 : 1. Hva legger du merke til?",
+      "solution": "15 : 15 = 1, 15 : 1 = 15, 9 : 9 = 1 og 9 : 1 = 9. Et tall delt på seg selv er 1. Et tall delt på 1 er tallet selv.",
+      "workedSolution": "15 ting i grupper med 15 gir 1 gruppe. 15 ting i 1 gruppe gir 15 i gruppen.",
+      "representationHint": null,
+      "teacherNote": "Godta forklaringer med egne ord.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD3-N2-01",
+      "topic": "strategier-i-divisjon",
+      "area": "sammenhenger-divisjon",
+      "areaTitle": "Sammenhenger i divisjon",
+      "level": 2,
+      "title": "Halvparten så mange grupper",
+      "format": "sammenheng",
+      "purpose": "Eleven ser at svaret dobles når tallet vi deler på halveres.",
+      "studentText": "48 : 6 = 8. Hva er 48 : 3? Forklar.",
+      "solution": "48 : 3 = 16. Når det blir halvparten så mange grupper, blir det dobbelt så mange i hver gruppe.",
+      "workedSolution": "8 · 2 = 16. Kontroll: 3 · 16 = 48.",
+      "representationHint": null,
+      "teacherNote": "Vanlig feil er å svare 4.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD3-N2-02",
+      "topic": "strategier-i-divisjon",
+      "area": "sammenhenger-divisjon",
+      "areaTitle": "Sammenhenger i divisjon",
+      "level": 2,
+      "title": "Bygg på et kjent stykke",
+      "format": "sammenheng",
+      "purpose": "Eleven bruker ett divisjonsstykke til å finne to andre.",
+      "studentText": "Du vet at 35 : 5 = 7. Bruk dette til å finne 70 : 5 og 350 : 5.",
+      "solution": "70 : 5 = 14 og 350 : 5 = 70.",
+      "workedSolution": "70 er dobbelt så mye som 35, så svaret blir dobbelt så stort. 350 er ti ganger 35, så svaret blir ti ganger så stort.",
+      "representationHint": null,
+      "teacherNote": "Kontroll: 5 · 14 = 70 og 5 · 70 = 350.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD3-N2-03",
+      "topic": "strategier-i-divisjon",
+      "area": "sammenhenger-divisjon",
+      "areaTitle": "Sammenhenger i divisjon",
+      "level": 2,
+      "title": "Samme svar",
+      "format": "sammenligne",
+      "purpose": "Eleven ser at svaret er likt når begge tallene endres like mye.",
+      "studentText": "Hvilke av disse divisjonsstykkene har samme svar? 12 : 2, 24 : 4, 18 : 2 og 36 : 6",
+      "solution": "12 : 2, 24 : 4 og 36 : 6 gir alle 6. 18 : 2 gir 9.",
+      "workedSolution": "I 24 : 4 og 36 : 6 er begge tallene fra 12 : 2 doblet eller tredoblet.",
+      "representationHint": null,
+      "teacherNote": "Regn ut alle før eleven ser etter mønsteret.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD3-N3-01",
+      "topic": "strategier-i-divisjon",
+      "area": "sammenhenger-divisjon",
+      "areaTitle": "Sammenhenger i divisjon",
+      "level": 3,
+      "title": "Har Kari rett?",
+      "format": "vurder-pastand",
+      "purpose": "Eleven vurderer en påstand om hva som skjer når divisoren dobles.",
+      "studentText": "Kari sier: «Når jeg dobler tallet jeg deler på, blir svaret også dobbelt så stort.» Har Kari rett? Bruk 40 : 5 og 40 : 10 i forklaringen.",
+      "solution": "Nei. 40 : 5 = 8 og 40 : 10 = 4. Når tallet vi deler på dobles, blir svaret halvparten så stort.",
+      "workedSolution": "Dobbelt så store grupper gir halvparten så mange grupper.",
+      "representationHint": null,
+      "teacherNote": "Kari blander sammen tallet som deles og tallet vi deler på.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD3-N3-02",
+      "topic": "strategier-i-divisjon",
+      "area": "sammenhenger-divisjon",
+      "areaTitle": "Sammenhenger i divisjon",
+      "level": 3,
+      "title": "Fortsett mønsteret",
+      "format": "monster",
+      "purpose": "Eleven fortsetter et mønster i divisjonsstykker og forklarer regelen.",
+      "studentText": "Fortsett mønsteret og forklar regelen: 6 : 3 = 2, 12 : 3 = 4, 24 : 3 = 8, 48 : 3 = __, 96 : 3 = __",
+      "solution": "48 : 3 = 16 og 96 : 3 = 32. Tallet som deles dobles hver gang, og da dobles svaret også.",
+      "workedSolution": "Kontroll: 3 · 16 = 48 og 3 · 32 = 96.",
+      "representationHint": null,
+      "teacherNote": "Forklaringen skal nevne både tallet som deles og svaret.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD3-N3-03",
+      "topic": "strategier-i-divisjon",
+      "area": "sammenhenger-divisjon",
+      "areaTitle": "Sammenhenger i divisjon",
+      "level": 3,
+      "title": "Forklar med modell",
+      "format": "forklaring",
+      "purpose": "Eleven bruker en modell til å forklare sammenhengen mellom to divisjonsstykker.",
+      "studentText": "60 : 4 = 15. Forklar hvordan dette kan hjelpe deg å finne 60 : 2. Tegn en blokkmodell i forklaringen.",
+      "solution": "60 : 2 = 30. To blokker på 15 blir én blokk på 30 når 60 deles i 2 i stedet for 4.",
+      "workedSolution": "[ 15 ][ 15 ][ 15 ][ 15 ] = 60 og [ 30 ][ 30 ] = 60.",
+      "representationHint": null,
+      "teacherNote": "Se etter at modellen viser samme helhet.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD4-N1-01",
+      "topic": "strategier-i-divisjon",
+      "area": "dividere-10-100",
+      "areaTitle": "Dividere med 10 og 100",
+      "level": 1,
+      "title": "Tiere i et tall",
+      "format": "plassverdi",
+      "purpose": "Eleven finner antall tiere og kobler det til divisjon med 10.",
+      "studentText": "Hvor mange tiere er det i 70? Hva er 70 : 10?",
+      "solution": "Det er 7 tiere i 70. 70 : 10 = 7.",
+      "workedSolution": "Å dele på 10 er å finne hvor mange tiere det er.",
+      "representationHint": null,
+      "teacherNote": "Kontroll: 7 · 10 = 70.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD4-N1-02",
+      "topic": "strategier-i-divisjon",
+      "area": "dividere-10-100",
+      "areaTitle": "Dividere med 10 og 100",
+      "level": 1,
+      "title": "Tikroner",
+      "format": "situasjon",
+      "purpose": "Eleven finner antall tikroner i et beløp og skriver divisjonsstykket.",
+      "studentText": "Du har 90 kr bare i tikroner. Hvor mange tikroner har du? Skriv divisjonsstykket.",
+      "solution": "9 tikroner. 90 : 10 = 9.",
+      "workedSolution": "Hver tikrone er 10 kr. Hvor mange tiere er det i 90?",
+      "representationHint": "[ 10 ][ 10 ][ 10 ][ 10 ][ 10 ][ 10 ][ 10 ][ 10 ][ 10 ]",
+      "teacherNote": "Målingsdivisjon: hver del er 10.",
+      "answerForm": "kort",
+      "divisionType": "maling",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD4-N1-03",
+      "topic": "strategier-i-divisjon",
+      "area": "dividere-10-100",
+      "areaTitle": "Dividere med 10 og 100",
+      "level": 1,
+      "title": "Hundrelapper",
+      "format": "situasjon",
+      "purpose": "Eleven finner antall hundrere i et beløp og skriver divisjonsstykket.",
+      "studentText": "Du har 500 kr bare i hundrelapper. Hvor mange hundrelapper har du? Skriv divisjonsstykket.",
+      "solution": "5 hundrelapper. 500 : 100 = 5.",
+      "workedSolution": "Det er 5 hundrere i 500.",
+      "representationHint": null,
+      "teacherNote": "Målingsdivisjon: hver del er 100.",
+      "answerForm": "kort",
+      "divisionType": "maling",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD4-N2-01",
+      "topic": "strategier-i-divisjon",
+      "area": "dividere-10-100",
+      "areaTitle": "Dividere med 10 og 100",
+      "level": 2,
+      "title": "Mange tiere",
+      "format": "plassverdi",
+      "purpose": "Eleven forklarer divisjon med 10 som antall tiere i et tresifret tall.",
+      "studentText": "Regn ut 340 : 10. Forklar svaret med tiere.",
+      "solution": "340 : 10 = 34. 340 er 34 tiere.",
+      "workedSolution": "300 er 30 tiere og 40 er 4 tiere. 30 + 4 = 34.",
+      "representationHint": null,
+      "teacherNote": "Eleven skal forklare med tiere, ikke bare stryke en null.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD4-N2-02",
+      "topic": "strategier-i-divisjon",
+      "area": "dividere-10-100",
+      "areaTitle": "Dividere med 10 og 100",
+      "level": 2,
+      "title": "Mange hundrere",
+      "format": "plassverdi",
+      "purpose": "Eleven forklarer divisjon med 100 som antall hundrere.",
+      "studentText": "Regn ut 1200 : 100. Hvor mange hundrere er det i 1200?",
+      "solution": "1200 : 100 = 12. Det er 12 hundrere i 1200.",
+      "workedSolution": "1000 er 10 hundrere og 200 er 2 hundrere.",
+      "representationHint": null,
+      "teacherNote": "Forklaringen er like viktig som svaret.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD4-N2-03",
+      "topic": "strategier-i-divisjon",
+      "area": "dividere-10-100",
+      "areaTitle": "Dividere med 10 og 100",
+      "level": 2,
+      "title": "Esker med blyanter",
+      "format": "situasjon",
+      "purpose": "Eleven bruker divisjon med 10 i en målingssituasjon.",
+      "studentText": "En fabrikk pakker 650 blyanter i esker med 10 blyanter i hver. Hvor mange esker blir det?",
+      "solution": "65 esker. 650 : 10 = 65.",
+      "workedSolution": "650 er 65 tiere.",
+      "representationHint": null,
+      "teacherNote": "Målingsdivisjon: størrelsen på hver eske er kjent.",
+      "answerForm": "kort",
+      "divisionType": "maling",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD4-N3-01",
+      "topic": "strategier-i-divisjon",
+      "area": "dividere-10-100",
+      "areaTitle": "Dividere med 10 og 100",
+      "level": 3,
+      "title": "Hva er feil?",
+      "format": "feilvurdering",
+      "purpose": "Eleven retter en feil der en regel er brukt uten forståelse av plassverdi.",
+      "studentText": "Ali sier at 400 : 100 = 40, fordi han strøk en null. Hva har Ali gjort feil? Forklar med hundrere.",
+      "solution": "400 : 100 = 4. 400 er 4 hundrere. Ali har delt på 10 i stedet for 100.",
+      "workedSolution": "Kontroll: 4 · 100 = 400, mens 40 · 100 = 4000.",
+      "representationHint": null,
+      "teacherNote": "Bruk feilen til å snakke om plassverdi, ikke om å stryke nuller.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD4-N3-02",
+      "topic": "strategier-i-divisjon",
+      "area": "dividere-10-100",
+      "areaTitle": "Dividere med 10 og 100",
+      "level": 3,
+      "title": "10 eller 100?",
+      "format": "ukjent-tall",
+      "purpose": "Eleven avgjør om det er delt på 10 eller 100 ut fra plassverdi.",
+      "studentText": "Hvilket tall mangler? 2500 : __ = 25 og 2500 : __ = 250",
+      "solution": "2500 : 100 = 25 og 2500 : 10 = 250.",
+      "workedSolution": "2500 er 25 hundrere og 250 tiere.",
+      "representationHint": null,
+      "teacherNote": "Begge svarene skal begrunnes med plassverdi.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD4-N3-03",
+      "topic": "strategier-i-divisjon",
+      "area": "dividere-10-100",
+      "areaTitle": "Dividere med 10 og 100",
+      "level": 3,
+      "title": "Samme svar",
+      "format": "forklaring",
+      "purpose": "Eleven forklarer hvorfor to divisjoner med 10 og 100 gir samme svar.",
+      "studentText": "Forklar hvorfor 800 : 100 gir samme svar som 80 : 10.",
+      "solution": "Begge gir 8. 800 er 8 hundrere og 80 er 8 tiere.",
+      "workedSolution": "Antall hundrere i 800 og antall tiere i 80 er det samme.",
+      "representationHint": null,
+      "teacherNote": "Se etter at eleven bruker ordene hundrere og tiere.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD5-N1-01",
+      "topic": "strategier-i-divisjon",
+      "area": "del-av-hel-mengde",
+      "areaTitle": "Del av en hel og del av en mengde",
+      "level": 1,
+      "title": "Del av en pizza",
+      "format": "del-av-hel",
+      "purpose": "Eleven navngir en brøkdel av én hel gjenstand.",
+      "studentText": "En pizza deles i 4 like store biter. Hvor stor del av pizzaen er én bit? Skriv svaret med ord og som brøk.",
+      "solution": "En fjerdedel, 1/4.",
+      "workedSolution": "Pizzaen er én hel som er delt i 4 like store deler.",
+      "representationHint": "En sirkel delt i 4 like store deler.",
+      "teacherNote": "Delene må være like store.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD5-N1-02",
+      "topic": "strategier-i-divisjon",
+      "area": "del-av-hel-mengde",
+      "areaTitle": "Del av en hel og del av en mengde",
+      "level": 1,
+      "title": "En tredjedel av kulene",
+      "format": "del-av-mengde",
+      "purpose": "Eleven finner en tredjedel av en mengde ved å dele i like grupper.",
+      "studentText": "Det er 12 kuler. En tredjedel (1/3) av kulene er røde. Del kulene i 3 like grupper. Hvor mange kuler er røde?",
+      "solution": "4 kuler er røde. 12 : 3 = 4.",
+      "workedSolution": "Én av de tre like gruppene er en tredjedel.",
+      "representationHint": "Tre ringer med fire kuler i hver.",
+      "teacherNote": "Del av en mengde: hele er en gruppe ting.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD5-N1-03",
+      "topic": "strategier-i-divisjon",
+      "area": "del-av-hel-mengde",
+      "areaTitle": "Del av en hel og del av en mengde",
+      "level": 1,
+      "title": "Halvparten av elevene",
+      "format": "del-av-mengde",
+      "purpose": "Eleven finner halvparten av en mengde.",
+      "studentText": "Halvparten (1/2) av 18 elever går ut i friminuttet. Hvor mange elever går ut?",
+      "solution": "9 elever. 18 : 2 = 9.",
+      "workedSolution": "Halvparten er én av to like store deler.",
+      "representationHint": null,
+      "teacherNote": "Godta 9 + 9 = 18 som forklaring.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD5-N2-01",
+      "topic": "strategier-i-divisjon",
+      "area": "del-av-hel-mengde",
+      "areaTitle": "Del av en hel og del av en mengde",
+      "level": 2,
+      "title": "En fjerdedel av bøkene",
+      "format": "del-av-mengde",
+      "purpose": "Eleven finner en fjerdedel av en mengde og skriver divisjonsstykket.",
+      "studentText": "En fjerdedel (1/4) av 28 bøker er tegneserier. Hvor mange bøker er tegneserier? Skriv divisjonsstykket.",
+      "solution": "7 bøker. 28 : 4 = 7.",
+      "workedSolution": "Bøkene deles i 4 like store grupper. Én gruppe er en fjerdedel.",
+      "representationHint": null,
+      "teacherNote": "Kontroll: 4 · 7 = 28.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD5-N2-02",
+      "topic": "strategier-i-divisjon",
+      "area": "del-av-hel-mengde",
+      "areaTitle": "Del av en hel og del av en mengde",
+      "level": 2,
+      "title": "Hel eller mengde?",
+      "format": "sammenligne-typer",
+      "purpose": "Eleven skiller mellom del av en hel og del av en mengde.",
+      "studentText": "A: En kake deles i 6 like store stykker. Hvor stor del av kaken er ett stykke?\nB: 24 kjeks deles i 6 like store grupper. Hvor mange kjeks er en sjettedel av kjeksene?\nLøs begge. Hvilken handler om del av en hel, og hvilken om del av en mengde?",
+      "solution": "A: En sjettedel (1/6) av kaken. Det er del av en hel. B: 4 kjeks (24 : 6 = 4). Det er del av en mengde.",
+      "workedSolution": "I A er det én gjenstand som deles. I B er det mange ting som deles i grupper.",
+      "representationHint": null,
+      "teacherNote": "Svaret i A er en del, svaret i B er et antall.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD5-N2-03",
+      "topic": "strategier-i-divisjon",
+      "area": "del-av-hel-mengde",
+      "areaTitle": "Del av en hel og del av en mengde",
+      "level": 2,
+      "title": "Del av et tau",
+      "format": "del-av-hel",
+      "purpose": "Eleven finner en brøkdel av en lengde.",
+      "studentText": "Et tau er 20 m langt. En femtedel (1/5) av tauet er rødt. Hvor mange meter av tauet er rødt?",
+      "solution": "4 m er rødt. 20 : 5 = 4.",
+      "workedSolution": "Tauet deles i 5 like lange deler. Én del er 4 m.",
+      "representationHint": "[ 4 m ][ 4 m ][ 4 m ][ 4 m ][ 4 m ] = 20 m",
+      "teacherNote": "Enheten må være med i svaret.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD5-N3-01",
+      "topic": "strategier-i-divisjon",
+      "area": "del-av-hel-mengde",
+      "areaTitle": "Del av en hel og del av en mengde",
+      "level": 3,
+      "title": "To tredjedeler",
+      "format": "del-av-mengde",
+      "purpose": "Eleven finner flere tredjedeler av en mengde og forklarer.",
+      "studentText": "Det er 21 elever i klassen. To tredjedeler (2/3) av elevene har sykkel. Hvor mange elever har sykkel? Forklar hvordan du tenker.",
+      "solution": "14 elever. 21 : 3 = 7, og to tredjedeler er 2 · 7 = 14.",
+      "workedSolution": "Først finner vi én tredjedel. Så tar vi to av de like gruppene.",
+      "representationHint": "[ 7 ][ 7 ][ 7 ] = 21",
+      "teacherNote": "Vanlig feil er å stoppe på 7.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD5-N3-02",
+      "topic": "strategier-i-divisjon",
+      "area": "del-av-hel-mengde",
+      "areaTitle": "Del av en hel og del av en mengde",
+      "level": 3,
+      "title": "Har Mia rett?",
+      "format": "vurder-pastand",
+      "purpose": "Eleven vurderer en misoppfatning om størrelsen på brøkdeler.",
+      "studentText": "Mia sier at en fjerdedel av 20 er mer enn en halvdel av 20, fordi 4 er større enn 2. Har Mia rett? Forklar.",
+      "solution": "Nei. En fjerdedel av 20 er 5, og en halvdel av 20 er 10. Jo flere deler vi deler i, jo mindre blir hver del.",
+      "workedSolution": "20 : 4 = 5 og 20 : 2 = 10.",
+      "representationHint": null,
+      "teacherNote": "Misoppfatningen er vanlig og viktig å ta opp.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    },
+    {
+      "id": "SD5-N3-03",
+      "topic": "strategier-i-divisjon",
+      "area": "del-av-hel-mengde",
+      "areaTitle": "Del av en hel og del av en mengde",
+      "level": 3,
+      "title": "Samme del, ulikt antall",
+      "format": "forklaring",
+      "purpose": "Eleven skiller mellom brøkdel og antall.",
+      "studentText": "Er en halvdel av 10 epler det samme antallet som en halvdel av 16 epler? Er det den samme delen? Forklar forskjellen.",
+      "solution": "Nei, antallet er ulikt: 5 epler og 8 epler. Ja, det er den samme delen: en halvdel av hver mengde.",
+      "workedSolution": "Delen sier hvor stor del av hele vi tar. Antallet avhenger av hvor stor hele mengden er.",
+      "representationHint": null,
+      "teacherNote": "Bruk ordene del og antall i samtalen.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "strategier_i_divisjon_referanser.json"
+      }
+    }
+  ]
+}

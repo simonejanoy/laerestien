@@ -1,8 +1,8 @@
-import { DIVISION_AREAS, GEOMETRY_AREAS, MULTIPLICATION_AREAS, NUMBERS_AND_OPERATIONS_AREAS, PLACE_VALUE_AREAS, PROBLEM_SOLVING_AREAS } from '../../src/ai/contract.ts'
+import { DIVISION_AREAS, DIVISION_STRATEGIES_AREAS, GEOMETRY_AREAS, MULTIPLICATION_AREAS, NUMBERS_AND_OPERATIONS_AREAS, PLACE_VALUE_AREAS, PROBLEM_SOLVING_AREAS } from '../../src/ai/contract.ts'
 import type { ReferenceBank, ReferenceTask } from './types.ts'
 
 // Kontroll av referansebankene. Kjøres når serveren starter (multiplication.ts, placeValue.ts, division.ts, geometry.ts,
-// problemSolving.ts, numbersAndOperations.ts) og i testene.
+// problemSolving.ts, numbersAndOperations.ts, divisionStrategies.ts) og i testene.
 
 /** Hva en bank skal inneholde: tema, ID-prefiks (M1-N1-01, T1-N1-01) og fagområdene i rekkefølge. */
 export interface BankSpec {
@@ -17,6 +17,7 @@ export const DIVISION_BANK: BankSpec = { topic: 'divisjon', idPrefix: 'D', areas
 export const GEOMETRY_BANK: BankSpec = { topic: 'geometri', idPrefix: 'G', areas: GEOMETRY_AREAS }
 export const PROBLEM_SOLVING_BANK: BankSpec = { topic: 'problemlosing', idPrefix: 'P', areas: PROBLEM_SOLVING_AREAS }
 export const NUMBERS_AND_OPERATIONS_BANK: BankSpec = { topic: 'tall-og-regning', idPrefix: 'TR', areas: NUMBERS_AND_OPERATIONS_AREAS }
+export const DIVISION_STRATEGIES_BANK: BankSpec = { topic: 'strategier-i-divisjon', idPrefix: 'SD', areas: DIVISION_STRATEGIES_AREAS }
 const REQUIRED_TEXT = ['id', 'topic', 'area', 'areaTitle', 'title', 'format', 'purpose', 'studentText', 'solution'] as const
 
 export interface BankCheck {
@@ -310,6 +311,7 @@ export function validateReferenceBank(raw: unknown, expectedCount: number, spec:
     }
     if (ref.answerForm !== undefined && !['kort', 'forklaring'].includes(ref.answerForm)) errors.push(`${where}: ugyldig svarform.`)
     if (ref.workedSolution !== undefined && (typeof ref.workedSolution !== 'string' || !ref.workedSolution.trim())) errors.push(`${where}: tomt løsningsforslag.`)
+    if (ref.divisionType !== undefined && !['deling', 'maling', 'begge'].includes(ref.divisionType)) errors.push(`${where}: ugyldig divisjonstype.`)
   })
 
   const perAreaCount = expectedCount / spec.areas.length
