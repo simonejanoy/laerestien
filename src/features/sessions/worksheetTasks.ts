@@ -160,18 +160,24 @@ const numberLines: [number, number, number, number[]][] = [
   [11, 1, 20, [0, 5, 9, 15]],
   [21, 1, 20, [0, 6, 12]],
   [43, 1, 20, [1, 4, 14]],
-  [58, 1, 20, [8]],
+  // Tre tall vises, så hoppet (1) er entydig. Med bare ett tall kunne regelen vært hva som helst.
+  [58, 1, 20, [0, 8, 15]],
 ]
 
 function numberLineTask(id: string, level: Level, [start, step, count, shown]: (typeof numberLines)[number]) {
   const values = Array.from({ length: count }, (_, i) => start + i * step)
   const line = values.map((v, i) => (shown.includes(i) ? String(v) : '___')).join(', ')
   const missingValues = values.filter((_, i) => !shown.includes(i))
-  return textTask(id, level, `Fyll inn tallene som mangler på tallinjen.\n${line}`, missingValues.join(', '))
+  // Hvert tomme felt vises som en inputboks i rekka (Mønster og algoritmer).
+  return {
+    ...textTask(id, level, `Fyll inn tallene som mangler på tallinjen.\n${line}`, missingValues.join(', ')),
+    answerBoxes: true as const,
+    expected: { kind: 'numbers' as const, values: missingValues },
+  }
 }
 
 /** «Hva blir de neste tallene?» (tallrekker) – uten eksempelet 0, 2, 0, 2. */
-const numberSequences: { start: number[]; rule: string; next: (seq: number[]) => number }[] = [
+const numberSequences: { start: number[]; rule: string; next: (seq: number[]) => number; count?: number }[] = [
   { start: [100, 110, 120, 130], rule: '10 mer hver gang', next: (q) => q[q.length - 1] + 10 },
   { start: [60, 65, 70, 75], rule: '5 mer hver gang', next: (q) => q[q.length - 1] + 5 },
   { start: [40, 42, 44, 46], rule: '2 mer hver gang', next: (q) => q[q.length - 1] + 2 },
@@ -180,7 +186,8 @@ const numberSequences: { start: number[]; rule: string; next: (seq: number[]) =>
   { start: [4, 5, 7, 10], rule: 'økningen blir 1 større hver gang', next: (q) => q[q.length - 1] + (q[q.length - 1] - q[q.length - 2] + 1) },
   { start: [6, 6, 12, 18], rule: 'hvert tall er summen av de to før', next: (q) => q[q.length - 1] + q[q.length - 2] },
   { start: [4, 8, 16, 32], rule: 'tallet dobles hver gang', next: (q) => q[q.length - 1] * 2 },
-  { start: [3, 9, 27, 81], rule: 'tallet ganges med 3 hver gang', next: (q) => q[q.length - 1] * 3 },
+  // To neste tall (243, 729): de fire neste ville gått til 6561, langt utenfor tallområdet på 4. trinn.
+  { start: [3, 9, 27, 81], rule: 'tallet ganges med 3 hver gang', next: (q) => q[q.length - 1] * 3, count: 2 },
 ]
 
 export function continueSequence(start: number[], next: (seq: number[]) => number, count = 4) {
@@ -189,13 +196,14 @@ export function continueSequence(start: number[], next: (seq: number[]) => numbe
   return seq.slice(start.length)
 }
 
-function sequenceTask(id: string, level: Level, { start, rule, next }: (typeof numberSequences)[number]) {
-  return textTask(
+function sequenceTask(id: string, level: Level, { start, rule, next, count = 4 }: (typeof numberSequences)[number]) {
+  const task = textTask(
     id,
     level,
-    `Hva blir de fire neste tallene?\n${start.join(', ')}, ___, ___, ___, ___`,
-    `${continueSequence(start, next).join(', ')}  (${rule})`,
+    `Hva blir de ${count === 4 ? 'fire' : 'to'} neste tallene?\n${start.join(', ')}, ${Array(count).fill('___').join(', ')}`,
+    `${continueSequence(start, next, count).join(', ')}  (${rule})`,
   )
+  return { ...task, answerBoxes: true as const, expected: { kind: 'numbers' as const, values: continueSequence(start, next, count) } }
 }
 
 /** Tall, økt 11–14 (okt-5 til okt-8): seks oppgaver per nivå i hver økt. */
@@ -714,90 +722,32 @@ const timesCrossTasks = (sessionId: string): SessionTask[] =>
   )
 
 // ---------------------------------------------------------------------------------------
-// Måleenheter (Måling): «Lengde cm og mm», «Sammenlign måleenheter» og «Hvem eier bilene?»
+// Måleenheter (Måling): «Sammenlign måleenheter» – bare radene med kilogram og gram (økta om kilogram og gram).
+// Radene med milliliter (volum), km/m/dm og cm²/m² er tatt ut: de bruker enheter som ikke hører til innholdsplanen
+// for Måling på 4. trinn (ml, tonn, mg, km, omgjøring mellom cm² og m²). Arket «Lengde cm/mm» og «Hvem eier bilene?»
+// er tatt ut med lengdeøkta – lengde med desimaltall hører til Tall og regning.
 
-/** Hver enhet i en felles grunnenhet: mm (lengde), cm² (areal), ml (volum) og mg (masse). */
-const units: Record<string, number> = {
-  km: 1_000_000, m: 1000, dm: 100, cm: 10, mm: 1,
-  'm²': 10_000, 'cm²': 1,
-  liter: 1000, dl: 100, ml: 1,
-  tonn: 1_000_000_000, kg: 1_000_000, g: 1000, mg: 1,
-}
+/** Hver enhet i gram. */
+const grams: Record<string, number> = { kg: 1000, g: 1 }
 
-/** «1 m 1 cm 1 mm» eller «7,5 m²» → verdi i grunnenheten. */
+/** «5 kg» eller «2010 g» → gram. */
 export function measure(value: string) {
-  const parts = value.trim().split(/\s+/)
-  let total = 0
-  for (let i = 0; i < parts.length; i += 2) total += Number(parts[i].replace(',', '.')) * units[parts[i + 1]]
-  return Math.round(total * 1000) / 1000
+  const [amount, unit] = value.trim().split(/\s+/)
+  return Number(amount.replace(',', '.')) * grams[unit]
 }
 
 const compareSign = (a: string, b: string) => (measure(a) > measure(b) ? '>' : measure(a) < measure(b) ? '<' : '=')
 
-/** «Lengde cm/mm» (økta om lengde, maling-3): oppgave 1 (tegne linjer) er gjort om til «hvor mange mm», oppgave 2 er sammenligning. */
-const lengthsToMm = ['2 cm 5 mm', '9 cm 3 mm', '20 cm', '20 mm', '10 cm 10 mm', '100 mm']
-const lengthComparisons: [string, string][] = [
-  ['5 m 5 mm', '55 cm'], ['3 cm 50 mm', '35 mm'], ['20 cm 20 mm', '200 mm'],
-  ['1 m 1 cm 1 mm', '1011 mm'], ['3 cm 10 mm', '310 m'], ['6 cm 80 mm', '14 cm'],
+/** «Sammenlign måleenheter» – radene med kilogram og gram. */
+const massComparisons: [string, string, string][] = [
+  ['5 kg', '2000 g', '2010 g'],
+  ['8000 g', '5 kg', '6000 g'],
 ]
-
-/** «Sammenlign måleenheter» – uten eksempelet (2 m > 100 cm < 168 cm). */
-const unitComparisons: Record<'lengde' | 'volum' | 'masse', [string, string, string][]> = {
-  lengde: [
-    ['15 dm', '400 cm', '4 m'],
-    ['5 km', '3000 m', '350 m'],
-    ['5 m²', '20000 cm²', '3050 cm²'],
-    ['3 m²', '20000 cm²', '7,5 m²'],
-  ],
-  volum: [
-    ['5 liter', '1000 ml', '4,7 liter'],
-    ['5 liter', '2000 ml', '2020 ml'],
-  ],
-  masse: [
-    ['5 kg', '2000 g', '2010 g'],
-    ['8000 g', '5 kg', '6000 g'],
-    ['2000 kg', '4 tonn', '5000 kg'],
-    ['2000 mg', '6,2 g', '2 g'],
-  ],
-}
-
-/** Rader med bare disse enhetene (f.eks. kg og g i økta om masse). */
-const withUnits = (rows: [string, string, string][], allowed: string[]) =>
-  rows.filter((row) => row.every((value) => value.trim().split(/\s+/).filter((_, i) => i % 2 === 1).every((u) => allowed.includes(u))))
 
 const comparisonTask = (id: string, [a, b, c]: [string, string, string]) =>
   textTask(id, 3, `Sett inn riktig tegn: <, > eller =.\n${a} ___ ${b} ___ ${c}`, `${a} ${compareSign(a, b)} ${b} ${compareSign(b, c)} ${c}`)
 
-/** Volum: liter, dl og ml. Masse: bare kg og g (tonn og mg hører ikke til økta). */
-const measureCompareTasks = (sessionId: string, kind: 'volum' | 'masse'): SessionTask[] =>
-  withUnits(unitComparisons[kind], kind === 'volum' ? ['liter', 'dl', 'ml'] : ['kg', 'g']).map((row, i) =>
-    comparisonTask(`ark-${sessionId}-sammenlign-${i + 1}`, row),
-  )
-
-/** Sammenligne areal i cm² og m² (fra «Sammenlign måleenheter») – hører til økta om areal. */
-const areaCompareTasks = (sessionId: string): SessionTask[] =>
-  withUnits(unitComparisons.lengde, ['m²', 'cm²']).map((row, i) => comparisonTask(`ark-${sessionId}-sammenlign-areal-${i + 1}`, row))
-
-/** «Hvem eier bilene?» – fasiten følger av hintene: Ella har den lengste, Tores er gul, Andreas er like lang som Tores, Kari er kortere enn Olav. */
-const carPuzzle = textTask(
-  '',
-  3,
-  'Hvem eier bilene?\nBil 1 er rød og 3 cm. Bil 2 er grønn og 4 cm. Bil 3 er blå og 5 cm. Bil 4 er gul og 2 cm. Bil 5 er oransje og 2 cm.\n' +
-    'Vi vet at:\n– Ella har den lengste bilen.\n– Karis bil er kortere enn Olavs.\n– Andreas bil er akkurat like lang som Tores.\n– Tores bil er gul.',
-  'Bil 1: Kari, bil 2: Olav, bil 3: Ella, bil 4: Tore, bil 5: Andrea  (Tores bil er gul = bil 4, den andre bilen på 2 cm er bil 5. Bil 1 og 2 er igjen, og Karis er kortest.)',
-)
-
-function measureUnitTasks(sessionId: string): SessionTask[] {
-  const id = (sheet: string, i: number) => `ark-${sessionId}-${sheet}-${i + 1}`
-  return [
-    ...lengthsToMm.map((length, i) => textTask(id('millimeter', i), 1, `Hvor mange millimeter er ${length}?`, `${measure(length)} mm`)),
-    ...lengthComparisons.map(([a, b], i) =>
-      textTask(id('sammenlign-lengde', i), 2, `Sett inn riktig tegn: <, > eller =.\n${a} ___ ${b}`, `${a} ${compareSign(a, b)} ${b}  (${measure(a)} mm og ${measure(b)} mm)`),
-    ),
-    ...withUnits(unitComparisons.lengde, ['km', 'm', 'dm', 'cm', 'mm']).map((row, i) => comparisonTask(id('sammenlign', i), row)),
-    { ...carPuzzle, id: id('hvem-eier-bilene', 0) },
-  ]
-}
+const massCompareTasks = (sessionId: string): SessionTask[] => massComparisons.map((row, i) => comparisonTask(`ark-${sessionId}-sammenlign-${i + 1}`, row))
 
 /** Legger oppgavene fra flere ark etter hverandre i samme økt. */
 function collect(entries: [string, SessionTask[]][]) {
@@ -841,10 +791,8 @@ export const worksheetTasks: Record<string, SessionTask[]> = collect([
   // Vår
   ['strategier-i-divisjon-1', divisionTasks('strategier-i-divisjon-1')],
   ['monster-og-algoritmer-2', sequenceSessionTasks('monster-og-algoritmer-2')],
-  ['maling-1', measureCompareTasks('maling-1', 'volum')],
-  ['maling-2', measureCompareTasks('maling-2', 'masse')],
-  ['maling-3', measureUnitTasks('maling-3')],
-  ['maling-4', [...areaTasks('maling-4'), ...areaCompareTasks('maling-4')]],
+  ['maling-2', massCompareTasks('maling-2')],
+  ['maling-4', areaTasks('maling-4')],
   ['maling-6', [...clockTasks('maling-6', 0), ...clockTasks('maling-6', 1)]],
   ['repetisjon-var-2', [...clockTasks('repetisjon-var-2', 2), ...clockTasks('repetisjon-var-2', 3)]],
 ])

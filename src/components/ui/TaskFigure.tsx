@@ -1,12 +1,16 @@
 import type { TaskFigure as Figure } from '../../types'
+import { ColorFigure } from './ColorFigure'
+import { DotFigure } from './DotFigure'
 import { GeometryFigure } from './GeometryFigure.ts'
 
 /**
- * Tegner figuren til en oppgave: rutefigur, analog klokke, plan figur eller vinkel. Brukes i lærerens
+ * Tegner figuren til en oppgave: rutefigur, analog klokke, plan figur, vinkel, figurtall med prikker eller fargemønster. Brukes i lærerens
  * oppgavekort og i elevvisningen (som også er lærerens elevvisning), så figuren ser lik ut overalt.
  */
 export function TaskFigure({ figure, size = 'md' }: { figure: Figure; size?: 'sm' | 'md' }) {
   if (figure.kind === 'shape' || figure.kind === 'angle') return <GeometryFigure figure={figure} size={size} />
+  if (figure.kind === 'dots') return <DotFigure figure={figure} size={size} />
+  if (figure.kind === 'colors') return <ColorFigure figure={figure} size={size} />
   return figure.kind === 'grid' ? <GridFigure rows={figure.rows} size={size} /> : <Clock time={figure.time} size={size} />
 }
 

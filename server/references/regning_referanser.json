@@ -1,0 +1,729 @@
+{
+  "schemaVersion": 1,
+  "topic": "regning",
+  "description": "Referansebank for AI-generering av ekstraoppgaver i Regning. Referansene styrer fagområde, innhold, oppgavetype, tallområde, nivå, språk og representasjon. De skal ikke vises direkte til elever. Ingen eksterne oppgaveark er brukt. Oppgavene er skrevet for Lærestien. Progresjon og oppgavetyper følger innholdsplanen for 4. trinn.",
+  "dataFormat": "Diagrammer og tabeller skrives som tekst, én rad per linje, med | mellom navn og verdier. Søylediagrammer bruker ■, og oppgaven sier alltid hvor mye hver ■ er. Tabeller har en overskriftsrad med tydelige kolonnenavn. Ukjent tall skrives alltid som □.",
+  "referenceCount": 36,
+  "references": [
+    {
+      "id": "RE1-N1-01",
+      "topic": "regning",
+      "area": "diagrammer",
+      "areaTitle": "Lese og tolke diagrammer",
+      "level": 1,
+      "title": "Favorittfrukt",
+      "format": "lese-diagram",
+      "purpose": "Eleven leser verdier og finner største søyle i et enkelt søylediagram.",
+      "studentText": "Diagrammet viser hvilken frukt elevene i 4A liker best. Hver ■ er 1 elev.\nEple     | ■■■■■■\nBanan    | ■■■■\nPære     | ■■\nAppelsin | ■■■■■\nHvor mange elever liker banan best? Hvilken frukt liker flest elever best?",
+      "solution": "4 elever liker banan best. Eple er mest populært, med 6 elever.",
+      "workedSolution": "Tell ■ i hver rad. Eple har flest.",
+      "representationHint": null,
+      "teacherNote": "Skalaen er 1, så antall ■ er antall elever.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE1-N1-02",
+      "topic": "regning",
+      "area": "diagrammer",
+      "areaTitle": "Lese og tolke diagrammer",
+      "level": 1,
+      "title": "Kjæledyr",
+      "format": "lese-diagram",
+      "purpose": "Eleven sammenligner to søyler.",
+      "studentText": "Diagrammet viser kjæledyr i klassen. Hver ■ er 1 dyr.\nHund | ■■■■■■■\nKatt | ■■■■\nFisk | ■■\nHvor mange flere hunder enn katter er det?",
+      "solution": "3 flere hunder. 7 − 4 = 3.",
+      "workedSolution": "Hund har 7 ■ og katt har 4 ■.",
+      "representationHint": null,
+      "teacherNote": "Svaret er en forskjell, ikke en sum.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE1-N1-03",
+      "topic": "regning",
+      "area": "diagrammer",
+      "areaTitle": "Lese og tolke diagrammer",
+      "level": 1,
+      "title": "Bøker i uka",
+      "format": "lese-diagram",
+      "purpose": "Eleven legger sammen verdier fra et diagram.",
+      "studentText": "Diagrammet viser hvor mange bøker klassen leste hver dag. Hver ■ er 1 bok.\nMandag  | ■■■\nTirsdag | ■■■■■\nOnsdag  | ■■■■\nHvor mange bøker leste klassen til sammen?",
+      "solution": "12 bøker. 3 + 5 + 4 = 12.",
+      "workedSolution": "Tell alle ■ i diagrammet.",
+      "representationHint": null,
+      "teacherNote": "Godta at eleven teller alle ■ direkte.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE1-N2-01",
+      "topic": "regning",
+      "area": "diagrammer",
+      "areaTitle": "Lese og tolke diagrammer",
+      "level": 2,
+      "title": "Diagram med skala",
+      "format": "lese-diagram",
+      "purpose": "Eleven leser et diagram der hver ■ er mer enn 1.",
+      "studentText": "Diagrammet viser elevenes favorittaktivitet. Hver ■ er 2 elever.\nFotball  | ■■■■■■\nSki      | ■■■■\nSvømming | ■■■\nDans     | ■■\nHvor mange elever valgte fotball? Hvor mange valgte ski og svømming til sammen?",
+      "solution": "12 elever valgte fotball. Ski og svømming: 8 + 6 = 14 elever.",
+      "workedSolution": "Fotball: 6 · 2 = 12. Ski: 4 · 2 = 8. Svømming: 3 · 2 = 6.",
+      "representationHint": null,
+      "teacherNote": "Vanlig feil er å glemme skalaen og svare 6.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE1-N2-02",
+      "topic": "regning",
+      "area": "diagrammer",
+      "areaTitle": "Lese og tolke diagrammer",
+      "level": 2,
+      "title": "Lag et diagram",
+      "format": "lage-diagram",
+      "purpose": "Eleven lager et søylediagram med ■ ut fra oppgitte tall.",
+      "studentText": "Elevene stemte på favorittfarge: rød 3, blå 6, grønn 2 og gul 4. Lag et søylediagram der hver ■ er 1 stemme. Skriv en tittel over diagrammet.",
+      "solution": "Diagrammet skal ha 3 ■ for rød, 6 ■ for blå, 2 ■ for grønn og 4 ■ for gul, og en tittel som sier hva diagrammet viser.",
+      "workedSolution": "Eksempel på tittel: Favorittfarger i klassen.",
+      "representationHint": null,
+      "teacherNote": "Kontroller antall ■ i hver rad og at tittelen passer.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE1-N2-03",
+      "topic": "regning",
+      "area": "diagrammer",
+      "areaTitle": "Lese og tolke diagrammer",
+      "level": 2,
+      "title": "Sparepenger",
+      "format": "lese-diagram",
+      "purpose": "Eleven leser et diagram med skala og regner ut summen.",
+      "studentText": "Diagrammet viser hvor mye Ali sparte hver uke. Hver ■ er 5 kr.\nUke 1 | ■■\nUke 2 | ■■■■\nUke 3 | ■■■\nUke 4 | ■■■■■\nHvor mye sparte Ali til sammen? Hvilken uke sparte han mest?",
+      "solution": "70 kr til sammen. Uke 4 sparte han mest, 25 kr.",
+      "workedSolution": "Uke 1: 10 kr, uke 2: 20 kr, uke 3: 15 kr, uke 4: 25 kr. 10 + 20 + 15 + 25 = 70.",
+      "representationHint": null,
+      "teacherNote": "Eller: 14 ■ til sammen, 14 · 5 = 70.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE1-N3-01",
+      "topic": "regning",
+      "area": "diagrammer",
+      "areaTitle": "Lese og tolke diagrammer",
+      "level": 3,
+      "title": "Har Ola rett?",
+      "format": "vurder-pastand",
+      "purpose": "Eleven vurderer en påstand om et diagram med skala.",
+      "studentText": "Diagrammet viser hvordan elevene kommer til skolen. Hver ■ er 2 elever.\nBuss   | ■■■■■\nGår    | ■■■■■■■\nSykkel | ■■■\nBil    | ■\nOla sier: «Dobbelt så mange går som sykler.» Har Ola rett? Forklar.",
+      "solution": "Nei. 14 elever går og 6 sykler. Dobbelt så mange som 6 er 12, ikke 14.",
+      "workedSolution": "Gå: 7 · 2 = 14. Sykkel: 3 · 2 = 6. 2 · 6 = 12.",
+      "representationHint": null,
+      "teacherNote": "Eleven må bruke skalaen før sammenligningen.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE1-N3-02",
+      "topic": "regning",
+      "area": "diagrammer",
+      "areaTitle": "Lese og tolke diagrammer",
+      "level": 3,
+      "title": "Hva har Kari gjort feil?",
+      "format": "feilvurdering",
+      "purpose": "Eleven oppdager at skalaen er oversett.",
+      "studentText": "Diagrammet viser antall besøkende på et museum. Hver ■ er 10 besøkende.\nLørdag | ■■■■\nSøndag | ■■■■■■\nKari sier at det kom 2 flere besøkende på søndag enn på lørdag. Hva har Kari gjort feil? Hvor mange flere kom på søndag?",
+      "solution": "Kari har talt ■ og glemt skalaen. Lørdag: 40, søndag: 60. Det kom 20 flere på søndag.",
+      "workedSolution": "2 ■ forskjell · 10 = 20.",
+      "representationHint": null,
+      "teacherNote": "Feilen er vanlig og viktig å ta opp.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE1-N3-03",
+      "topic": "regning",
+      "area": "diagrammer",
+      "areaTitle": "Lese og tolke diagrammer",
+      "level": 3,
+      "title": "Temperatur",
+      "format": "tolke-diagram",
+      "purpose": "Eleven tolker et diagram, finner forskjeller og lager eget spørsmål.",
+      "studentText": "Diagrammet viser temperaturen kl. 12 fem dager. Hver ■ er 2 grader.\nMandag  | ■■■■\nTirsdag | ■■■■■\nOnsdag  | ■■■\nTorsdag | ■■■■■■\nFredag  | ■■■■■\nHvilken dag var varmest, og hvor mange grader var det? Hvor stor er forskjellen mellom den varmeste og den kaldeste dagen? Lag ett eget spørsmål som kan besvares med diagrammet, og svar på det.",
+      "solution": "Torsdag var varmest med 12 grader. Onsdag var kaldest med 6 grader. Forskjellen er 6 grader. Eget spørsmål må kunne besvares med verdiene i diagrammet.",
+      "workedSolution": "Torsdag: 6 · 2 = 12. Onsdag: 3 · 2 = 6. 12 − 6 = 6.",
+      "representationHint": null,
+      "teacherNote": "Vurder om det egne spørsmålet faktisk kan besvares med diagrammet.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE2-N1-01",
+      "topic": "regning",
+      "area": "tabeller",
+      "areaTitle": "Lese og tolke tabeller",
+      "level": 1,
+      "title": "Elever i klassene",
+      "format": "lese-tabell",
+      "purpose": "Eleven leser verdier og sammenligner i en enkel tabell.",
+      "studentText": "Tabellen viser antall elever i hver klasse.\nKlasse | Elever\n4A     | 24\n4B     | 22\n4C     | 26\nHvor mange elever går i 4B? Hvilken klasse har flest elever?",
+      "solution": "22 elever går i 4B. 4C har flest elever.",
+      "workedSolution": "Les i raden for 4B. Sammenlign tallene i kolonnen «Elever».",
+      "representationHint": null,
+      "teacherNote": "Rad og kolonne er viktige ord.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE2-N1-02",
+      "topic": "regning",
+      "area": "tabeller",
+      "areaTitle": "Lese og tolke tabeller",
+      "level": 1,
+      "title": "Kiosken",
+      "format": "lese-tabell",
+      "purpose": "Eleven henter to verdier fra en tabell og legger dem sammen.",
+      "studentText": "Tabellen viser prisene i kiosken.\nVare  | Pris\nIs    | 15 kr\nSaft  | 10 kr\nBolle | 12 kr\nHva koster en is og en bolle til sammen?",
+      "solution": "27 kr. 15 + 12 = 27.",
+      "workedSolution": "Finn prisen for is og bolle i tabellen.",
+      "representationHint": null,
+      "teacherNote": "Enheten må være med i svaret.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE2-N1-03",
+      "topic": "regning",
+      "area": "tabeller",
+      "areaTitle": "Lese og tolke tabeller",
+      "level": 1,
+      "title": "Fyll ut tabellen",
+      "format": "fylle-ut-tabell",
+      "purpose": "Eleven fyller ut en tabell som følger en regel.",
+      "studentText": "Tabellen viser antall hjul på sykler.\nSykler | Hjul\n1      | 2\n2      | 4\n3      | __\n4      | __\nFyll inn tallene som mangler.",
+      "solution": "3 sykler: 6 hjul. 4 sykler: 8 hjul.",
+      "workedSolution": "Hver sykkel har 2 hjul. 3 · 2 = 6 og 4 · 2 = 8.",
+      "representationHint": null,
+      "teacherNote": "Regelen er at antall hjul er to ganger antall sykler.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE2-N2-01",
+      "topic": "regning",
+      "area": "tabeller",
+      "areaTitle": "Lese og tolke tabeller",
+      "level": 2,
+      "title": "Kinobilletter",
+      "format": "regne-med-tabell",
+      "purpose": "Eleven bruker priser i en tabell i et regnestykke med flere steg.",
+      "studentText": "Tabellen viser prisene på kino.\nBillett | Pris\nBarn    | 80 kr\nVoksen  | 120 kr\nHva koster det for 2 voksne og 3 barn?",
+      "solution": "480 kr.",
+      "workedSolution": "2 · 120 = 240 og 3 · 80 = 240. 240 + 240 = 480.",
+      "representationHint": null,
+      "teacherNote": "Eleven må finne riktig rad for hver billett.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE2-N2-02",
+      "topic": "regning",
+      "area": "tabeller",
+      "areaTitle": "Lese og tolke tabeller",
+      "level": 2,
+      "title": "Jenter og gutter",
+      "format": "lese-tabell",
+      "purpose": "Eleven leser en tabell med flere kolonner og sammenligner.",
+      "studentText": "Tabellen viser antall jenter og gutter i hver klasse.\nKlasse | Jenter | Gutter\n4A     | 12     | 12\n4B     | 10     | 12\n4C     | 14     | 12\nHvor mange jenter er det til sammen? Hvilken klasse har flere jenter enn gutter?",
+      "solution": "36 jenter til sammen. 4C har flere jenter enn gutter.",
+      "workedSolution": "12 + 10 + 14 = 36. I 4C er 14 større enn 12.",
+      "representationHint": null,
+      "teacherNote": "Eleven må lese både rader og kolonner.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE2-N2-03",
+      "topic": "regning",
+      "area": "tabeller",
+      "areaTitle": "Lese og tolke tabeller",
+      "level": 2,
+      "title": "Busstabell",
+      "format": "regne-med-tabell",
+      "purpose": "Eleven bruker klokkeslett i en tabell til å finne tid og vurdere en situasjon.",
+      "studentText": "Tabellen viser når bussen er ved hvert stopp.\nStopp     | Tid\nSkolen    | 08:05\nTorget    | 08:17\nStasjonen | 08:30\nHvor lang tid tar bussen fra skolen til stasjonen? Kristian kommer til Torget kl. 08:20. Rekker han bussen?",
+      "solution": "25 minutter. Nei, Kristian rekker ikke bussen, fordi den går fra Torget kl. 08:17.",
+      "workedSolution": "08:05 til 08:30 er 25 minutter. 08:20 er senere enn 08:17.",
+      "representationHint": null,
+      "teacherNote": "Kobler tabell og tid.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE2-N3-01",
+      "topic": "regning",
+      "area": "tabeller",
+      "areaTitle": "Lese og tolke tabeller",
+      "level": 3,
+      "title": "Tall som mangler",
+      "format": "fylle-ut-tabell",
+      "purpose": "Eleven bruker sammenhengen mellom kolonnene til å finne manglende tall.",
+      "studentText": "Tabellen viser jenter og gutter i to klasser.\nKlasse | Jenter | Gutter | Til sammen\n4A     | 13     | __     | 25\n4B     | __     | 11     | 23\nFinn tallene som mangler. Forklar hvordan du regner.",
+      "solution": "4A: 12 gutter. 4B: 12 jenter.",
+      "workedSolution": "4A: 25 − 13 = 12. 4B: 23 − 11 = 12.",
+      "representationHint": null,
+      "teacherNote": "Kolonnen «Til sammen» er summen av de to andre.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE2-N3-02",
+      "topic": "regning",
+      "area": "tabeller",
+      "areaTitle": "Lese og tolke tabeller",
+      "level": 3,
+      "title": "Har Mina rett?",
+      "format": "vurder-pastand",
+      "purpose": "Eleven vurderer en påstand om utviklingen i en tabell.",
+      "studentText": "Tabellen viser antall bøker lånt på biblioteket.\nUke | Bøker\n1   | 18\n2   | 24\n3   | 21\n4   | 27\nMina sier: «Antallet bøker øker hver uke.» Har Mina rett? Forklar.",
+      "solution": "Nei. Fra uke 2 til uke 3 gikk antallet ned fra 24 til 21.",
+      "workedSolution": "Antallet øker fra uke 1 til 2 og fra uke 3 til 4, men ikke fra uke 2 til 3.",
+      "representationHint": null,
+      "teacherNote": "Påstanden er nesten sann, og derfor god å vurdere.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE2-N3-03",
+      "topic": "regning",
+      "area": "tabeller",
+      "areaTitle": "Lese og tolke tabeller",
+      "level": 3,
+      "title": "Lag en tabell",
+      "format": "lage-tabell",
+      "purpose": "Eleven lager en tabell ut fra en tekst og bruker den.",
+      "studentText": "I 4B går 9 elever til skolen, 7 elever sykler og 6 elever tar buss. Lag en tabell med to kolonner som viser dette. Hvor mange elever er det i 4B? Hvor mange flere går enn tar buss?",
+      "solution": "Tabellen har kolonnene «Måte» og «Elever» med radene gå 9, sykkel 7 og buss 6. Det er 22 elever. 3 flere går enn tar buss.",
+      "workedSolution": "9 + 7 + 6 = 22. 9 − 6 = 3.",
+      "representationHint": null,
+      "teacherNote": "Kolonnene må ha tydelige navn.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE3-N1-01",
+      "topic": "regning",
+      "area": "fire-regnearter",
+      "areaTitle": "De fire regneartene",
+      "level": 1,
+      "title": "Hvilken regneart?",
+      "format": "velge-regneart",
+      "purpose": "Eleven velger subtraksjon og regner ut.",
+      "studentText": "Det er 35 elever på bussen. 12 elever går av. Hvilken regneart bruker du? Hvor mange elever er igjen på bussen?",
+      "solution": "Subtraksjon. 35 − 12 = 23. Det er 23 elever igjen.",
+      "workedSolution": "Noen går av, så det blir færre.",
+      "representationHint": null,
+      "teacherNote": "Eleven skal navngi regnearten.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE3-N1-02",
+      "topic": "regning",
+      "area": "fire-regnearter",
+      "areaTitle": "De fire regneartene",
+      "level": 1,
+      "title": "Esker med kritt",
+      "format": "velge-regneart",
+      "purpose": "Eleven velger multiplikasjon og regner ut.",
+      "studentText": "Det er 6 esker med 8 kritt i hver eske. Hvilken regneart bruker du? Hvor mange kritt er det til sammen?",
+      "solution": "Multiplikasjon. 6 · 8 = 48. Det er 48 kritt.",
+      "workedSolution": "Like grupper gir gange.",
+      "representationHint": null,
+      "teacherNote": "Godta også gjentatt addisjon som forklaring.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE3-N1-03",
+      "topic": "regning",
+      "area": "fire-regnearter",
+      "areaTitle": "De fire regneartene",
+      "level": 1,
+      "title": "Del kortene",
+      "format": "velge-regneart",
+      "purpose": "Eleven velger divisjon og regner ut.",
+      "studentText": "32 kort skal deles likt mellom 4 spillere. Hvilken regneart bruker du? Hvor mange kort får hver spiller?",
+      "solution": "Divisjon. 32 : 4 = 8. Hver spiller får 8 kort.",
+      "workedSolution": "Noe deles likt, så vi deler.",
+      "representationHint": null,
+      "teacherNote": "Kontroll: 4 · 8 = 32.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE3-N2-01",
+      "topic": "regning",
+      "area": "fire-regnearter",
+      "areaTitle": "De fire regneartene",
+      "level": 2,
+      "title": "Fire situasjoner",
+      "format": "velge-regneart",
+      "purpose": "Eleven velger riktig regneart i fire situasjoner og regner ut.",
+      "studentText": "Skriv regnestykket og svaret for hver situasjon.\na) Lise har 245 kr. Hun får 138 kr. Hvor mye har hun nå?\nb) Det er 7 rader med 9 stoler. Hvor mange stoler er det?\nc) 63 epler skal i poser med 7 i hver. Hvor mange poser blir det?\nd) Tim har 500 kr. Han bruker 275 kr. Hvor mye har han igjen?",
+      "solution": "a) 245 + 138 = 383 kr. b) 7 · 9 = 63 stoler. c) 63 : 7 = 9 poser. d) 500 − 275 = 225 kr.",
+      "workedSolution": "Hver situasjon bruker én regneart.",
+      "representationHint": null,
+      "teacherNote": "Alle fire regneartene er med.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE3-N2-02",
+      "topic": "regning",
+      "area": "fire-regnearter",
+      "areaTitle": "De fire regneartene",
+      "level": 2,
+      "title": "Fyll inn regnetegnet",
+      "format": "velge-regneart",
+      "purpose": "Eleven finner hvilken regneart som gir et gitt svar.",
+      "studentText": "Skriv +, −, · eller : på hver strek slik at regnestykket blir riktig.\n24 __ 6 = 4\n24 __ 6 = 30\n24 __ 6 = 18\n24 __ 6 = 144",
+      "solution": "24 : 6 = 4, 24 + 6 = 30, 24 − 6 = 18 og 24 · 6 = 144.",
+      "workedSolution": "Svaret som er mindre enn 24 og ikke 18, må være deling. Det største svaret er gange.",
+      "representationHint": null,
+      "teacherNote": "Streken står for et regnetegn. □ brukes bare for ukjente tall.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE3-N2-03",
+      "topic": "regning",
+      "area": "fire-regnearter",
+      "areaTitle": "De fire regneartene",
+      "level": 2,
+      "title": "Overslag",
+      "format": "overslag",
+      "purpose": "Eleven bruker overslag til å avgjøre om et beløp er nok.",
+      "studentText": "Ola vil kjøpe 3 bøker som koster 98 kr hver. Han har 200 kr. Bruk overslag: Har Ola nok penger? Forklar.",
+      "solution": "Nei. 98 kr er nesten 100 kr, og 3 · 100 = 300 kr. Det er mer enn 200 kr. Nøyaktig pris er 294 kr.",
+      "workedSolution": "Rund 98 av til 100.",
+      "representationHint": null,
+      "teacherNote": "Overslaget er nok til å svare.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE3-N3-01",
+      "topic": "regning",
+      "area": "fire-regnearter",
+      "areaTitle": "De fire regneartene",
+      "level": 3,
+      "title": "Feil regneart",
+      "format": "feilvurdering",
+      "purpose": "Eleven finner og retter feil valg av regneart.",
+      "studentText": "Siri skal løse: «Det er 48 elever. De skal sitte 6 ved hvert bord. Hvor mange bord trengs?» Hun regner 48 · 6 = 288. Hva er feil? Løs oppgaven riktig.",
+      "solution": "Siri har ganget i stedet for å dele. 48 : 6 = 8. Det trengs 8 bord.",
+      "workedSolution": "288 bord er urimelig mange for 48 elever.",
+      "representationHint": null,
+      "teacherNote": "Be eleven bruke rimelighet.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE3-N3-02",
+      "topic": "regning",
+      "area": "fire-regnearter",
+      "areaTitle": "De fire regneartene",
+      "level": 3,
+      "title": "Fire fortellinger",
+      "format": "lag-oppgave",
+      "purpose": "Eleven lager en fortelling for hver regneart med de samme tallene.",
+      "studentText": "Lag fire korte fortellinger med tallene 24 og 4, én for hver regneart. Regn ut svaret i hver fortelling.",
+      "solution": "24 + 4 = 28, 24 − 4 = 20, 24 · 4 = 96 og 24 : 4 = 6. Hver fortelling må passe sin regneart.",
+      "workedSolution": "Eksempel for deling: 24 kaker deles likt på 4 tallerkener. Hvor mange kaker blir det på hver?",
+      "representationHint": null,
+      "teacherNote": "Vurder om fortellingen faktisk passer regnearten.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE3-N3-03",
+      "topic": "regning",
+      "area": "fire-regnearter",
+      "areaTitle": "De fire regneartene",
+      "level": 3,
+      "title": "Klassetur",
+      "format": "flersteg",
+      "purpose": "Eleven løser et problem som krever to regnearter og tolker svaret.",
+      "studentText": "24 elever skal på klassetur. Billetten koster 40 kr per elev. Klassen har 1000 kr. Er det nok penger? Hvor mye blir igjen eller mangler? Forklar.",
+      "solution": "Ja. 24 · 40 = 960 kr. 1000 − 960 = 40 kr blir igjen.",
+      "workedSolution": "24 · 4 = 96, så 24 · 40 = 960.",
+      "representationHint": null,
+      "teacherNote": "To regnearter i riktig rekkefølge.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE4-N1-01",
+      "topic": "regning",
+      "area": "algebra",
+      "areaTitle": "Utforske algebra",
+      "level": 1,
+      "title": "Hva skjuler seg?",
+      "format": "ukjent-tall",
+      "purpose": "Eleven finner et ukjent tall i et enkelt pluss-stykke.",
+      "studentText": "Hvilket tall står □ for?\n□ + 7 = 15",
+      "solution": "□ = 8.",
+      "workedSolution": "8 + 7 = 15.",
+      "representationHint": null,
+      "teacherNote": "Bruk alltid □ for ukjent tall.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE4-N1-02",
+      "topic": "regning",
+      "area": "algebra",
+      "areaTitle": "Utforske algebra",
+      "level": 1,
+      "title": "Vekt i balanse",
+      "format": "likhet",
+      "purpose": "Eleven bruker en balansevekt til å forstå likhet.",
+      "studentText": "En vekt er i balanse. På den ene siden ligger 4 klosser og 6 klosser. På den andre siden ligger □ klosser. Hvilket tall står □ for?",
+      "solution": "□ = 10.",
+      "workedSolution": "Når vekten er i balanse, er det like mye på begge sider. 4 + 6 = 10.",
+      "representationHint": "Venstre side: 4 klosser og 6 klosser. Høyre side: □ klosser.",
+      "teacherNote": "Balansevekten forklarer likhetstegnet.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE4-N1-03",
+      "topic": "regning",
+      "area": "algebra",
+      "areaTitle": "Utforske algebra",
+      "level": 1,
+      "title": "Like mye på begge sider",
+      "format": "likhet",
+      "purpose": "Eleven finner et ukjent tall når begge sider av likhetstegnet har et regnestykke.",
+      "studentText": "Hvilket tall står □ for?\n6 + 4 = □ + 5",
+      "solution": "□ = 5.",
+      "workedSolution": "6 + 4 = 10. 5 + 5 = 10.",
+      "representationHint": null,
+      "teacherNote": "Vanlig feil er å svare 10.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE4-N2-01",
+      "topic": "regning",
+      "area": "algebra",
+      "areaTitle": "Utforske algebra",
+      "level": 2,
+      "title": "Ukjent i minus",
+      "format": "ukjent-tall",
+      "purpose": "Eleven finner et ukjent tall i et minus-stykke.",
+      "studentText": "Hvilket tall står □ for?\n30 − □ = 12",
+      "solution": "□ = 18.",
+      "workedSolution": "30 − 18 = 12. Eller: 30 − 12 = 18.",
+      "representationHint": null,
+      "teacherNote": "Kontroll: sett 18 inn i stykket.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE4-N2-02",
+      "topic": "regning",
+      "area": "algebra",
+      "areaTitle": "Utforske algebra",
+      "level": 2,
+      "title": "Ukjent i gange",
+      "format": "ukjent-tall",
+      "purpose": "Eleven finner et ukjent tall i et gangestykke.",
+      "studentText": "Hvilket tall står □ for?\n4 · □ = 36",
+      "solution": "□ = 9.",
+      "workedSolution": "4 · 9 = 36. Eller: 36 : 4 = 9.",
+      "representationHint": null,
+      "teacherNote": "Kontroll: sett 9 inn i stykket.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE4-N2-03",
+      "topic": "regning",
+      "area": "algebra",
+      "areaTitle": "Utforske algebra",
+      "level": 2,
+      "title": "Sant eller usant?",
+      "format": "likhet",
+      "purpose": "Eleven vurderer om to sider av et likhetstegn er like mye.",
+      "studentText": "Er påstandene sanne eller usanne? Forklar.\n12 + 3 = 15 + 2\n9 + 6 = 10 + 5",
+      "solution": "12 + 3 = 15 + 2 er usant, fordi 15 ikke er lik 17. 9 + 6 = 10 + 5 er sant, fordi begge sider er 15.",
+      "workedSolution": "Regn ut hver side for seg og sammenlign.",
+      "representationHint": null,
+      "teacherNote": "Likhetstegnet betyr at begge sider er like mye.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE4-N3-01",
+      "topic": "regning",
+      "area": "algebra",
+      "areaTitle": "Utforske algebra",
+      "level": 3,
+      "title": "To like ukjente",
+      "format": "ukjent-tall",
+      "purpose": "Eleven finner et ukjent tall som står to ganger.",
+      "studentText": "Hvilket tall står □ for? Forklar hvordan du tenker.\n□ + □ + 4 = 18",
+      "solution": "□ = 7.",
+      "workedSolution": "□ + □ = 18 − 4 = 14. To like tall som blir 14, er 7 og 7.",
+      "representationHint": null,
+      "teacherNote": "Samme symbol betyr samme tall.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE4-N3-02",
+      "topic": "regning",
+      "area": "algebra",
+      "areaTitle": "Utforske algebra",
+      "level": 3,
+      "title": "Har Leo rett?",
+      "format": "feilvurdering",
+      "purpose": "Eleven vurderer en vanlig misoppfatning om likhetstegnet.",
+      "studentText": "Leo skal finne tallet □ i 7 + 5 = □ + 4. Han skriver 12. Har Leo rett? Forklar hva likhetstegnet betyr.",
+      "solution": "Nei. □ = 8. Likhetstegnet betyr at begge sider er like mye. 7 + 5 = 12, og 8 + 4 = 12.",
+      "workedSolution": "Leo har tolket likhetstegnet som «svaret er».",
+      "representationHint": null,
+      "teacherNote": "Misoppfatningen er vanlig og viktig å ta opp.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    },
+    {
+      "id": "RE4-N3-03",
+      "topic": "regning",
+      "area": "algebra",
+      "areaTitle": "Utforske algebra",
+      "level": 3,
+      "title": "Lag en fortelling",
+      "format": "lag-oppgave",
+      "purpose": "Eleven lager en fortelling til en likning og løser den.",
+      "studentText": "Lag en fortelling som passer til □ + 15 = 40. Finn tallet □, og forklar hva □ betyr i fortellingen din.",
+      "solution": "□ = 25. Fortellingen må ha et ukjent antall som sammen med 15 blir 40.",
+      "workedSolution": "Eksempel: Mia har noen kroner. Hun får 15 kr og har da 40 kr. Hvor mange kroner hadde hun? 40 − 15 = 25.",
+      "representationHint": null,
+      "teacherNote": "Vurder om □ har en tydelig betydning i fortellingen.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "regning_referanser.json"
+      }
+    }
+  ]
+}

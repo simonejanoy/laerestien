@@ -5,7 +5,7 @@ import { isMathDraft, type AiTaskDraft, type GeometryArea } from '../src/ai/cont
 // manglende del av 90° eller 180°). Det som ikke kan leses sikkert, avvises ikke – prompten og
 // referansene styrer de åpne oppgavene. Kontrollene gjelder alltid – også med «Andre ønsker».
 
-export type GeometryProblem = 'missingFigure' | 'wrongAngle' | 'wrongFact' | 'wrongTerm' | 'wrongSolution' | 'offTopic'
+export type GeometryProblem = 'missingFigure' | 'wrongAngle' | 'wrongFact' | 'wrongTerm' | 'wrongSolution' | 'offTopic' | 'format'
 
 export interface GeometryContext {
   area: GeometryArea
@@ -318,15 +318,14 @@ export function geometryProblem(task: AiTaskDraft, { area, secondaryAreas = [] }
   // «Se på figuren» er bare i orden når oppgaven faktisk har en figur appen tegner (se visualChecks.ts).
   if (MISSING_FIGURE.test(studentText) && (isMathDraft(task) || !task.figure)) return 'missingFigure'
   if (OTHER_TOPIC.test(all)) return 'offTopic'
-  // Regnestykker bare i vinkeløkter (pluss og minus med grader), aldri som forkledd gangetrening.
-  if (isMathDraft(task) && (area !== 'vinkler' || !['+', '-'].includes(task.operator))) return 'offTopic'
+  // Ingen regnestykker i geometriøktene. I vinkeløktene ville «90 − 10 =» under teksten røpe hvordan oppgaven løses:
+  // vinkelberegninger er tekstoppgaver, og fasiten viser utregningen. Ellers ville et regnestykke vært forkledd regnetrening.
+  if (isMathDraft(task)) return area === 'vinkler' ? 'format' : 'offTopic'
   const areas = [area, ...secondaryAreas]
   // En figur appen tegner er selv geometriinnholdet («Hva heter figuren?»); om den hører til økta, avgjør visualChecks.ts.
   // Men en tekst uten geometriord som regner med tall, handler om noe annet (f.eks. divisjon) selv med en figur.
   const hasVisual = !isMathDraft(task) && !!task.figure
   if (!areas.some((a) => AREA_WORDS[a].test(studentText)) && (!hasVisual || /\d/.test(studentText))) return 'offTopic'
-  // Regnestykket appen retter må stemme med vinklene i instruksjonen (f.eks. 90 − 35 for en rett vinkel).
-  if (isMathDraft(task)) return angleProblem(studentText, String(task.operator === '+' ? task.a + task.b : task.a - task.b))
 
   return angleProblem(studentText, solution) ?? figureProblem(studentText, solution)
 }

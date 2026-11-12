@@ -513,29 +513,33 @@ describe('13. andre temaer og referansebanker er uendret', () => {
     assert.equal(hash(file('tall_og_plassverdi')), '21ba85a512aeffed')
     assert.equal(hash(file('divisjon')), '137f3e1f03a7d25f')
     assert.equal(hash(file('geometri')), 'f5051a7c950ae47c')
-    assert.equal(referenceBanks.filter((r) => !['problemlosing', 'tall-og-regning', 'strategier-i-divisjon'].includes(r.topic)).length, 54 + 45 + 36 + 36)
+    assert.equal(referenceBanks.filter((r) => !['problemlosing', 'tall-og-regning', 'strategier-i-divisjon', 'maling', 'monster-og-algoritmer', 'regning'].includes(r.topic)).length, 54 + 45 + 36 + 36)
     for (const [area, level, own] of [['tabell-6-7-8-9', 2, multiplicationReferences], ['modeller', 3, divisionReferences]] as const) {
       assert.deepEqual(selectReferences(referenceBanks, { area, level, seed: 11 }).map((r) => r.id), selectReferences(own, { area, level, seed: 11 }).map((r) => r.id))
     }
   })
 
   it('alle økter i de andre temaene og arbeidsarkene er uendret – i repetisjon bare oppgavene fra Problemløsing og Tall og regning', () => {
-    // Tall og regning, Strategier i divisjon og repetisjonsøkter med undertema derfra er endret senere
-    // (se numbersAndOperationsAi.test.ts og divisionStrategiesAi.test.ts).
-    const touched = (s: Planned) => s.skills.some((k) => k.startsWith('prob.') || k.startsWith('tr.') || k.startsWith('sdiv.'))
-    const all = unitSpecs.filter((u) => !['problemlosing', 'tall-og-regning', 'strategier-i-divisjon'].includes(u.unitId)).flatMap((u) => planned(u.unitId))
+    // Tall og regning, Strategier i divisjon, Måling, Mønster og algoritmer og repetisjonsøkter med undertema derfra er endret
+    // senere (se numbersAndOperationsAi.test.ts, divisionStrategiesAi.test.ts, measurementAi.test.ts og patternAi.test.ts).
+    const touched = (s: Planned) => s.skills.some((k) => k.startsWith('prob.') || k.startsWith('tr.') || k.startsWith('sdiv.') || k.startsWith('mal.') || k.startsWith('mon.'))
+    // Regning er endret senere (se arithmeticAi.test.ts); repetisjonsøktene med undertema derfra er uendret.
+    const all = unitSpecs.filter((u) => !['problemlosing', 'tall-og-regning', 'strategier-i-divisjon', 'maling', 'monster-og-algoritmer', 'regning'].includes(u.unitId)).flatMap((u) => planned(u.unitId))
+    // geometri-6 «Vinkler i trekanter» er endret senere: rene tekstoppgaver i stedet for regnestykker (se geometryAi.test.ts).
     const others = all
-      .filter((s) => !touched(s))
+      .filter((s) => !touched(s) && s.id !== 'geometri-6')
       .map((s) => ({ id: s.id, heading: s.heading, skills: s.skills, profile: s.profile ?? null, levels: levelsFor(s, 5, 6), tasks: buildTasks(s) }))
-    assert.equal(others.length, 64)
-    assert.equal(hash(JSON.stringify(others)), '95d64726dc38a3b8')
-    assert.deepEqual(all.filter(touched).map((s) => s.id), ['repetisjon-vinter-3', 'repetisjon-vinter-4', 'repetisjon-var-1', 'repetisjon-var-4'])
+    // Regnet ut fra koden på begge sider av sammenslåingen (Strategier i divisjon og de andre temaene), og de samme etterpå.
+    assert.equal(others.length, 45)
+    assert.equal(hash(JSON.stringify(others)), 'b959da02df0c637c')
+    assert.deepEqual(all.filter(touched).map((s) => s.id), ['repetisjon-vinter-3', 'repetisjon-vinter-4', 'repetisjon-var-1', 'repetisjon-var-2', 'repetisjon-var-3', 'repetisjon-var-4'])
     // «Dette mestrer jeg» (bare Problemløsing): samme overskrift, undertema, nivåer, oppgave-ID-er og regnestykker fra Regning.
     const kept = all
       .filter((s) => s.id === 'repetisjon-var-4')
       .map((s) => ({ id: s.id, heading: s.heading, skills: s.skills, levels: levelsFor(s, 5, 6), ids: buildTasks(s).map((t) => t.id), math: buildTasks(s).filter((t) => t.kind !== 'text') }))
     assert.equal(hash(JSON.stringify(kept)), '95e64256a9bda463')
-    assert.equal(hash(JSON.stringify(worksheetTasks)), 'd20a8f714743442c')
+    // Arbeidsarkene i Måling og Mønster og algoritmer er endret senere (se measurementAi.test.ts og patternAi.test.ts).
+    assert.equal(hash(JSON.stringify(Object.fromEntries(Object.entries(worksheetTasks).filter(([id]) => !id.startsWith('maling-') && !id.startsWith('monster-og-algoritmer-'))))), 'b573e51e205df96d')
   })
 
   it('regelversjon, modeller og tidsgrenser er uendret', () => {

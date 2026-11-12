@@ -1,4 +1,5 @@
 import type { AiTaskMeta, AiVisual, DivisionType, ReferenceArea } from '../ai/contract.ts'
+import type { ColorsFigure, DotsFigure, ExpectedAnswer } from '../ai/patternDisplay.ts'
 
 export type Role = 'teacher' | 'student'
 
@@ -183,7 +184,8 @@ export interface Task {
 }
 
 /**
- * Figur som tegnes til en oppgave: rutefigur (areal), analog klokke, plan figur eller vinkel (geometri).
+ * Figur som tegnes til en oppgave: rutefigur (areal), analog klokke, plan figur eller vinkel (geometri), eller
+ * figurtall som prikker og fargemønstre som sirkler (Mønster og algoritmer).
  * Appen tegner alle selv som SVG (components/ui/TaskFigure.tsx).
  */
 export type TaskFigure =
@@ -193,6 +195,10 @@ export type TaskFigure =
   | { kind: 'clock'; time: string }
   /** Plan figur (trekant, kvadrat …) eller vinkel (spiss, rett, stump) – se AiVisual. */
   | AiVisual
+  /** Figurtall: antall prikker i figur 1, 2, 3 … (se ai/patternDisplay.ts). */
+  | DotsFigure
+  /** Fargemønster: fargene i rekka, tegnet som fylte sirkler med navnet under (se ai/patternDisplay.ts). */
+  | ColorsFigure
 
 /** Fritekstoppgave, f.eks. laget med AI-assistenten. Eleven skriver svaret, og læreren vurderer det. */
 export interface TextTask {
@@ -213,6 +219,13 @@ export interface TextTask {
   reviewed: boolean
   /** Figur som hører til oppgaven (valgfritt). */
   figure?: TaskFigure
+  /** Mønster og algoritmer: tallrekka med tomme felt («21, ___, ___, 24») vises med en inputboks for hvert felt. */
+  answerBoxes?: true
+  /**
+   * Mønster og algoritmer: det korte svaret appen retter automatisk (tall, tallrekke, figur eller farge). Uten feltet
+   * rettes oppgaven ikke automatisk. Fjernes når teksten eller fasiten endres, så det aldri blir stående feil.
+   */
+  expected?: ExpectedAnswer
   source?: TaskSource
   /** Sporbarhet for AI-genererte oppgaver (modell, regelversjon, referanser …). Vises aldri for eleven. */
   aiMeta?: AiTaskMeta

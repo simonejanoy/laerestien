@@ -1,5 +1,19 @@
-import { visualSignature, type AiVisual, type DivisionArea, type DivisionStrategiesArea, type DivisionType, type GeometryArea, type NumbersAndOperationsArea, type PlaceValueArea, type ProblemSolvingArea } from '../../ai/contract.ts'
+import {
+  visualSignature,
+  type AiVisual,
+  type ArithmeticArea,
+  type DivisionArea,
+  type DivisionStrategiesArea,
+  type DivisionType,
+  type GeometryArea,
+  type MeasurementArea,
+  type NumbersAndOperationsArea,
+  type PatternArea,
+  type PlaceValueArea,
+  type ProblemSolvingArea,
+} from '../../ai/contract.ts'
 import type { Level, LevelGroup, LevelProfile, Operator, TaskProfile, TaskType, TopicDetails } from '../../types/index.ts'
+import type { ColorsFigure, DotsFigure, ExpectedAnswer } from '../../ai/patternDisplay.ts'
 import { OPEN_STRATEGY, strategyInstruction } from './multiplicationStrategies.ts'
 import { columnTasks, fourDigitTasks, mentalStrategyTasks, negativeNumberTasks, type FourDigitVariant } from './placeValueTasks.ts'
 
@@ -17,8 +31,12 @@ export type TaskSpec = [TaskType, number, Operator, number, string]
 export interface TextSpec {
   text: string
   solution: string
-  /** Geometri: plan figur eller vinkel som appen tegner til oppgaven. */
-  figure?: AiVisual
+  /** Geometri: plan figur eller vinkel som appen tegner til oppgaven. Mønster og algoritmer: figurtall med prikker. */
+  figure?: AiVisual | DotsFigure | ColorsFigure
+  /** Mønster og algoritmer: tallrekka med tomme felt vises med inputbokser. */
+  answerBoxes?: true
+  /** Mønster og algoritmer: det korte svaret appen retter automatisk (brukes bare i øktene i temaet). */
+  expected?: ExpectedAnswer
 }
 
 export type GeneratedTask = TaskSpec | TextSpec
@@ -61,11 +79,18 @@ function pick<T>(list: T[], i: number) {
   return list[i % list.length]
 }
 
-/** Typografisk minus for negative tall: −3 */
-const signed = (x: number) => (x < 0 ? `−${-x}` : String(x))
-
 /** 2.5 → «2,5» */
 const dec = (x: number) => String(Math.round(x * 100) / 100).replace('.', ',')
+
+/** Gjentakelsene i mønstrene i «Utforske mønster», per nivå: to eller tre ledd på nivå 1 og 2, fire på nivå 3. */
+const PATTERN_UNITS: Record<Level, string[][]> = {
+  1: [['▲', '●'], ['■', '▲'], ['●', '■', '■'], ['gul', 'grønn'], ['▲', '▲', '●']],
+  2: [['■', '●', '●'], ['▲', '■', '●'], ['●', '●', '▲'], ['rød', 'gul', 'gul'], ['■', '▲', '▲']],
+  3: [['▲', '●', '●', '■'], ['●', '■', '■', '▲'], ['■', '■', '●', '▲'], ['blå', 'rød', 'rød', 'gul'], ['●', '▲', '■', '■']],
+}
+const isColor = (item: string) => /^\p{L}+$/u.test(item)
+/** «● ■ ●» med figurer, «rød, blå, rød» med fargeord. */
+const patternLine = (items: string[]) => items.join(isColor(items[0]) ? ', ' : ' ')
 
 /** Gangestykker: grupper · faktor. */
 const times = (factors: number[], n: number, instruction: string, [minGroups, maxGroups]: [number, number] = [2, 10]) =>
@@ -341,6 +366,16 @@ const angleSumTasks = byLevel(
       return [H, 180, '-', two, `Vinklene i en trekant er 180° til sammen. To av vinklene er ${two}° til sammen. Hvor stor er den tredje?`]
     }),
 )
+
+/**
+ * «Vinkler i trekanter»: de samme oppgavene som tekstoppgaver. Et regnestykke under teksten («90 − 10 =») ville
+ * røpe hvordan oppgaven løses; eleven ser bare teksten, og fasiten viser utregningen for læreren.
+ */
+const angleSumTextTasks = (level: Level, n: number): TextSpec[] =>
+  angleSumTasks(level, n).map((task) => {
+    const [, a, , b, text] = task as TaskSpec
+    return { text, solution: `${a - b}°  (${a}° − ${b}° = ${a - b}°)` }
+  })
 
 /** Tekst, fasit og eventuelt en figur appen tegner. */
 type Item = [string, string] | [string, string, AiVisual]
@@ -1031,6 +1066,293 @@ const writeLengths = byLevel(
 // ---------------------------------------------------------------------------------------
 // Regler per undertema
 
+/** Repetisjon (uten profil): som før. */
+const oldDiagramTasks = byLevel(
+    (n) =>
+      five((i): TaskSpec => {
+        const [a, b] = [vary(n, i, 4, 12), vary(n + 1, i, 3, 11)]
+        return [H, a, '+', b, `I et søylediagram har ${a} elever svart «hund» og ${b} elever «katt». Hvor mange har svart?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const b = vary(n, i, 3, 9)
+        const a = b + vary(n + 2, i, 2, 8)
+        return [H, a, '-', b, `Søylen for fotball viser ${a} og søylen for håndball viser ${b}. Hvor mange flere liker fotball?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const f = pick([2, 5, 10], i + n)
+        const k = vary(n, i, 3, 9)
+        return [H, k, '*', f, `I et piktogram betyr hver figur ${f} elever. Hvor mange elever er ${k} figurer?`]
+      }),
+  )
+
+/** Repetisjon (uten profil): som før. */
+const oldTableTasks = byLevel(
+    (n) =>
+      five((i): TaskSpec => {
+        const b = vary(n, i, 3, 12)
+        const a = b + vary(n + 1, i, 2, 10)
+        return [H, a, '-', b, `Tabellen viser at ${a} elever går til skolen og ${b} sykler. Hvor mange flere går?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const [a, b] = [vary(n, i, 12, 48), vary(n + 1, i, 11, 39)]
+        return [H, a, '+', b, `Tabellen viser at klassen leste ${a} bøker i oktober og ${b} i november. Hvor mange bøker er det til sammen?`]
+      }),
+    (n) =>
+      five((i): TaskSpec => {
+        const [a, b] = [vary(n, i, 3, 9), vary(n + 1, i, 6, 12)]
+        return [H, a, '*', b, `Tabellen viser at hver pakke har ${b} kjeks. Hvor mange kjeks er det i ${a} pakker?`]
+      }),
+  )
+
+/** Repetisjon (uten profil): som før. */
+const oldAlgebraTasks = (level: Level, n: number) =>
+  five((i): TextSpec => {
+    const [a, b] = [vary(n, i, 3, 20), vary(n + 1, i, 2, 9)]
+    if (level === 1) return { text: `Hvilket tall skjuler seg bak □?\n□ + ${b} = ${a + b}`, solution: String(a) }
+    if (level === 2) return { text: `Hvilket tall skjuler seg bak □?\n${b} · □ = ${b * a}`, solution: String(a) }
+    return { text: `Hvilket tall skjuler seg bak □?\n□ − ${b} = ${a}`, solution: String(a + b) }
+  })
+
+// ---------------------------------------------------------------------------------------
+// Regning: diagrammer og tabeller skrives som tekst, én rad per linje med | mellom kolonnene (dataformatet i
+// referansebanken). Navnene fylles ut med mellomrom, så kolonnene står rett under hverandre i monospace.
+
+/** Søylediagram med ■: «Fotball  | ■■■■■■». */
+const barChart = (rows: [string, number][]) => {
+  const width = Math.max(...rows.map(([label]) => label.length))
+  return rows.map(([label, count]) => `${label.padEnd(width)} | ${'■'.repeat(count)}`).join('\n')
+}
+
+/** Tabell med overskriftsrad: kolonnene fylles ut, så de står rett under hverandre. */
+const textTable = (rows: (string | number)[][]) => {
+  const cells = rows.map((r) => r.map(String))
+  const widths = cells[0].map((_, c) => Math.max(...cells.map((r) => r[c].length)))
+  return cells.map((r) => r.map((cell, c) => (c === r.length - 1 ? cell : cell.padEnd(widths[c]))).join(' | ')).join('\n')
+}
+
+/** Avstemninger i klassen: tittel og fire navn. */
+const VOTES: [string, string[]][] = [
+  ['favorittsport', ['Fotball', 'Håndball', 'Svømming', 'Dans']],
+  ['turmål', ['Museum', 'Skogen', 'Stranda', 'Fjellet']],
+  ['favorittis', ['Sjokolade', 'Jordbær', 'Vanilje', 'Karamell']],
+  ['frukt i matpakka', ['Eple', 'Banan', 'Pære', 'Druer']],
+  ['klassedyr', ['Kanin', 'Hamster', 'Fisk', 'Undulat']],
+]
+
+/** Fire ulike antall ■, så én søyle er tydelig størst. */
+const BAR_SETS = [[6, 3, 4, 2], [7, 2, 5, 3], [5, 8, 2, 4], [3, 6, 7, 2], [8, 4, 3, 6]]
+const barCounts = (n: number, i: number) => BAR_SETS[(i + 2 * n) % BAR_SETS.length]
+const votes = (count: number) => `${count} ${count === 1 ? 'stemme' : 'stemmer'}`
+
+/** Lese av og sammenligne (nivå 1, hver ■ er 1), legge sammen med skala (nivå 2) og vurdere en påstand med skala (nivå 3). */
+const diagramTasks = (level: Level, n: number) =>
+  five((i): TextSpec => {
+    const [title, labels] = VOTES[(i + n) % VOTES.length]
+    const counts = barCounts(n, i)
+    const scale = level === 1 ? 1 : pick([2, 5, 2, 10, 2], i + n)
+    const rows = labels.map((label, j): [string, number] => [label, counts[j]])
+    const value = (j: number) => counts[j] * scale
+    const unit = scale === 1 ? 'stemme' : 'stemmer'
+    const head = `Elevene i 4B stemte over ${title}. Hver ■ er ${scale} ${unit}.\n${barChart(rows)}\n`
+    const top = counts.indexOf(Math.max(...counts))
+    // Hvert spørsmål får sitt eget svarfelt: en tallboks, eller knapper med navnene i diagrammet (se expected).
+    if (level === 1) {
+      const j = 1 + (i % 3)
+      const [howMany, most] = [`Hvor mange stemmer fikk ${labels[j].toLowerCase()}?`, 'Hva fikk flest stemmer?']
+      return {
+        text: `${head}${howMany} ${most}`,
+        solution: `${labels[j]}: ${votes(value(j))}. ${labels[top]} fikk flest, ${votes(value(top))}.`,
+        expected: { kind: 'parts', parts: [{ question: howMany, answer: { kind: 'number', value: value(j) } }, { question: most, answer: { kind: 'choice', value: labels[top] } }] },
+      }
+    }
+    const [a, b] = [i % 2, 2 + (i % 2)]
+    if (level === 2) {
+      const question = `Hvor mange stemmer fikk ${labels[a].toLowerCase()} og ${labels[b].toLowerCase()} til sammen?`
+      return {
+        text: `${head}${question}`,
+        solution: `${value(a) + value(b)} stemmer. ${labels[a]}: ${counts[a]} · ${scale} = ${value(a)}. ${labels[b]}: ${counts[b]} · ${scale} = ${value(b)}. ${value(a)} + ${value(b)} = ${value(a) + value(b)}.`,
+        expected: { kind: 'parts', parts: [{ question, answer: { kind: 'number', value: value(a) + value(b) } }] },
+      }
+    }
+    // Påstanden glemmer skalaen (forskjellen i antall ■) i annenhver oppgave, ellers er den riktig.
+    const right = i % 2 === 1
+    const said = right ? value(0) - value(b) : counts[0] - counts[b]
+    return {
+      text: `${head}Jonas sier: «${labels[0]} fikk ${said} flere stemmer enn ${labels[b].toLowerCase()}.» Har Jonas rett? Forklar.`,
+      solution: `${right ? 'Ja' : 'Nei'}. ${labels[0]}: ${counts[0]} · ${scale} = ${value(0)}. ${labels[b]}: ${counts[b]} · ${scale} = ${value(b)}. ${value(0)} − ${value(b)} = ${value(0) - value(b)}.${right ? '' : ' Jonas har glemt at hver ■ er ' + scale + ' stemmer.'}`,
+    }
+  })
+
+/** Lese av (nivå 1), regne med priser fra tabellen (nivå 2) og finne tall som mangler med «Til sammen» (nivå 3). */
+const arithmeticTableTasks = (level: Level, n: number) =>
+  five((i): TextSpec => {
+    if (level === 1) {
+      const days = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag']
+      const visits = days.map((_, j) => vary(n + j, i, 8, 30))
+      const top = visits.indexOf(Math.max(...visits))
+      const unique = visits.filter((v) => v === visits[top]).length === 1
+      const j = (i + 1) % 5
+      const [howMany, most] = [`Hvor mange lånte bøker på ${days[j].toLowerCase()}?`, 'Hvilken dag var det flest lånere?']
+      return {
+        text: `Tabellen viser hvor mange som lånte bøker på skolebiblioteket.\n${textTable([['Dag', 'Lånere'], ...days.map((d, k) => [d, visits[k]])])}\n${howMany}${unique ? ` ${most}` : ''}`,
+        solution: `${visits[j]} lånere.${unique ? ` ${days[top]} hadde flest, ${visits[top]}.` : ''}`,
+        expected: {
+          kind: 'parts',
+          parts: [{ question: howMany, answer: { kind: 'number', value: visits[j] } }, ...(unique ? [{ question: most, answer: { kind: 'choice' as const, value: days[top] } }] : [])],
+        },
+      }
+    }
+    if (level === 2) {
+      const [child, adult] = [pick([30, 40, 50, 60], i + n), pick([70, 80, 90, 100], i + n + 1)]
+      const [adults, children] = [1 + (i % 2), vary(n, i, 2, 4)]
+      const total = adults * adult + children * child
+      return {
+        text: `Tabellen viser hva det koster å bade i svømmehallen.\n${textTable([['Billett', 'Pris'], ['Barn', `${child} kr`], ['Voksen', `${adult} kr`]])}\nFamilien Berg er ${adults} ${adults === 1 ? 'voksen' : 'voksne'} og ${children} barn. Hvor mye må familien betale?`,
+        solution: `${total} kr. ${adults} · ${adult} = ${adults * adult} og ${children} · ${child} = ${children * child}. ${adults * adult} + ${children * child} = ${total}.`,
+        expected: { kind: 'parts', parts: [{ question: 'Hvor mye må familien betale?', answer: { kind: 'number', value: total } }] },
+      }
+    }
+    const [g1, b1, g2, b2] = [vary(n, i, 6, 14), vary(n + 1, i, 5, 13), vary(n + 2, i, 4, 12), vary(n + 3, i, 6, 15)]
+    const activity = pick(['Fotball', 'Klatring', 'Orientering', 'Dans', 'Bueskyting'], i + n)
+    const other = pick(['Sykling', 'Svømming', 'Turn', 'Ski', 'Tennis'], i + n)
+    return {
+      text: `Tabellen viser hvor mange som var med på hver aktivitet på aktivitetsdagen.\n${textTable([['Aktivitet', 'Jenter', 'Gutter', 'Til sammen'], [activity, g1, '__', g1 + b1], [other, '__', b2, g2 + b2]])}\nHvilke tall skal stå i de tomme feltene? Forklar.`,
+      solution: `${activity}: ${b1} gutter, fordi ${g1 + b1} − ${g1} = ${b1}. ${other}: ${g2} jenter, fordi ${g2 + b2} − ${b2} = ${g2}.`,
+      // Én inputboks per tom rute, rad for rad.
+      expected: { kind: 'numbers', values: [b1, g2] },
+    }
+  })
+
+/** Situasjoner til de fire regneartene. */
+const STORIES: ((a: number, b: number) => [string, '+' | '-' | '*' | '/', string])[] = [
+  (a, b) => [`Emma har ${a} klistremerker. Hun får ${b} til av en venn.`, '+', 'klistremerker'],
+  (a, b) => [`Det ligger ${a + b} epler i en kasse. Klassen spiser ${b} av dem.`, '-', 'epler'],
+  (a, b) => [`Det er ${a % 8 + 2} poser med ${b % 7 + 3} boller i hver pose.`, '*', 'boller'],
+  (a, b) => [`${(a % 6 + 2) * (b % 5 + 2)} blyanter deles likt i ${b % 5 + 2} bokser.`, '/', 'blyanter i hver boks'],
+]
+const OPERATION_NAMES = { '+': 'Addisjon', '-': 'Subtraksjon', '*': 'Multiplikasjon', '/': 'Divisjon' } as const
+const SIGNS = { '+': '+', '-': '−', '*': '·', '/': ':' } as const
+
+/** «Hvilken regneart passer? Hvor mange … blir det?»: fire knapper for regnetegnet og en tallboks for svaret, rettet hver for seg. */
+const operationParts = (op: '+' | '-' | '*' | '/', noun: string, result: number): ExpectedAnswer => ({
+  kind: 'parts',
+  parts: [
+    { question: 'Hvilken regneart passer?', answer: { kind: 'operator', value: SIGNS[op] } },
+    { question: `Hvor mange ${noun.split(' ')[0]} blir det?`, answer: { kind: 'number', value: result } },
+  ],
+})
+
+/** Regnestykket og svaret i en situasjon («36 : 4 = 9»). */
+function storyFact(story: string, op: '+' | '-' | '*' | '/'): [string, number] {
+  const [x, y] = (story.match(/\d+/g) ?? []).map(Number)
+  const result = op === '+' ? x + y : op === '-' ? x - y : op === '*' ? x * y : x / y
+  return [`${x} ${SIGNS[op]} ${y} = ${result}`, result]
+}
+
+/**
+ * De fire regneartene. Uten «tekstoppgaver»: velge regneart (nivå 1), finne regnetegnet (nivå 2) og nok penger i to steg
+ * (nivå 3). Med «tekstoppgaver»: skrive regnestykket (nivå 1), to situasjoner (nivå 2) og finne feil regneart (nivå 3).
+ */
+const operationTasks = (level: Level, n: number, wordProblems: boolean) =>
+  five((i): TextSpec => {
+    const [a, b] = [vary(n, i, 12, 48), vary(n + 1, i, 5, 19)]
+    const make = (k: number) => STORIES[k % STORIES.length](a + k, b + k)
+    if (!wordProblems) {
+      if (level === 1) {
+        const [story, op, noun] = make(i + n)
+        const [fact, result] = storyFact(story, op)
+        return { text: `${story} Hvilken regneart passer? Hvor mange ${noun.split(' ')[0]} blir det?`, solution: `${OPERATION_NAMES[op]}. ${fact}. Det blir ${result} ${noun}.`, expected: operationParts(op, noun, result) }
+      }
+      if (level === 2) {
+        const op = (['+', '-', '*', '/'] as const)[(i + n) % 4]
+        const [x, y] = op === '/' ? [(a % 9 + 2) * (b % 8 + 2), b % 8 + 2] : op === '*' ? [a % 9 + 2, b % 8 + 2] : [a + 20, b]
+        const result = op === '+' ? x + y : op === '-' ? x - y : op === '*' ? x * y : x / y
+        // Appen viser fire knapper for regnetegnet og retter valget.
+        return { text: `Hvilket regnetegn mangler? Velg mellom +, −, · og :.\n${x} __ ${y} = ${result}`, solution: `${x} ${SIGNS[op]} ${y} = ${result}`, expected: { kind: 'operator', value: SIGNS[op] } }
+      }
+      const pupils = vary(n, i, 18, 26)
+      const price = pick([20, 30, 40, 50], i + n)
+      const budget = pick([600, 700, 800, 1000, 900], i + n)
+      const cost = pupils * price
+      return {
+        text: `Klassekassa i 4B har ${budget} kr. ${pupils} elever skal på tur, og bussen koster ${price} kr per elev. Er det nok penger? Hvor mye blir igjen eller mangler? Forklar.`,
+        solution:
+          cost <= budget
+            ? `Ja. ${pupils} · ${price} = ${cost} kr. ${budget} − ${cost} = ${budget - cost} kr blir igjen.`
+            : `Nei. ${pupils} · ${price} = ${cost} kr. ${cost} − ${budget} = ${cost - budget} kr mangler.`,
+      }
+    }
+    if (level === 1) {
+      const [story, op, noun] = make(i + n + 1)
+      const [fact, result] = storyFact(story, op)
+      return { text: `${story} Skriv regnestykket og svaret.`, solution: `${fact}. Det blir ${result} ${noun}.` }
+    }
+    if (level === 2) {
+      // Én situasjon per oppgave (ikke a) og b)): eleven velger regneart selv og forklarer hvorfor.
+      const [story, op, noun] = make(i + n + 2)
+      const [fact, result] = storyFact(story, op)
+      const why = { '+': 'noe kommer til', '-': 'noe blir borte', '*': 'det er like mange i hver gruppe', '/': 'noe deles likt' }[op]
+      return {
+        text: `${story} Hvilken regneart passer? Hvor mange ${noun.split(' ')[0]} blir det? Forklar hvorfor du valgte regnearten.`,
+        solution: `${OPERATION_NAMES[op]}, fordi ${why}. ${fact}. Det blir ${result} ${noun}.`,
+        expected: operationParts(op, noun, result),
+      }
+    }
+    // Feil regneart: Per legger sammen der noe tas bort.
+    const total = a + b + 20
+    return {
+      text: `Per skal løse: «Det er ${total} elever i hallen. ${b} elever går hjem. Hvor mange er igjen?» Han regner ${total} + ${b} = ${total + b}. Hva er feil? Løs oppgaven riktig.`,
+      solution: `Per har lagt sammen i stedet for å trekke fra. ${total} − ${b} = ${total - b}. Det er ${total - b} elever igjen.`,
+    }
+  })
+
+/**
+ * Utforske algebra. Uten «likhet»: □ i pluss (nivå 1), i minus og gange (nivå 2) og to like □ (nivå 3). Med «likhet»:
+ * regnestykke på begge sider (nivå 1), sant eller usant (nivå 2) og en vanlig misoppfatning om likhetstegnet (nivå 3).
+ */
+const algebraTasks = (level: Level, n: number, equality: boolean) =>
+  five((i): TextSpec => {
+    const [a, b] = [vary(n, i, 3, 20), vary(n + 1, i, 2, 9)]
+    if (!equality) {
+      // □ blir en inputboks i likningen (én per □, med samme tall), og appen retter svaret.
+      if (level === 1) return { text: `Hvilket tall skjuler seg bak □?\n□ + ${b} = ${a + b}`, solution: `□ = ${a}. ${a} + ${b} = ${a + b}.`, expected: { kind: 'numbers', values: [a] } }
+      if (level === 2) {
+        return i % 2 === 0
+          ? { text: `Hvilket tall skjuler seg bak □?\n${b} · □ = ${b * a}`, solution: `□ = ${a}. ${b} · ${a} = ${b * a}.`, expected: { kind: 'numbers', values: [a] } }
+          : { text: `Hvilket tall skjuler seg bak □?\n${a + b + 10} − □ = ${a}`, solution: `□ = ${b + 10}. ${a + b + 10} − ${b + 10} = ${a}.`, expected: { kind: 'numbers', values: [b + 10] } }
+      }
+      return {
+        text: `Samme symbol betyr samme tall. Hvilket tall skjuler seg bak □? Forklar.\n□ + □ + ${b} = ${2 * a + b}`,
+        solution: `□ = ${a}. ${2 * a + b} − ${b} = ${2 * a}, og ${a} + ${a} = ${2 * a}.`,
+        expected: { kind: 'numbers', values: [a, a] },
+      }
+    }
+    const [c, d] = [a + b, vary(n + 2, i, 2, 9)]
+    if (level === 1) {
+      return {
+        text: `Begge sider av likhetstegnet er like mye. Hvilket tall skjuler seg bak □?\n${a} + ${b} = □ + ${d}`,
+        solution: `□ = ${c - d}. ${a} + ${b} = ${c}, og ${c - d} + ${d} = ${c}.`,
+        expected: { kind: 'numbers', values: [c - d] },
+      }
+    }
+    if (level === 2) {
+      const truthy = i % 2 === 0
+      const right = truthy ? `${c - d} + ${d}` : `${c - d} + ${d + 1}`
+      return {
+        text: `Er påstanden sann eller usann? Forklar.\n${a} + ${b} = ${right}`,
+        solution: `${a} + ${b} = ${right} er ${truthy ? 'sant' : 'usant'}, fordi venstre side er ${c} og høyre side er ${truthy ? c : c + 1}.`,
+      }
+    }
+    return {
+      text: `Sara løser ${a} + ${b} = □ + ${d} og svarer at □ er ${c}. Stemmer det? Forklar hva likhetstegnet betyr.`,
+      solution: `Nei. □ = ${c - d}. Likhetstegnet betyr at begge sider er like mye. ${a} + ${b} = ${c}, og ${c - d} + ${d} = ${c}.`,
+    }
+  })
+
+
 const skillTasks: Record<string, Generator> = {
   // Tall – nivåene er tall 1–20, 1–100 og 1–1000.
   // Firesifrede tall: sifferverdi og bygge tall → dele opp, sammenligne og sortere → vilkår og endring
@@ -1186,7 +1508,9 @@ const skillTasks: Record<string, Generator> = {
       return { text: `${q}${suffix}`, solution: a }
     })
   },
-  'geo.vinkler': (level, n, profile) => (profile?.taskVariant === 'klassifisere' ? angleTypeTasks(level, n) : angleSumTasks(level, n)),
+  // Repetisjonsøkta (uten profil) har regnestykkene som før.
+  'geo.vinkler': (level, n, profile) =>
+    profile?.taskVariant === 'klassifisere' ? angleTypeTasks(level, n) : profile ? angleSumTextTasks(level, n) : angleSumTasks(level, n),
 
   // Problemløsing. Repetisjonsøktene bruker de samme grunnoppgavene som øktene de repeterer.
   'prob.regnefortellinger': storyTasks,
@@ -1301,10 +1625,17 @@ const skillTasks: Record<string, Generator> = {
         const used = vary(n + 1, i, 2, 9)
         return [H, liters * 10, '-', used, `En flaske har ${liters} liter vann (${liters * 10} dl). Du heller ut ${used} dl. Hvor mange dl er igjen?`]
       }),
+    // Nivå 3: to steg med hele liter og desiliter (desimaltall hører til økta om desimaltall i måling).
     (n) =>
       five((i): TextSpec => {
-        const x = vary(n, i, 11, 39)
-        return { text: `${dec(x / 10)} liter er hvor mange desiliter?`, solution: `${x} dl  (1 liter = 10 dl)` }
+        const liters = vary(n, i, 2, 3)
+        const glasses = vary(n + 1, i, 2, 4)
+        const size = pick([2, 3], i + n)
+        const [all, used] = [liters * 10, glasses * size]
+        return {
+          text: `En kanne har ${liters} liter saft. Du fyller ${glasses} glass som rommer ${size} dl hver. Hvor mange dl saft er igjen i kanna?`,
+          solution: `${all - used} dl  (${liters} liter = ${all} dl. ${glasses} · ${size} dl = ${used} dl. ${all} dl − ${used} dl = ${all - used} dl.)`,
+        }
       }),
   ),
   'mal.liter-dl': byLevel(
@@ -1316,20 +1647,47 @@ const skillTasks: Record<string, Generator> = {
         return [H, 10, '/', g, `Hvor mange glass på ${g} dl kan du fylle fra 1 liter (10 dl)?`]
       }),
   ),
-  // Lengde: cm og mm, m og cm, og sammenligne lengder.
-  'mal.lengde': byLevel(
-    (n) => five((i): TaskSpec => [H, vary(n, i, 2, 9), '*', 10, 'Hvor mange millimeter er så mange centimeter? (1 cm = 10 mm)']),
+  // Desimaltall i måling: liter og kilogram med én desimal (lengde med desimaltall hører til Tall og regning).
+  'mal.desimal': byLevel(
     (n) =>
       five((i): TextSpec => {
-        const [cm, mm] = [vary(n, i, 2, 15), vary(n + 1, i, 1, 9)]
-        return { text: `Hvor mange millimeter er ${cm} cm og ${mm} mm?`, solution: `${cm * 10 + mm} mm  (${cm} · 10 + ${mm})` }
+        const t = vary(n, i, 1, 9)
+        if (i % 2 === 0) {
+          const container = pick(['Et glass', 'En kopp', 'En boks'], i + n)
+          return { text: `${container} rommer ${t} dl. Skriv hvor mange liter det er, som desimaltall.`, solution: `0,${t} liter  (${t} dl er ${t} tideler av en liter)` }
+        }
+        return { text: `En ost veier 0,${t} kg. Hvor mange gram er det? Tips: 0,1 kg = 100 g.`, solution: `${t * 100} g  (0,${t} kg er ${t} tideler av en kilo. ${t} · 100 g = ${t * 100} g.)` }
       }),
     (n) =>
       five((i): TextSpec => {
-        const m = vary(n, i, 1, 5)
-        const cm = 100 * m + 10 * vary(n + 1, i, -5, 5)
-        const sign = 100 * m > cm ? '>' : 100 * m < cm ? '<' : '='
-        return { text: `Sett inn riktig tegn: <, > eller =.\n${m} m ___ ${cm} cm`, solution: `${m} m ${sign} ${cm} cm  (${m} m = ${100 * m} cm)` }
+        const [a, b] = [vary(n, i, 1, 3), vary(n + 1, i, 1, 9)]
+        if (i % 2 === 0) {
+          return { text: `Gjør om ${a},${b} liter til desiliter.`, solution: `${a * 10 + b} dl  (${a} liter er ${a * 10} dl, og 0,${b} liter er ${b} dl.)` }
+        }
+        const item = pick(['En pose poteter', 'En sekk med jord', 'En pose mel'], i + n)
+        return { text: `${item} veier ${a},${b} kg på butikkvekta. Skriv vekten i gram.`, solution: `${a * 1000 + b * 100} g  (${a} kg er ${a * 1000} g, og 0,${b} kg er ${b * 100} g.)` }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const [a, b] = [vary(n, i, 1, 3), vary(n + 1, i, 1, 9)]
+        if (i % 2 === 0) {
+          // Den andre kanna har 1–3 dl mer eller mindre (aldri like mye).
+          const dl = 10 * a + b
+          const other = dl + pick([-3, -2, -1, 1, 2, 3], i + n)
+          const [red, blue] = [`${a},${b} liter`, `${other} dl`]
+          const winner = other > dl ? ['Den blå kanna', blue] : ['Den røde kanna', red]
+          return {
+            text: `Den røde kanna rommer ${red}. Den blå kanna rommer ${blue}. Hvilken kanne rommer mest? Forklar med samme enhet.`,
+            solution: `${winner[0]} rommer mest: ${winner[1]}. ${red} er ${dl} dl, og ${Math.max(dl, other)} dl er mer enn ${Math.min(dl, other)} dl.`,
+          }
+        }
+        // Masse: 0,b kg mot gram som er 50 g mer eller mindre.
+        const grams = 100 * b + pick([-50, 50], i + n)
+        const heavy = grams > 100 * b ? `${grams} g` : `0,${b} kg`
+        return {
+          text: `En pakke veier 0,${b} kg. En annen pakke veier ${grams} g. Hvilken pakke er tyngst? Forklar med samme enhet.`,
+          solution: `Pakken på ${heavy} er tyngst. 0,${b} kg er ${100 * b} g, og ${Math.max(grams, 100 * b)} g er mer enn ${Math.min(grams, 100 * b)} g.`,
+        }
       }),
   ),
   'mal.kg-g': byLevel(
@@ -1375,7 +1733,7 @@ const skillTasks: Record<string, Generator> = {
         const start = 5 * vary(n, i, 1, 5)
         const end = start + 5 * vary(n + 3, i, 3, 6)
         const pad = (m: number) => String(m).padStart(2, '0')
-        return [H, end, '-', start, `Filmen begynner kl. 18.${pad(start)} og slutter kl. 18.${pad(end)}. Hvor mange minutter varer den?`]
+        return [H, end, '-', start, `Filmen begynner kl. 18:${pad(start)} og slutter kl. 18:${pad(end)}. Hvor mange minutter varer den?`]
       }),
     (n) =>
       five((i): TaskSpec => {
@@ -1386,124 +1744,166 @@ const skillTasks: Record<string, Generator> = {
 
   // Mønster og algoritmer
   'mon.utforske': (level, n) =>
-    five((i): TaskSpec => {
-      const d = vary(n, i, level === 1 ? 2 : 3, level === 3 ? 12 : 9)
-      const s = vary(n + 1, i, 1, 20)
-      const seq = [s, s + d, s + 2 * d, s + 3 * d]
-      return [H, seq[3], '+', d, `Tallfølgen er ${seq.join(', ')}. Hva er neste tall?`]
+    five((i): TextSpec => {
+      // Gjentakende mønstre med ●, ■ og ▲ eller fargeord. Gjentakelsen vises minst to ganger, og fasiten regnes ut.
+      const unit = PATTERN_UNITS[level][(i + n) % 5]
+      const p = unit.length
+      const shown = Array.from({ length: p === 2 ? 6 : p === 3 ? 6 : 8 }, (_, j) => unit[j % p])
+      const line = patternLine(shown)
+      // Fargemønstre tegnes som sirkler med fargenavnet under (plassen det spørres etter er alltid etter rekka).
+      const colors = isColor(unit[0]) ? { figure: { kind: 'colors' as const, items: shown } } : {}
+      const word = isColor(unit[0]) ? 'farge' : 'figur'
+      const at = (k: number) => unit[(k - 1) % p]
+      if (level === 2 && i % 2 === 1 && !isColor(unit[0])) {
+        const total = p * vary(n, i, 4, 7)
+        const item = unit.find((u) => unit.filter((x) => x === u).length === 1) ?? unit[0]
+        const each = unit.filter((x) => x === item).length
+        return {
+          text: `Ola legger figurer i dette mønsteret:\n${line}\nHan fortsetter til han har lagt ${total} figurer. Hvor mange ${item} har han lagt?`,
+          solution: `${(total / p) * each} ${item}. ${total} : ${p} = ${total / p} gjentakelser med ${each} ${item} i hver.`,
+          expected: { kind: 'number', value: (total / p) * each },
+        }
+      }
+      if (level === 3) {
+        const k = vary(n, i, 30, 60)
+        const m = k - ((k - 1) % p) - 1
+        return {
+          text: `Mønsteret fortsetter likt hele veien:\n${line}\nFinn ${word}en på plass ${k} uten å skrive hele mønsteret. Forklar hvordan du tenker.`,
+          solution: `${at(k)}. Gjentakelsen har ${p} ${word}r, og ${m} er i ${p === 4 ? 'fire' : 'tre'}gangen. Plass ${m} er den siste i en gjentakelse, så plass ${k} er nr. ${k - m} i neste.`,
+          expected: { kind: 'item', value: at(k) },
+          ...colors,
+        }
+      }
+      // Ulik plass i hver oppgave på nivået (7–12 på nivå 1, 13–24 på nivå 2).
+      const k = level === 1 ? 7 + ((n + i) % 6) : 13 + ((n + 2 * i) % 12)
+      return {
+        text: `Her gjentar ${word === 'farge' ? 'fargene' : 'figurene'} seg:\n${line}\nHvilken ${word} står på plass ${k}?${level === 2 ? ' Forklar.' : ''}`,
+        solution: `${at(k)}. Gjentakelsen er ${patternLine(unit)}.`,
+        expected: { kind: 'item', value: at(k) },
+        ...colors,
+      }
     }),
   'mon.figurtall': (level, n) =>
     five((i): TextSpec => {
       const [s, d] = [vary(n, i, 1, 5), vary(n + 1, i, 2, 4)]
       const k = level === 1 ? 4 : level === 2 ? 6 : 10
+      // Egen formulering – «Figur 1 har 2 prikker. Figur 2 har 4 prikker …» er referanseoppgaven MO2-N1-01.
+      // Appen tegner figur 1–3 som prikker (ikke figuren det spørres etter).
       return {
-        text: `Figur 1 har ${s} prikker, figur 2 har ${s + d} og figur 3 har ${s + 2 * d}. Hvor mange prikker har figur ${k}?`,
-        solution: `${s + (k - 1) * d} prikker  (det kommer ${d} til hver gang)`,
+        text: `Et figurtall vokser med like mange prikker hver gang.\nFigur 1: ${s} prikker. Figur 2: ${s + d} prikker. Figur 3: ${s + 2 * d} prikker.\nHvor mange prikker blir det i figur ${k}?`,
+        solution: `${s + (k - 1) * d} prikker. Det kommer ${d} nye prikker hver gang.`,
+        figure: { kind: 'dots', counts: [s, s + d, s + 2 * d] },
+        expected: { kind: 'number', value: s + (k - 1) * d },
       }
     }),
+  // Tekstoppgaver: et regnestykke under teksten («16 + 4 = ___») ville vist regelen eleven skal finne.
   'mon.tallfolger': byLevel(
     (n) =>
-      five((i): TaskSpec => {
+      five((i): TextSpec => {
         const d = vary(n, i, 2, 9)
         const k = vary(n + 2, i, 6, 10)
-        return [H, k, '*', d, `Tallfølgen er ${d}, ${2 * d}, ${3 * d} … Hva er tall nummer ${k}?`]
+        return { text: `Tallfølgen er ${d}, ${2 * d}, ${3 * d}, ${4 * d} … Hva er tall nummer ${k}?`, solution: `${k * d}. Regelen er +${d}.`, expected: { kind: 'number', value: k * d } }
       }),
     (n) =>
-      five((i): TaskSpec => {
+      five((i): TextSpec => {
         const d = vary(n, i, 2, 9)
         const start = vary(n, i, 60, 100)
-        const seq = [start, start - d, start - 2 * d]
-        return [H, seq[2], '-', d, `Tallfølgen er ${seq.join(', ')}. Hva er neste tall?`]
+        const seq = [start, start - d, start - 2 * d, start - 3 * d]
+        return { text: `Fortsett tallfølgen: ${seq.join(', ')}, __, __`, solution: `${start - 4 * d} og ${start - 5 * d}. Regelen er −${d}.`, answerBoxes: true, expected: { kind: 'numbers', values: [start - 4 * d, start - 5 * d] } }
       }),
     (n) =>
       five((i): TextSpec => {
-        const start = vary(n, i, 1, 4)
+        // Ikke 4: «4, 8, 16, 32» står allerede i arbeidsarket i økta.
+        const start = pick([1, 2, 3, 5, 6], i + n)
         const seq = [start, start * 2, start * 4, start * 8]
-        return { text: `Finn regelen og neste tall: ${seq.join(', ')}, ___`, solution: `${start * 16}  (tallet dobles hver gang)` }
+        return { text: `Finn regelen og neste tall: ${seq.join(', ')}, ___`, solution: `${start * 16}  (tallet dobles hver gang)`, answerBoxes: true, expected: { kind: 'numbers', values: [start * 16] } }
       }),
   ),
+  // Pseudokode i kodeformatet: én kommando per linje og fire mellomrom innrykk inne i løkker og vilkår.
   'mon.lokker': byLevel(
     (n) =>
-      five((i): TaskSpec => {
+      five((i): TextSpec => {
         const [r, st] = [vary(n, i, 2, 5), vary(n + 1, i, 2, 6)]
-        return [H, r, '*', st, `Koden sier: «Gjenta ${r} ganger: gå ${st} steg.» Hvor mange steg går figuren?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const [r, st] = [vary(n, i, 3, 8), vary(n + 1, i, 3, 9)]
-        return [H, r, '*', st, `Koden sier: «Start på 0. Gjenta ${r} ganger: legg til ${st}.» Hvilket tall ender du på?`]
+        return {
+          text: `En robot følger programmet:\ngjenta ${r} ganger:\n    gå ${st} steg fram\nHvor mange steg går roboten til sammen?`,
+          solution: `${r * st} steg. ${r} · ${st} = ${r * st}.`,
+          expected: { kind: 'number', value: r * st },
+        }
       }),
     (n) =>
       five((i): TextSpec => {
-        const [r, st] = [vary(n, i, 3, 8), vary(n + 1, i, 4, 12)]
-        return { text: `Koden sier: «Start på 100. Gjenta ${r} ganger: trekk fra ${st}.» Hvilket tall ender du på?`, solution: `${signed(100 - r * st)}  (${r} · ${st} = ${r * st}, 100 − ${r * st})` }
+        const [s, r, a, b] = [vary(n, i, 1, 10), vary(n + 1, i, 2, 4), vary(n + 2, i, 5, 9), vary(n + 3, i, 1, 4)]
+        return {
+          text: `Start med ${s}.\ngjenta ${r} ganger:\n    legg til ${a}\n    trekk fra ${b}\nHvilket tall ender programmet på?`,
+          solution: `${s + r * (a - b)}. Hver runde gir ${a} − ${b} = ${a - b} mer: ${s} + ${r} · ${a - b} = ${s + r * (a - b)}.`,
+          expected: { kind: 'number', value: s + r * (a - b) },
+        }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const [r, st] = [vary(n, i, 3, 6), vary(n + 1, i, 4, 12)]
+        const rounds = Array.from({ length: r }, (_, j) => 100 - (j + 1) * st)
+        return {
+          text: `Start med 100.\ngjenta ${r} ganger:\n    trekk fra ${st}\nSkriv tallet etter hver runde. Hvilket tall ender du på?`,
+          solution: `${rounds.join(', ')}. Tallet til slutt er ${rounds[r - 1]}.`,
+          expected: { kind: 'numbers', values: rounds },
+        }
       }),
   ),
-  'mon.vilkar': (level, n) =>
-    five((i): TextSpec => {
-      let x = vary(n, i, 9, 40)
-      const start = x
-      for (let k = 0; k < level; k++) x = x % 2 === 0 ? x / 2 : x + 1
-      return {
-        text: `Koden sier: «Hvis tallet er et partall, del det på 2. Ellers legg til 1.» Start på ${start}. Hvilket tall har du etter ${level} steg?`,
-        solution: String(x),
-      }
-    }),
+  'mon.vilkar': byLevel(
+    (n) =>
+      five((i): TextSpec => {
+        const x = vary(n, i, 9, 40)
+        const even = x % 2 === 0
+        return {
+          text: `Start med ${x}.\nhvis tallet er et partall:\n    legg til 10\nellers:\n    legg til 1\nHvilket tall får du?`,
+          solution: `${even ? x + 10 : x + 1}. ${x} er et ${even ? 'partall, så programmet legger til 10' : 'oddetall, så programmet går til «ellers» og legger til 1'}.`,
+          expected: { kind: 'number', value: even ? x + 10 : x + 1 },
+        }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        // Grensetilfellet (tallet er lik grensen) er med: da er tallet ikke større enn grensen.
+        const g = vary(n, i, 10, 20)
+        const x = g + [0, 3, -2, 0, 5][i]
+        const [a, b] = [vary(n + 1, i, 2, 6), vary(n + 2, i, 2, 6)]
+        const bigger = x > g
+        return {
+          text: `Start med ${x}.\nhvis tallet er større enn ${g}:\n    trekk fra ${a}\nellers:\n    legg til ${b}\nHvilket tall får du?`,
+          solution: `${bigger ? x - a : x + b}. ${x} er ${bigger ? '' : 'ikke '}større enn ${g}, så programmet ${bigger ? `trekker fra ${a}` : `går til «ellers» og legger til ${b}`}.`,
+          expected: { kind: 'number', value: bigger ? x - a : x + b },
+        }
+      }),
+    (n) =>
+      five((i): TextSpec => {
+        const x = vary(n, i, 12, 24)
+        const rounds: number[] = []
+        for (let v = x, j = 0; j < 4; j++) rounds.push((v = v > 20 ? v - 6 : v + 5))
+        return {
+          text: `Start med ${x}.\ngjenta 4 ganger:\n    hvis tallet er større enn 20:\n        trekk fra 6\n    ellers:\n        legg til 5\nHvilket tall har du etter hver runde?`,
+          solution: `${rounds.join(', ')}. Tallet til slutt er ${rounds[3]}. Vilkåret sjekkes på nytt i hver runde.`,
+          expected: { kind: 'numbers', values: rounds },
+        }
+      }),
+  ),
 
   // Regning
-  'reg.diagrammer': byLevel(
-    (n) =>
-      five((i): TaskSpec => {
-        const [a, b] = [vary(n, i, 4, 12), vary(n + 1, i, 3, 11)]
-        return [H, a, '+', b, `I et søylediagram har ${a} elever svart «hund» og ${b} elever «katt». Hvor mange har svart?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const b = vary(n, i, 3, 9)
-        const a = b + vary(n + 2, i, 2, 8)
-        return [H, a, '-', b, `Søylen for fotball viser ${a} og søylen for håndball viser ${b}. Hvor mange flere liker fotball?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const f = pick([2, 5, 10], i + n)
-        const k = vary(n, i, 3, 9)
-        return [H, k, '*', f, `I et piktogram betyr hver figur ${f} elever. Hvor mange elever er ${k} figurer?`]
-      }),
-  ),
-  'reg.tabeller': byLevel(
-    (n) =>
-      five((i): TaskSpec => {
-        const b = vary(n, i, 3, 12)
-        const a = b + vary(n + 1, i, 2, 10)
-        return [H, a, '-', b, `Tabellen viser at ${a} elever går til skolen og ${b} sykler. Hvor mange flere går?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const [a, b] = [vary(n, i, 12, 48), vary(n + 1, i, 11, 39)]
-        return [H, a, '+', b, `Tabellen viser at klassen leste ${a} bøker i oktober og ${b} i november. Hvor mange bøker er det til sammen?`]
-      }),
-    (n) =>
-      five((i): TaskSpec => {
-        const [a, b] = [vary(n, i, 3, 9), vary(n + 1, i, 6, 12)]
-        return [H, a, '*', b, `Tabellen viser at hver pakke har ${b} kjeks. Hvor mange kjeks er det i ${a} pakker?`]
-      }),
-  ),
-  'reg.fire-regnearter': (level, n) =>
-    five((i) => {
-      const from = ['tall.addisjon-subtraksjon', 'mult.tabell-2-10', 'div.mult-og-div', 'mult.tabell-6-9']
-      return skillTasks[pick(from, i + n)](level, n + i)[i]
-    }),
-  'reg.algebra': (level, n) =>
-    five((i): TextSpec => {
-      const [a, b] = [vary(n, i, 3, 20), vary(n + 1, i, 2, 9)]
-      if (level === 1) return { text: `Hvilket tall skjuler seg bak □?\n□ + ${b} = ${a + b}`, solution: String(a) }
-      if (level === 2) return { text: `Hvilket tall skjuler seg bak □?\n${b} · □ = ${b * a}`, solution: String(a) }
-      return { text: `Hvilket tall skjuler seg bak □?\n□ − ${b} = ${a}`, solution: String(a + b) }
-    }),
+  // Regning: med øktprofil (øktene i Regning) diagrammer og tabeller skrevet som tekst; uten profil (repetisjon) som før.
+  'reg.diagrammer': (level, n, profile) => (profile ? diagramTasks(level, n) : oldDiagramTasks(level, n)),
+  'reg.tabeller': (level, n, profile) => (profile ? arithmeticTableTasks(level, n) : oldTableTasks(level, n)),
+  'reg.fire-regnearter': (level, n, profile) =>
+    profile
+      ? operationTasks(level, n, profile.taskVariant === 'tekstoppgaver')
+      : five((i) => {
+          const from = ['tall.addisjon-subtraksjon', 'mult.tabell-2-10', 'div.mult-og-div', 'mult.tabell-6-9']
+          return skillTasks[pick(from, i + n)](level, n + i)[i]
+        }),
+  'reg.algebra': (level, n, profile) => (profile ? algebraTasks(level, n, profile.taskVariant === 'likhet') : oldAlgebraTasks(level, n)),
 }
 
 /** To oppgaver er like når teksten, eller regnestykket, er det samme. */
-export const taskKey = (task: GeneratedTask) => (isTextSpec(task) ? `${task.text}${task.figure ? `|${visualSignature(task.figure)}` : ''}` : `${task[1]} ${task[2]} ${task[3]}`)
+export const taskKey = (task: GeneratedTask) =>
+  isTextSpec(task) ? `${task.text}${task.figure && task.figure.kind !== 'dots' && task.figure.kind !== 'colors' ? `|${visualSignature(task.figure)}` : ''}` : `${task[1]} ${task[2]} ${task[3]}`
 
 function round(skills: string[], level: Level, n: number, profile?: TaskProfile): GeneratedTask[] {
   if (skills.length === 1) return skillTasks[skills[0]](level, n, profile)
@@ -2125,8 +2525,21 @@ const strategiesProfile = (area: DivisionStrategiesArea, focus: string, { taskVa
   ) as Record<Level, LevelProfile>,
 })
 
-/** Måleøkt. */
+/** Hva måleøktene ikke skal ha, per fagområde (i tillegg til det felles). */
+const MEASURE_AVOID: Record<MeasurementArea, string> = {
+  'volum-liter-desiliter': 'Milliliter, centiliter og desimaltall (desimaltall hører til økta om desimaltall i måling)',
+  'desimaltall-maling': 'Hundredeler (f.eks. 1,25 kg), desimaltall i dL eller g, og lengder (hører til Tall og regning)',
+  'kilogram-gram': 'Tonn, milligram og vekter som ikke er rimelige for tingen som veies',
+  'areal-omkrets': 'Areal i lengdeenheter, omkrets i kvadratenheter og omkrets av sammensatte figurer uten at det står hvordan delene ligger',
+  tid: 'Tid regnet som om en time har 100 minutter, klokkeslett med punktum og urskiver som ikke vises',
+}
+
+/**
+ * Måleøkt. Fagområdet styrer referansene og kontrollene på serveren; enhetene sier hva AI-en kan bruke.
+ * Underpunktene i innholdsplanen er samlet i fem fagområder (se MEASUREMENT_AREAS i ai/contract.ts).
+ */
 const measureProfile = (
+  area: MeasurementArea,
   focus: string,
   units: string[],
   operations: Operator[],
@@ -2134,11 +2547,61 @@ const measureProfile = (
   extra: Partial<TaskProfile> = {},
 ): TaskProfile => ({
   focus,
+  area,
   operations,
   units,
   formats: ['Hoderegning', 'Tekstoppgave'],
-  steps: 'Ett steg, høyst to på nivå 3. Ingen delspørsmål.',
-  avoid: ['Rene gangestykker der måleenheten ikke betyr noe', 'Kubeoppgaver som bare er gangestykker'],
+  steps: 'Nivå 1: ett steg. Nivå 2: ett eller to steg. Nivå 3: to steg, vurdering eller forklaring. Høyst to korte spørsmål i samme oppgave.',
+  avoid: [
+    MEASURE_AVOID[area],
+    'Svar uten enhet',
+    'Rene gangestykker der måleenheten ikke betyr noe',
+    'Kubeoppgaver som bare er gangestykker',
+    'Henvisninger til figurer, klokker eller bilder som ikke vises («se figuren», «se på klokka»)',
+  ],
+  figures: false,
+  levels: { 1: levels[0], 2: levels[1], 3: levels[2] },
+  ...extra,
+})
+
+/**
+ * Økt i Mønster og algoritmer. Fagområdet styrer referansene og kontrollene på serveren (se PATTERN_AREAS i
+ * ai/contract.ts). Alle oppgavene er tekstoppgaver: mønstre og pseudokode står som tekst på egne linjer.
+ */
+const patternProfile = (area: PatternArea, focus: string, levels: [LevelProfile, LevelProfile, LevelProfile], extra: Partial<TaskProfile> = {}): TaskProfile => ({
+  focus,
+  area,
+  operations: [],
+  formats: ['Tekstoppgave'],
+  steps: 'Nivå 1: ett steg med tydelig støtte. Nivå 2: finne regelen selv eller følge to kommandoer. Nivå 3: forklare, vurdere eller rette. Høyst to korte spørsmål i samme oppgave.',
+  avoid: [
+    'Regnestykker der utregningen under oppgaven avslører regelen eller programmet',
+    'Negative tall, desimaltall, brøk og måleenheter',
+    'Ekte programmeringsspråk (Scratch, Python) og kodeblokker – bare pseudokoden i kodeformatet',
+    'Henvisninger til figurer eller kode som ikke står i teksten («se figuren», «koden under»)',
+  ],
+  figures: false,
+  levels: { 1: levels[0], 2: levels[1], 3: levels[2] },
+  ...extra,
+})
+
+/**
+ * Økt i Regning. Fagområdet styrer referansene og kontrollene på serveren (se ARITHMETIC_AREAS i ai/contract.ts). Alle
+ * oppgavene er tekstoppgaver: diagrammer og tabeller står som tekst, og et regnestykke under teksten ville røpe regnearten.
+ */
+const arithmeticProfile = (area: ArithmeticArea, focus: string, operations: Operator[], levels: [LevelProfile, LevelProfile, LevelProfile], extra: Partial<TaskProfile> = {}): TaskProfile => ({
+  focus,
+  area,
+  operations,
+  formats: ['Tekstoppgave'],
+  steps: 'Nivå 1: ett steg med tydelig støtte. Nivå 2: to steg, skala eller flere kolonner. Nivå 3: vurdere, forklare eller finne feil. Høyst to korte spørsmål i samme oppgave.',
+  avoid: [
+    'Regnestykker der utregningen under oppgaven avslører regnearten',
+    'Negative tall, desimaltall, brøk og prosent',
+    'Linjediagram, sektordiagram, piktogram og bilder – bare søylediagram med ■ og tabeller skrevet som tekst',
+    'Bokstaver eller __ for ukjent tall – ukjent tall skrives alltid som □',
+    'Henvisninger til diagrammer eller tabeller som ikke står i teksten («se diagrammet», «tabellen under»)',
+  ],
   figures: false,
   levels: { 1: levels[0], 2: levels[1], 3: levels[2] },
   ...extra,
@@ -2784,8 +3247,10 @@ export const unitSpecs: UnitSpec[] = [
     title: 'Måling',
     topic: 'Måling',
     area: 'Måling',
-    description: 'Elevene måler volum, masse, areal, omkrets og tid, og bytter mellom måleenheter.',
-    // Hver økt måler én størrelse, så oppgavene og AI-en holder seg til enhetene i overskriften.
+    description: 'Elevene måler volum i liter og desiliter, bruker desimaltall i liter og kilogram, gjør om mellom kilogram og gram, finner areal og omkrets og regner med tid.',
+    // Hver økt hører til ett av de fem fagområdene i Måling (se measureProfile), så oppgavene og AI-en holder seg
+    // til enhetene i overskriften. Økt-ID-ene, rekkefølgen og antallet er de samme som før; økt 3 handlet om lengde
+    // (ikke i innholdsplanen – lengde med desimaltall hører til Tall og regning) og er nå desimaltall i måling.
     weeks: [
       {
         title: 'Uke 1 - volum og masse',
@@ -2793,16 +3258,16 @@ export const unitSpecs: UnitSpec[] = [
           p(
             'Måle volum – liter og desiliter',
             ['mal.volum', 'mal.liter-dl'],
-            measureProfile('Volum: måle i liter og desiliter, og gjøre om mellom dem (1 liter = 10 dl).', ['liter', 'dl', 'ml'], ['+', '-', '*', '/'], [
-              { title: 'Liter og dl', subtitle: 'Hele liter og desiliter.', description: 'Legge sammen og trekke fra desiliter.', numbers: 'Desiliter opp til 10, hele liter opp til 3', units: ['liter', 'dl'] },
-              { title: 'Gjøre om', subtitle: 'Liter til dl og dl til liter.', description: 'Bruke at 1 liter er 10 dl.', numbers: 'Opp til 9 liter og 90 dl', units: ['liter', 'dl'] },
-              { title: 'Sammenligne volum', subtitle: 'Liter, dl, ml og desimaltall.', description: 'Sammenligne og gjøre om med desimaltall.', numbers: 'Desimaltall med tideler (f.eks. 2,5 liter) og liter, dl og ml', units: ['liter', 'dl', 'ml'] },
+            measureProfile('volum-liter-desiliter', 'Volum: måle i liter og desiliter, og gjøre om mellom dem (1 L = 10 dL).', ['L', 'dL'], ['+', '-', '*', '/'], [
+              { title: 'Liter og dl', subtitle: 'Hele liter og desiliter.', description: 'Legge sammen og trekke fra desiliter.', numbers: 'Desiliter opp til 10, hele liter opp til 3', units: ['L', 'dL'] },
+              { title: 'Gjøre om', subtitle: 'Liter til dl og dl til liter.', description: 'Bruke at 1 liter er 10 dl.', numbers: 'Opp til 9 liter og 90 dl', units: ['L', 'dL'] },
+              { title: 'Flere steg', subtitle: 'Liter og desiliter.', description: 'Gjøre om og regne i to steg med hele liter og desiliter.', numbers: 'Hele liter opp til 3 og desiliter opp til 30', units: ['L', 'dL'] },
             ]),
           ),
           p(
             'Kilogram og gram',
             ['mal.kg-g'],
-            measureProfile('Masse: kilogram og gram, og gjøre om mellom dem (1 kg = 1000 g).', ['kg', 'g'], ['+', '*', '/'], [
+            measureProfile('kilogram-gram', 'Masse: kilogram og gram, og gjøre om mellom dem (1 kg = 1000 g).', ['kg', 'g'], ['+', '*', '/'], [
               { title: 'Kilo til gram', subtitle: 'Hele kilo.', description: 'Bruke at 1 kg er 1000 g.', numbers: '1–9 kg', units: ['kg', 'g'] },
               { title: 'Regne med gram', subtitle: 'Hele hundre gram.', description: 'Legge sammen gram.', numbers: '100–900 g', units: ['g'] },
               { title: 'Sammenligne masse', subtitle: 'Kilo og gram.', description: 'Dele opp en kilo og sammenligne kilo og gram.', numbers: 'Opp til 8000 g og 8 kg', units: ['kg', 'g'] },
@@ -2811,24 +3276,24 @@ export const unitSpecs: UnitSpec[] = [
         ],
       },
       {
-        title: 'Uke 2 - lengde og areal',
+        title: 'Uke 2 - desimaltall og areal',
         sessions: [
           p(
-            'Lengde – cm, mm og sammenligne måleenheter',
-            ['mal.lengde'],
-            measureProfile('Lengde: centimeter og millimeter, meter og centimeter, og sammenligne lengder med ulike enheter.', ['km', 'm', 'dm', 'cm', 'mm'], ['+', '*'], [
-              { title: 'Centimeter og millimeter', subtitle: 'cm og mm.', description: 'Bruke at 1 cm er 10 mm.', numbers: '1–20 cm', units: ['cm', 'mm'] },
-              { title: 'Sammenligne lengder', subtitle: 'cm og mm.', description: 'Gjøre om til samme enhet før jeg sammenligner.', numbers: 'Opp til 25 cm og 300 mm', units: ['m', 'cm', 'mm'] },
-              { title: 'Sammenligne måleenheter', subtitle: 'km, m, dm, cm og mm.', description: 'Sammenligne lengder med ulike enheter og løse lengdegåter.', numbers: 'Opp til 5 km og 5 m', units: ['km', 'm', 'dm', 'cm', 'mm'] },
+            'Desimaltall i måling – liter og kilogram',
+            ['mal.desimal'],
+            measureProfile('desimaltall-maling', 'Desimaltall med én desimal i liter og kilogram: 0,1 L = 1 dL og 0,1 kg = 100 g.', ['L', 'dL', 'kg', 'g'], ['+', '-'], [
+              { title: 'Tideler av liter og kilo', subtitle: '0,1 L = 1 dL og 0,1 kg = 100 g.', description: 'Skrive desiliter som tideler av en liter, og gjøre om tideler av en kilo til gram.', numbers: 'Én desimal: 0,1–0,9 L og 0,1–0,9 kg', units: ['L', 'dL', 'kg', 'g'] },
+              { title: 'Gjøre om', subtitle: 'Liter til dl og kilo til gram.', description: 'Gjøre om liter og kilogram med én desimal til desiliter og gram.', numbers: 'Én desimal: opp til 3,9 L og 3,9 kg', units: ['L', 'dL', 'kg', 'g'] },
+              { title: 'Sammenligne og forklare', subtitle: 'Samme enhet.', description: 'Sammenligne mengder i ulike enheter, vurdere omgjøringer og løse problemer i flere steg.', numbers: 'Én desimal: opp til 3,9 L og 0,9 kg', units: ['L', 'dL', 'kg', 'g'] },
             ]),
           ),
           p(
             'Måle areal',
             ['mal.areal'],
-            measureProfile('Areal: telle ruter på 1 cm² og regne ut areal av rektangler som rader · ruter.', ['cm²', 'm²'], ['*'], [
-              { title: 'Telle ruter', subtitle: 'Små rektangler.', description: 'Telle ruter på 1 cm².', numbers: '2–5 rader med 3–8 ruter', units: ['cm²'] },
-              { title: 'Rader og ruter', subtitle: 'Større rektangler.', description: 'Regne rader · ruter.', numbers: '2–9 rader med 3–8 ruter', units: ['cm²'] },
-              { title: 'Areal i cm² og m²', subtitle: 'Sammensatte figurer og m².', description: 'Finne areal og sammenligne cm² og m².', numbers: '2–9 rader med 3–12 ruter, og cm² og m²', units: ['cm²', 'm²'] },
+            measureProfile('areal-omkrets', 'Areal: telle ruter på 1 cm² og regne ut areal av rektangler som rader · ruter.', ['cm²', 'ruter'], ['*'], [
+              { title: 'Telle ruter', subtitle: 'Små rektangler.', description: 'Telle ruter på 1 cm².', numbers: '2–5 rader med 3–8 ruter', units: ['cm²', 'ruter'] },
+              { title: 'Rader og ruter', subtitle: 'Større rektangler.', description: 'Regne rader · ruter.', numbers: '2–9 rader med 3–8 ruter', units: ['cm²', 'ruter'] },
+              { title: 'Areal av større figurer', subtitle: 'Rektangler og sammensatte figurer.', description: 'Finne arealet av større rektangler og figurer satt sammen av ruter.', numbers: '2–9 rader med 3–12 ruter', units: ['cm²', 'ruter'] },
             ], { figures: true }),
           ),
         ],
@@ -2839,7 +3304,7 @@ export const unitSpecs: UnitSpec[] = [
           p(
             'Areal og omkrets',
             ['mal.areal-omkrets'],
-            measureProfile('Areal og omkrets av rektangler og kvadrater.', ['cm', 'cm²'], ['+', '*', '/'], [
+            measureProfile('areal-omkrets', 'Areal og omkrets av rektangler og kvadrater: areal = lengde · bredde i cm², omkrets = summen av sidene i cm.', ['cm', 'cm²'], ['+', '*', '/'], [
               { title: 'Areal', subtitle: 'Rektangler.', description: 'Lengde · bredde.', numbers: 'Sider fra 2 til 9 cm', units: ['cm', 'cm²'] },
               { title: 'Areal og omkrets', subtitle: 'Rektangler.', description: 'Skille mellom areal og omkrets.', numbers: 'Sider fra 2 til 12 cm', units: ['cm', 'cm²'] },
               { title: 'Fra omkrets til areal', subtitle: 'Kvadrater.', description: 'Finne siden ut fra omkretsen.', numbers: 'Omkrets opp til 36 cm', units: ['cm', 'cm²'] },
@@ -2848,7 +3313,7 @@ export const unitSpecs: UnitSpec[] = [
           p(
             'Tid – klokka og hvor lang tid',
             ['mal.tid'],
-            measureProfile('Tid: lese klokka, minutter, kvarter og timer, og regne ut hvor lang tid noe tar.', ['minutter', 'kvarter', 'timer'], ['+', '-', '*'], [
+            measureProfile('tid', 'Tid: lese klokka, minutter, kvarter og timer (1 time = 60 minutter), og regne ut hvor lang tid noe tar. Klokkeslett skrives digitalt med kolon, f.eks. kl. 08:45.', ['minutter', 'kvarter', 'timer'], ['+', '-', '*'], [
               { title: 'Kvarter og halvtimer', subtitle: 'Hel, halv og kvart.', description: 'Lese klokka og regne med kvarter.', numbers: '1–4 kvarter', units: ['minutter', 'kvarter'] },
               { title: 'Hvor lang tid?', subtitle: 'Minutter.', description: 'Regne ut hvor lang tid noe varer.', numbers: 'Opp til 60 minutter', units: ['minutter'] },
               { title: 'Timer og minutter', subtitle: 'Timer.', description: 'Gjøre om mellom timer og minutter.', numbers: 'Opp til 6 timer', units: ['minutter', 'timer'] },
@@ -2857,7 +3322,7 @@ export const unitSpecs: UnitSpec[] = [
         ],
       },
     ],
-    goals: ['Måle og sammenligne volum, masse og lengde.', 'Bytte mellom måleenheter.', 'Finne areal og omkrets.', 'Lese klokka og regne med tid.'],
+    goals: ['Måle volum og gjøre om mellom liter og desiliter.', 'Bruke desimaltall i liter og kilogram.', 'Gjøre om mellom kilogram og gram.', 'Finne og skille mellom areal og omkrets.', 'Lese klokka og regne med tid.'],
     levels: [
       { title: 'Måle', subtitle: 'Hele enheter.', description: 'Måle og telle.' },
       { title: 'Bytte enheter', subtitle: 'Liter, dl, kg og g.', description: 'Gjøre om mellom enheter.' },
@@ -2870,9 +3335,60 @@ export const unitSpecs: UnitSpec[] = [
     topic: 'Mønster og algoritmer',
     area: 'Tall og algebra',
     description: 'Elevene utforsker mønster, figurtall og tallfølger, og lager koder med løkker og vilkår.',
+    // Fire økter og fem fagområder: økt 1 dekker utforske mønster (hovedområde) og figurtall (tilgrensende område),
+    // de andre øktene ett fagområde hver. Økt-ID-ene, rekkefølgen og antallet er de samme som før.
     weeks: [
-      { title: 'Uke 1 - mønster', sessions: [s('Utforske mønster og figurtall', 'mon.utforske', 'mon.figurtall'), s('Mønster i tallfølger', 'mon.tallfolger')] },
-      { title: 'Uke 2 - algoritmer', sessions: [s('Koder med løkker', 'mon.lokker'), s('Koder med vilkår', 'mon.vilkar')] },
+      {
+        title: 'Uke 1 - mønster',
+        sessions: [
+          p(
+            'Utforske mønster og figurtall',
+            ['mon.utforske', 'mon.figurtall'],
+            patternProfile(
+              'utforske-monster',
+              'Gjentakende mønstre med figurene ●, ■ og ▲ og med farger: finne gjentakelsen, fortsette mønsteret og finne figuren på en plass – og figurtall som vokser med like mange hver gang.',
+              [
+                { title: 'Fortsette mønsteret', subtitle: 'Korte gjentakelser.', description: 'Finne gjentakelsen, figuren på en plass og neste figur i et figurtall.', numbers: 'Gjentakelser med 2–3 figurer, plasser opp til 12, figur 4' },
+                { title: 'Forutsi', subtitle: 'Plasser lenger ut.', description: 'Bruke lengden på gjentakelsen, telle figurer og finne regelen i et figurtall.', numbers: 'Gjentakelser med 3 figurer, plasser opp til 24, figur 6' },
+                { title: 'Forklare', subtitle: 'Langt ut i mønsteret.', description: 'Forutsi langt ut i mønsteret og i figurtallet, og forklare uten å skrive alt.', numbers: 'Gjentakelser med 4 figurer, plasser opp til 60, figur 10' },
+              ],
+              { secondaryAreas: ['figurtall'] },
+            ),
+          ),
+          p(
+            'Mønster i tallfølger',
+            ['mon.tallfolger'],
+            patternProfile('tallfolger', 'Finne og beskrive regelen i en tallfølge, fortsette følgen og finne tall som mangler.', [
+              { title: 'Fortsette tallfølgen', subtitle: 'Like store hopp.', description: 'Fortsette tallfølger og tallinjer som øker med like mye.', numbers: 'Tall opp til 100, hopp på 1–10' },
+              { title: 'Finne regelen', subtitle: 'Opp og ned.', description: 'Finne regelen selv, også når følgen synker, og finne tall som mangler.', numbers: 'Tall opp til 200' },
+              { title: 'Andre regler', subtitle: 'Gange og voksende hopp.', description: 'Følger der tallet dobles, ganges eller hoppene vokser, og forklare regelen.', numbers: 'Tall opp til 1000' },
+            ]),
+          ),
+        ],
+      },
+      {
+        title: 'Uke 2 - algoritmer',
+        sessions: [
+          p(
+            'Koder med løkker',
+            ['mon.lokker'],
+            patternProfile('koder-lokker', 'Lese, fullføre, skrive og rette korte programmer med «gjenta» i norsk pseudokode (kodeformatet i økta).', [
+              { title: 'Følge en løkke', subtitle: 'Én kommando.', description: 'Følge en løkke som gjentar én kommando.', numbers: 'Gjenta 2–5 ganger, tall opp til 30' },
+              { title: 'To kommandoer', subtitle: 'Mer i løkka.', description: 'Følge en løkke med to kommandoer og skrive kortere med «gjenta».', numbers: 'Gjenta 2–4 ganger, tall opp til 50' },
+              { title: 'Rette og lage', subtitle: 'Hver runde.', description: 'Skrive tallet etter hver runde, finne og rette feil og lage egne løkker.', numbers: 'Gjenta 3–6 ganger, tall opp til 100' },
+            ]),
+          ),
+          p(
+            'Koder med vilkår',
+            ['mon.vilkar'],
+            patternProfile('koder-vilkar', 'Lese, skrive og rette korte programmer med «hvis» og «ellers» i norsk pseudokode, også grensetilfeller og vilkår inne i en løkke.', [
+              { title: 'Hvis og ellers', subtitle: 'Partall og oddetall.', description: 'Følge et vilkår og velge riktig gren.', numbers: 'Tall opp til 50' },
+              { title: 'Grensetilfeller', subtitle: 'Større enn.', description: 'Følge vilkår med «større enn», også når tallet er lik grensen, og sortere tall.', numbers: 'Tall opp til 30' },
+              { title: 'Vilkår i løkke', subtitle: 'Sjekkes hver runde.', description: 'Følge et vilkår inne i en løkke, finne og rette feil i vilkår.', numbers: 'Tall opp til 30, 4 runder' },
+            ]),
+          ),
+        ],
+      },
     ],
     goals: ['Beskrive og fortsette mønster og figurtall.', 'Finne regelen i en tallfølge.', 'Lese og lage enkle koder med løkker og vilkår.'],
     levels: [
@@ -2887,16 +3403,84 @@ export const unitSpecs: UnitSpec[] = [
     topic: 'Regning',
     area: 'Statistikk',
     description: 'Elevene leser og tolker diagrammer og tabeller, bruker de fire regneartene og utforsker algebra.',
+    // Seks økter og fire fagområder (se arithmeticProfile): diagrammer, tabeller, to økter om de fire regneartene og to om
+    // algebra. Økt-ID-ene, rekkefølgen og antallet er de samme som før.
     weeks: [
-      { title: 'Uke 1 - diagrammer og tabeller', sessions: [s('Lese og tolke diagrammer', 'reg.diagrammer'), s('Lese og tolke tabeller', 'reg.tabeller')] },
-      { title: 'Uke 2 - de fire regneartene', sessions: [s('De fire regneartene', 'reg.fire-regnearter'), s('Velge regneart i tekstoppgaver', 'reg.fire-regnearter')] },
-      { title: 'Uke 3 - algebra', sessions: [s('Utforske algebra – finne det ukjente tallet', 'reg.algebra'), s('Likninger med symboler', 'reg.algebra')] },
+      {
+        title: 'Uke 1 - diagrammer og tabeller',
+        sessions: [
+          p(
+            'Lese og tolke diagrammer',
+            ['reg.diagrammer'],
+            arithmeticProfile('diagrammer', 'Lese og tolke søylediagrammer skrevet med ■: lese av verdier med skala, sammenligne, legge sammen og vurdere påstander.', ['+', '-', '*'], [
+              { title: 'Lese av', subtitle: 'Hver ■ er 1.', description: 'Lese av verdier og finne den største søylen.', numbers: 'Opp til 10 ■, hver ■ er 1' },
+              { title: 'Skala', subtitle: 'Hver ■ er mer enn 1.', description: 'Bruke skalaen og legge sammen verdier.', numbers: 'Hver ■ er 2, 5 eller 10' },
+              { title: 'Vurdere', subtitle: 'Påstander om diagrammet.', description: 'Vurdere påstander og finne feil, med skalaen regnet inn.', numbers: 'Hver ■ er 2, 5 eller 10' },
+            ]),
+          ),
+          p(
+            'Lese og tolke tabeller',
+            ['reg.tabeller'],
+            arithmeticProfile('tabeller', 'Lese og tolke tabeller skrevet som tekst: finne verdier i rader og kolonner, regne med verdiene og finne tall som mangler.', ['+', '-', '*'], [
+              { title: 'Lese av', subtitle: 'To kolonner.', description: 'Finne verdier i en tabell og sammenligne.', numbers: 'Tall opp til 30' },
+              { title: 'Regne med tabellen', subtitle: 'Priser og antall.', description: 'Bruke verdier fra tabellen i regnestykker med to steg.', numbers: 'Priser opp til 100 kr' },
+              { title: 'Tall som mangler', subtitle: '«Til sammen».', description: 'Bruke sammenhengen mellom kolonnene til å finne tall som mangler, og forklare.', numbers: 'Tall opp til 30' },
+            ]),
+          ),
+        ],
+      },
+      {
+        title: 'Uke 2 - de fire regneartene',
+        sessions: [
+          p(
+            'De fire regneartene',
+            ['reg.fire-regnearter'],
+            arithmeticProfile('fire-regnearter', 'Velge og bruke riktig regneart: addisjon, subtraksjon, multiplikasjon og divisjon, også overslag.', ['+', '-', '*', '/'], [
+              { title: 'Velge regneart', subtitle: 'Én situasjon.', description: 'Si hvilken regneart som passer, og regne ut.', numbers: 'Tall opp til 100' },
+              { title: 'Regnetegnet', subtitle: 'Alle fire.', description: 'Finne regnetegnet som gjør regnestykket riktig.', numbers: 'Tall opp til 100' },
+              { title: 'To steg', subtitle: 'Nok penger?', description: 'Løse problemer med to regnearter og tolke svaret.', numbers: 'Tall opp til 1000' },
+            ]),
+          ),
+          p(
+            'Velge regneart i tekstoppgaver',
+            ['reg.fire-regnearter'],
+            arithmeticProfile('fire-regnearter', 'Velge regneart i tekstoppgaver: skrive regnestykket som passer situasjonen, og finne feil regneart.', ['+', '-', '*', '/'], [
+              { title: 'Skrive regnestykket', subtitle: 'Én situasjon.', description: 'Skrive regnestykket som passer situasjonen, og svaret.', numbers: 'Tall opp til 100' },
+              { title: 'To situasjoner', subtitle: 'Ulike regnearter.', description: 'Velge riktig regneart i to ulike situasjoner.', numbers: 'Tall opp til 100' },
+              { title: 'Finne feil', subtitle: 'Feil regneart.', description: 'Finne og rette feil valg av regneart.', numbers: 'Tall opp til 100' },
+            ], { taskVariant: 'tekstoppgaver' }),
+          ),
+        ],
+      },
+      {
+        title: 'Uke 3 - algebra',
+        sessions: [
+          p(
+            'Utforske algebra – finne det ukjente tallet',
+            ['reg.algebra'],
+            arithmeticProfile('algebra', 'Finne det ukjente tallet □ i pluss-, minus- og gangestykker, også når □ står flere ganger.', ['+', '-', '*'], [
+              { title: 'Ukjent i pluss', subtitle: '□ + 7 = 15.', description: 'Finne □ i et enkelt pluss-stykke.', numbers: 'Tall opp til 30' },
+              { title: 'Minus og gange', subtitle: '30 − □ = 12.', description: 'Finne □ i minus- og gangestykker.', numbers: 'Tall opp til 100' },
+              { title: 'To like □', subtitle: '□ + □ + 4 = 18.', description: 'Samme symbol betyr samme tall.', numbers: 'Tall opp til 50' },
+            ]),
+          ),
+          p(
+            'Likninger med symboler',
+            ['reg.algebra'],
+            arithmeticProfile('algebra', 'Likhetstegnet betyr «like mye som»: regnestykker på begge sider, sant eller usant, og □ som ukjent tall.', ['+', '-'], [
+              { title: 'Like mye', subtitle: 'Begge sider.', description: 'Finne □ når det står et regnestykke på begge sider.', numbers: 'Tall opp til 30' },
+              { title: 'Sant eller usant', subtitle: 'Likhetstegnet.', description: 'Vurdere om begge sider er like mye.', numbers: 'Tall opp til 30' },
+              { title: 'Vanlige feil', subtitle: 'Likhetstegnet er ikke «svaret er».', description: 'Vurdere en vanlig feil og forklare hva likhetstegnet betyr.', numbers: 'Tall opp til 30' },
+            ], { taskVariant: 'likhet' }),
+          ),
+        ],
+      },
     ],
     goals: ['Lese og tolke diagrammer og tabeller.', 'Velge og bruke riktig regneart.', 'Finne ukjente tall i enkle likninger.'],
     levels: [
       { title: 'Lese av', subtitle: 'Diagrammer og tabeller.', description: 'Finne hvor mange.' },
       { title: 'Sammenligne', subtitle: 'Forskjeller og summer.', description: 'Velge regneart.' },
-      { title: 'Tolke og regne', subtitle: 'Piktogram og likninger.', description: 'Forklare hvordan jeg tenker.' },
+      { title: 'Tolke og regne', subtitle: 'Påstander og likninger.', description: 'Forklare hvordan jeg tenker.' },
     ],
   },
   {

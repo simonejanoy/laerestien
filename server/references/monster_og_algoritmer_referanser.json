@@ -1,0 +1,909 @@
+{
+  "schemaVersion": 1,
+  "topic": "monster-og-algoritmer",
+  "description": "Referansebank for AI-generering av ekstraoppgaver i Mønster og algoritmer. Referansene styrer fagområde, innhold, oppgavetype, tallområde, nivå, språk og representasjon. De skal ikke vises direkte til elever. Ingen eksterne oppgaveark er brukt. Oppgavene er skrevet for Lærestien. Progresjon og oppgavetyper følger innholdsplanen for 4. trinn.",
+  "codeFormat": "Enkel norsk pseudokode. Kommandoer: gjenta N ganger:, hvis ...:, ellers:, legg til, trekk fra, gang tallet med, si «...», tegn, gå fram, snu til høyre. Innrykk på fire mellomrom viser hva som er inne i løkka eller vilkåret.",
+  "referenceCount": 45,
+  "references": [
+    {
+      "id": "MO1-N1-01",
+      "topic": "monster-og-algoritmer",
+      "area": "utforske-monster",
+      "areaTitle": "Utforske mønster",
+      "level": 1,
+      "title": "Hvilken figur?",
+      "format": "gjentakende-monster",
+      "purpose": "Eleven fortsetter et enkelt gjentakende mønster.",
+      "studentText": "Se på mønsteret:\n● ■ ● ■ ● ■\nMønsteret fortsetter på samme måte. Hvilken figur er nummer 7?",
+      "solution": "●.",
+      "workedSolution": "Mønsteret gjentar ● ■. Alle oddetallsplasser er ●, og 7 er et oddetall.",
+      "representationHint": null,
+      "teacherNote": "Eleven kan fortsette å tegne til plass 7.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO1-N1-02",
+      "topic": "monster-og-algoritmer",
+      "area": "utforske-monster",
+      "areaTitle": "Utforske mønster",
+      "level": 1,
+      "title": "Finn gjentakelsen",
+      "format": "gjentakende-monster",
+      "purpose": "Eleven finner delen som gjentas og fortsetter mønsteret.",
+      "studentText": "rød, blå, blå, rød, blå, blå, rød\nHvilke farger gjentas? Skriv de tre neste fargene.",
+      "solution": "Rød, blå, blå gjentas. De tre neste er blå, blå, rød.",
+      "workedSolution": "Etter rød kommer blå, blå, og så starter gjentakelsen på nytt.",
+      "representationHint": null,
+      "teacherNote": "Be eleven ringe rundt hver gjentakelse.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO1-N1-03",
+      "topic": "monster-og-algoritmer",
+      "area": "utforske-monster",
+      "areaTitle": "Utforske mønster",
+      "level": 1,
+      "title": "Lag ditt eget mønster",
+      "format": "lag-oppgave",
+      "purpose": "Eleven lager et gjentakende mønster med en gitt lengde på gjentakelsen.",
+      "studentText": "Lag et mønster med to ulike figurer, der en gruppe på tre figurer gjentas. Skriv mønsteret slik at gruppen vises minst tre ganger.",
+      "solution": "For eksempel ● ● ■ ● ● ■ ● ● ■. Gruppen må ha tre figurer og to ulike figurer.",
+      "workedSolution": "Kontroller at den samme gruppen gjentas likt hver gang.",
+      "representationHint": null,
+      "teacherNote": "Godta alle riktige mønstre.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO1-N2-01",
+      "topic": "monster-og-algoritmer",
+      "area": "utforske-monster",
+      "areaTitle": "Utforske mønster",
+      "level": 2,
+      "title": "Figur nummer 20",
+      "format": "forutsi",
+      "purpose": "Eleven bruker lengden på gjentakelsen til å finne en figur langt ut i mønsteret.",
+      "studentText": "▲ ▲ ● ▲ ▲ ● ▲ ▲ ●\nMønsteret fortsetter på samme måte. Hvilken figur er nummer 20? Forklar.",
+      "solution": "▲.",
+      "workedSolution": "Gjentakelsen har 3 figurer. ● står på plassene 3, 6, 9 og så videre, altså tregangen. Plass 18 er ●, plass 19 er ▲ og plass 20 er ▲.",
+      "representationHint": null,
+      "teacherNote": "Godta at eleven skriver mønsteret helt ut, men oppmuntre til å bruke tregangen.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO1-N2-02",
+      "topic": "monster-og-algoritmer",
+      "area": "utforske-monster",
+      "areaTitle": "Utforske mønster",
+      "level": 2,
+      "title": "Hvor mange av hver?",
+      "format": "telle-i-monster",
+      "purpose": "Eleven teller hvor mange av hver figur det blir i et mønster av gitt lengde.",
+      "studentText": "● ■ ■ ● ■ ■\nMønsteret fortsetter til det er 15 figurer til sammen. Hvor mange ● og hvor mange ■ er det?",
+      "solution": "5 ● og 10 ■.",
+      "workedSolution": "Hver gjentakelse har 3 figurer. 15 : 3 = 5 gjentakelser, med 1 ● og 2 ■ i hver.",
+      "representationHint": null,
+      "teacherNote": "Kontroll: 5 + 10 = 15.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO1-N2-03",
+      "topic": "monster-og-algoritmer",
+      "area": "utforske-monster",
+      "areaTitle": "Utforske mønster",
+      "level": 2,
+      "title": "Finn feilen",
+      "format": "feilvurdering",
+      "purpose": "Eleven finner hvor et mønster brytes.",
+      "studentText": "● ■ ▲ ● ■ ▲ ● ▲ ■ ● ■ ▲\nTo figurer som står ved siden av hverandre, har byttet plass. Hvilke plasser er det?",
+      "solution": "Plass 8 og 9. Der skulle det stått ■ ▲, men det står ▲ ■.",
+      "workedSolution": "Gjentakelsen er ● ■ ▲. Plass 7 er ●, så plass 8 skal være ■ og plass 9 skal være ▲.",
+      "representationHint": null,
+      "teacherNote": "Be eleven nummerere plassene.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO1-N3-01",
+      "topic": "monster-og-algoritmer",
+      "area": "utforske-monster",
+      "areaTitle": "Utforske mønster",
+      "level": 3,
+      "title": "Figur nummer 50",
+      "format": "forutsi",
+      "purpose": "Eleven forutsier en figur langt ut i mønsteret og forklarer uten å skrive alt.",
+      "studentText": "● ● ■ ▲ ● ● ■ ▲\nMønsteret fortsetter på samme måte. Hvilken figur er nummer 50? Forklar uten å skrive alle figurene.",
+      "solution": "●.",
+      "workedSolution": "Gjentakelsen har 4 figurer. Plass 48 er den siste i en gjentakelse, fordi 48 er i firegangen. Plass 49 og 50 er de to første i neste gjentakelse: ● og ●.",
+      "representationHint": null,
+      "teacherNote": "Forklaringen skal bruke firegangen.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO1-N3-02",
+      "topic": "monster-og-algoritmer",
+      "area": "utforske-monster",
+      "areaTitle": "Utforske mønster",
+      "level": 3,
+      "title": "To mønstre",
+      "format": "sammenligne-monstre",
+      "purpose": "Eleven sammenligner to mønstre og finner felles plasser.",
+      "studentText": "Mønster A: ● ■ ● ■ ● ■\nMønster B: ● ■ ■ ● ■ ■\nBegge mønstrene fortsetter på samme måte. På hvilke plasser fra 1 til 12 har begge mønstrene ●? Forklar.",
+      "solution": "Plass 1 og plass 7.",
+      "workedSolution": "A har ● på oddetallsplassene 1, 3, 5, 7, 9 og 11. B har ● på plassene 1, 4, 7 og 10. Felles: 1 og 7.",
+      "representationHint": null,
+      "teacherNote": "Eleven kan skrive opp begge mønstrene med nummer.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO1-N3-03",
+      "topic": "monster-og-algoritmer",
+      "area": "utforske-monster",
+      "areaTitle": "Utforske mønster",
+      "level": 3,
+      "title": "Har Jonas rett?",
+      "format": "vurder-pastand",
+      "purpose": "Eleven vurderer en generell påstand om et mønster.",
+      "studentText": "Se på mønsteret:\n● ■ ■ ● ■ ■ ● ■ ■\nMønsteret fortsetter på samme måte. Jonas sier: «Alle figurer på en plass i tregangen er ■.» Har Jonas rett? Forklar.",
+      "solution": "Ja. Gjentakelsen har 3 figurer, og den siste i hver gjentakelse er ■. De siste står på plassene 3, 6, 9 og så videre.",
+      "workedSolution": "● står på plassene 1, 4, 7, 10. Ingen av dem er i tregangen.",
+      "representationHint": null,
+      "teacherNote": "Påstanden er sann. Det er også nyttig at eleven ser at påstander kan være sanne.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO2-N1-01",
+      "topic": "monster-og-algoritmer",
+      "area": "figurtall",
+      "areaTitle": "Figurtall",
+      "level": 1,
+      "title": "Neste figur",
+      "format": "figurtall",
+      "purpose": "Eleven fortsetter et figurtall som øker med samme antall.",
+      "studentText": "Figur 1 har 2 prikker. Figur 2 har 4 prikker. Figur 3 har 6 prikker. Hvor mange prikker har figur 4?",
+      "solution": "8 prikker.",
+      "workedSolution": "Det kommer 2 nye prikker for hver figur.",
+      "representationHint": null,
+      "teacherNote": "Eleven kan tegne figurene som to rader.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO2-N1-02",
+      "topic": "monster-og-algoritmer",
+      "area": "figurtall",
+      "areaTitle": "Figurtall",
+      "level": 1,
+      "title": "Kvadrattall",
+      "format": "figurtall",
+      "purpose": "Eleven tegner neste kvadrattall og teller prikkene.",
+      "studentText": "Figur 1 er 1 prikk. Figur 2 har 2 rader med 2 prikker. Figur 3 har 3 rader med 3 prikker. Tegn figur 4. Hvor mange prikker har den?",
+      "solution": "16 prikker. 4 rader med 4 prikker.",
+      "workedSolution": "4 · 4 = 16.",
+      "representationHint": "Figur 2: 2 rader med 2 prikker. Figur 3: 3 rader med 3 prikker.",
+      "teacherNote": "Tegningen skal være et kvadrat.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO2-N1-03",
+      "topic": "monster-og-algoritmer",
+      "area": "figurtall",
+      "areaTitle": "Figurtall",
+      "level": 1,
+      "title": "Fyrstikktrekanter",
+      "format": "tabell",
+      "purpose": "Eleven fyller ut en tabell for et figurtall.",
+      "studentText": "Du legger trekanter av fyrstikker på rad, slik at to trekanter ved siden av hverandre deler én fyrstikk. Figur 1 har 1 trekant og 3 fyrstikker. Figur 2 har 2 trekanter og 5 fyrstikker. Figur 3 har 3 trekanter og 7 fyrstikker. Hvor mange fyrstikker har figur 4 og figur 5?",
+      "solution": "Figur 4: 9 fyrstikker. Figur 5: 11 fyrstikker.",
+      "workedSolution": "Det kommer 2 nye fyrstikker for hver nye trekant.",
+      "representationHint": "Tabell med kolonnene «Figur» og «Fyrstikker».",
+      "teacherNote": "Tabell: figur 1–5 og 3, 5, 7, 9, 11 fyrstikker.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO2-N2-01",
+      "topic": "monster-og-algoritmer",
+      "area": "figurtall",
+      "areaTitle": "Figurtall",
+      "level": 2,
+      "title": "Figur 10",
+      "format": "figurtall-regel",
+      "purpose": "Eleven finner en regel og bruker den for en figur langt ut.",
+      "studentText": "Figur 1 har 4 klosser. Figur 2 har 7 klosser. Figur 3 har 10 klosser. Hver ny figur får like mange nye klosser. Hvor mange klosser har figur 10? Forklar regelen.",
+      "solution": "31 klosser.",
+      "workedSolution": "Det kommer 3 nye klosser for hver figur. Fra figur 1 til figur 10 er det 9 økninger. 4 + 9 · 3 = 4 + 27 = 31.",
+      "representationHint": null,
+      "teacherNote": "Godta at eleven fortsetter tabellen til figur 10.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO2-N2-02",
+      "topic": "monster-og-algoritmer",
+      "area": "figurtall",
+      "areaTitle": "Figurtall",
+      "level": 2,
+      "title": "Trekanttall",
+      "format": "figurtall",
+      "purpose": "Eleven finner et trekanttall ved å legge til en ny rad.",
+      "studentText": "Figur 1 har 1 prikk. Figur 2 har 1 + 2 = 3 prikker. Figur 3 har 1 + 2 + 3 = 6 prikker. Hvor mange prikker har figur 5?",
+      "solution": "15 prikker.",
+      "workedSolution": "Figur 4: 6 + 4 = 10. Figur 5: 10 + 5 = 15.",
+      "representationHint": null,
+      "teacherNote": "Hver ny figur får en ny rad som er én prikk lengre.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO2-N2-03",
+      "topic": "monster-og-algoritmer",
+      "area": "figurtall",
+      "areaTitle": "Figurtall",
+      "level": 2,
+      "title": "Hvilken figur?",
+      "format": "ukjent-figur",
+      "purpose": "Eleven finner figurnummeret ut fra antallet.",
+      "studentText": "Figur 1 har 5 prikker. Figur 2 har 10 prikker. Figur 3 har 15 prikker. Hvilken figur har 40 prikker?",
+      "solution": "Figur 8.",
+      "workedSolution": "Antallet er figurnummeret · 5. 8 · 5 = 40.",
+      "representationHint": null,
+      "teacherNote": "Eleven kan telle i femmere.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO2-N3-01",
+      "topic": "monster-og-algoritmer",
+      "area": "figurtall",
+      "areaTitle": "Figurtall",
+      "level": 3,
+      "title": "Hvem har rett?",
+      "format": "vurder-pastand",
+      "purpose": "Eleven vurderer to svar på et figurtall og forklarer regelen.",
+      "studentText": "Fyrstikktrekanter på rad: figur 1 har 3 fyrstikker, figur 2 har 5 og figur 3 har 7. Lise sier at figur 6 har 13 fyrstikker. Per sier at figur 6 har 12. Hvem har rett? Forklar.",
+      "solution": "Lise har rett. Figur 6 har 13 fyrstikker.",
+      "workedSolution": "Det kommer 2 nye for hver figur: 3, 5, 7, 9, 11, 13. Eller: figurnummeret · 2 + 1 = 13.",
+      "representationHint": null,
+      "teacherNote": "Per har trolig regnet 6 · 2 og glemt den første fyrstikken.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO2-N3-02",
+      "topic": "monster-og-algoritmer",
+      "area": "figurtall",
+      "areaTitle": "Figurtall",
+      "level": 3,
+      "title": "Er det et kvadrattall?",
+      "format": "forklaring",
+      "purpose": "Eleven avgjør om et tall er et kvadrattall og forklarer med rader.",
+      "studentText": "Er 36 et kvadrattall? Er 40 et kvadrattall? Forklar med rader og prikker.",
+      "solution": "36 er et kvadrattall, fordi 6 rader med 6 prikker er 36. 40 er ikke et kvadrattall, fordi 6 · 6 = 36 og 7 · 7 = 49.",
+      "workedSolution": "Et kvadrattall kan legges som et kvadrat med like mange rader som prikker i hver rad.",
+      "representationHint": null,
+      "teacherNote": "40 kan legges som rektangel, men ikke som kvadrat.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO2-N3-03",
+      "topic": "monster-og-algoritmer",
+      "area": "figurtall",
+      "areaTitle": "Figurtall",
+      "level": 3,
+      "title": "Lag et figurtall",
+      "format": "lag-oppgave",
+      "purpose": "Eleven lager et figurtall etter en regel og bruker regelen langt ut.",
+      "studentText": "Lag et figurtall der figur 1 har 2 prikker, og hver ny figur får 4 flere prikker. Skriv hvor mange prikker figur 1, 2 og 3 har. Hvor mange prikker har figur 10? Forklar.",
+      "solution": "Figur 1: 2, figur 2: 6, figur 3: 10. Figur 10: 38 prikker.",
+      "workedSolution": "Fra figur 1 til figur 10 er det 9 økninger på 4. 2 + 9 · 4 = 2 + 36 = 38.",
+      "representationHint": null,
+      "teacherNote": "Tegningene kan variere, men antallet må stemme.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO3-N1-01",
+      "topic": "monster-og-algoritmer",
+      "area": "tallfolger",
+      "areaTitle": "Mønster i tallfølger",
+      "level": 1,
+      "title": "Hopp på 5",
+      "format": "tallfolge",
+      "purpose": "Eleven fortsetter en tallfølge som øker med 5.",
+      "studentText": "Skriv de to neste tallene: 5, 10, 15, 20, __, __",
+      "solution": "25 og 30.",
+      "workedSolution": "Hvert tall er 5 mer enn tallet før.",
+      "representationHint": null,
+      "teacherNote": "Regelen er +5.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO3-N1-02",
+      "topic": "monster-og-algoritmer",
+      "area": "tallfolger",
+      "areaTitle": "Mønster i tallfølger",
+      "level": 1,
+      "title": "Telle ned",
+      "format": "tallfolge",
+      "purpose": "Eleven fortsetter en synkende tallfølge.",
+      "studentText": "Skriv de to neste tallene: 50, 46, 42, 38, __, __",
+      "solution": "34 og 30.",
+      "workedSolution": "Hvert tall er 4 mindre enn tallet før.",
+      "representationHint": null,
+      "teacherNote": "Regelen er −4.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO3-N1-03",
+      "topic": "monster-og-algoritmer",
+      "area": "tallfolger",
+      "areaTitle": "Mønster i tallfølger",
+      "level": 1,
+      "title": "Finn regelen",
+      "format": "tallfolge-regel",
+      "purpose": "Eleven beskriver regelen og finner neste tall.",
+      "studentText": "3, 6, 9, 12\nHva er regelen i tallfølgen? Hva er det neste tallet?",
+      "solution": "Regelen er +3. Neste tall er 15.",
+      "workedSolution": "Hvert tall er 3 mer enn tallet før. Tallene er også tregangen.",
+      "representationHint": null,
+      "teacherNote": "Godta begge beskrivelsene.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO3-N2-01",
+      "topic": "monster-og-algoritmer",
+      "area": "tallfolger",
+      "areaTitle": "Mønster i tallfølger",
+      "level": 2,
+      "title": "Tall som mangler",
+      "format": "manglende-tall",
+      "purpose": "Eleven finner manglende tall i en tallfølge.",
+      "studentText": "Finn tallene som mangler: 7, 12, __, 22, __, 32",
+      "solution": "17 og 27.",
+      "workedSolution": "Regelen er +5. 12 + 5 = 17 og 22 + 5 = 27.",
+      "representationHint": null,
+      "teacherNote": "Eleven må finne regelen fra tallene som står der.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO3-N2-02",
+      "topic": "monster-og-algoritmer",
+      "area": "tallfolger",
+      "areaTitle": "Mønster i tallfølger",
+      "level": 2,
+      "title": "Dobling",
+      "format": "tallfolge-regel",
+      "purpose": "Eleven finner en regel med gange og fortsetter følgen.",
+      "studentText": "2, 4, 8, 16, __, __\nHva er regelen? Skriv de to neste tallene.",
+      "solution": "Regelen er · 2. Neste tall er 32 og 64.",
+      "workedSolution": "Hvert tall er dobbelt så stort som tallet før.",
+      "representationHint": null,
+      "teacherNote": "Vanlig feil er å tro at regelen er +2 eller +4.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO3-N2-03",
+      "topic": "monster-og-algoritmer",
+      "area": "tallfolger",
+      "areaTitle": "Mønster i tallfølger",
+      "level": 2,
+      "title": "Kommer 40?",
+      "format": "vurdere",
+      "purpose": "Eleven avgjør om et tall finnes i en tallfølge.",
+      "studentText": "Tallfølgen starter på 4 og øker med 6 hver gang: 4, 10, 16, …\nKommer tallet 40 i tallfølgen? Forklar.",
+      "solution": "Ja. 4, 10, 16, 22, 28, 34, 40.",
+      "workedSolution": "Eller: 40 − 4 = 36, og 36 er i seksgangen.",
+      "representationHint": null,
+      "teacherNote": "Godta at eleven fortsetter følgen.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO3-N3-01",
+      "topic": "monster-og-algoritmer",
+      "area": "tallfolger",
+      "areaTitle": "Mønster i tallfølger",
+      "level": 3,
+      "title": "Voksende hopp",
+      "format": "tallfolge-regel",
+      "purpose": "Eleven finner en regel der hoppene øker.",
+      "studentText": "1, 2, 4, 7, 11, 16, __, __\nSkriv de to neste tallene og forklar regelen.",
+      "solution": "22 og 29.",
+      "workedSolution": "Hoppene er +1, +2, +3, +4, +5. Neste hopp er +6 og så +7. 16 + 6 = 22 og 22 + 7 = 29.",
+      "representationHint": null,
+      "teacherNote": "Regelen er at hoppet blir 1 større hver gang.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO3-N3-02",
+      "topic": "monster-og-algoritmer",
+      "area": "tallfolger",
+      "areaTitle": "Mønster i tallfølger",
+      "level": 3,
+      "title": "Har Mia rett?",
+      "format": "vurder-pastand",
+      "purpose": "Eleven vurderer en påstand om alle tallene i en tallfølge.",
+      "studentText": "Tallfølgen 3, 7, 11, 15, … fortsetter med +4. Mia sier: «Alle tallene i følgen blir oddetall.» Har Mia rett? Forklar.",
+      "solution": "Ja. Følgen starter på et oddetall, og når vi legger til 4, som er et partall, blir svaret fortsatt et oddetall.",
+      "workedSolution": "19, 23, 27 er også oddetall.",
+      "representationHint": null,
+      "teacherNote": "Forklaringen skal gjelde alle tallene, ikke bare de neste.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO3-N3-03",
+      "topic": "monster-og-algoritmer",
+      "area": "tallfolger",
+      "areaTitle": "Mønster i tallfølger",
+      "level": 3,
+      "title": "To følger, samme tall",
+      "format": "lag-oppgave",
+      "purpose": "Eleven lager tallfølger med ulike regler som treffer samme tall.",
+      "studentText": "Lag to tallfølger med ulike regler, der det tredje tallet i begge følgene er 12. Skriv de fire første tallene og regelen for hver følge.",
+      "solution": "For eksempel 4, 8, 12, 16 med regelen +4, og 3, 6, 12, 24 med regelen · 2. Det tredje tallet må være 12, og reglene må være ulike.",
+      "workedSolution": "Kontroller hver følge ved å bruke regelen fra første tall.",
+      "representationHint": null,
+      "teacherNote": "Godta alle riktige følger.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO4-N1-01",
+      "topic": "monster-og-algoritmer",
+      "area": "koder-lokker",
+      "areaTitle": "Koder med løkker",
+      "level": 1,
+      "title": "Hva blir tallet?",
+      "format": "lese-lokke",
+      "purpose": "Eleven følger en enkel løkke som gjentar én kommando.",
+      "studentText": "Start med 0.\ngjenta 4 ganger:\n    legg til 2\nHva er tallet til slutt?",
+      "solution": "8.",
+      "workedSolution": "0 + 2 = 2, 4, 6, 8. Kommandoen gjøres 4 ganger.",
+      "representationHint": null,
+      "teacherNote": "Eleven kan skrive tallet etter hver runde.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO4-N1-02",
+      "topic": "monster-og-algoritmer",
+      "area": "koder-lokker",
+      "areaTitle": "Koder med løkker",
+      "level": 1,
+      "title": "Klapp og stamp",
+      "format": "lese-lokke",
+      "purpose": "Eleven følger en løkke med to kommandoer.",
+      "studentText": "gjenta 3 ganger:\n    klapp\n    stamp\nSkriv alt som skjer, i riktig rekkefølge.",
+      "solution": "klapp, stamp, klapp, stamp, klapp, stamp.",
+      "workedSolution": "Begge kommandoene inne i løkka gjentas 3 ganger.",
+      "representationHint": null,
+      "teacherNote": "Eleven kan gjøre det med kroppen.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO4-N1-03",
+      "topic": "monster-og-algoritmer",
+      "area": "koder-lokker",
+      "areaTitle": "Koder med løkker",
+      "level": 1,
+      "title": "Skriv kortere",
+      "format": "skrive-lokke",
+      "purpose": "Eleven bytter ut gjentatte kommandoer med en løkke.",
+      "studentText": "Programmet er:\ngå fram\ngå fram\ngå fram\ngå fram\ngå fram\nSkriv det samme programmet kortere ved å bruke «gjenta».",
+      "solution": "gjenta 5 ganger:\n    gå fram",
+      "workedSolution": "Kommandoen «gå fram» står 5 ganger, så løkka gjentas 5 ganger.",
+      "representationHint": null,
+      "teacherNote": "Innrykk viser hva som er inne i løkka.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO4-N2-01",
+      "topic": "monster-og-algoritmer",
+      "area": "koder-lokker",
+      "areaTitle": "Koder med løkker",
+      "level": 2,
+      "title": "To kommandoer i løkka",
+      "format": "lese-lokke",
+      "purpose": "Eleven følger en løkke med to regnekommandoer.",
+      "studentText": "Start med 10.\ngjenta 3 ganger:\n    legg til 5\n    trekk fra 2\nHva er tallet til slutt?",
+      "solution": "19.",
+      "workedSolution": "Hver runde: +5 og −2, altså 3 mer. 10 → 13 → 16 → 19.",
+      "representationHint": null,
+      "teacherNote": "Eleven kan skrive tallet etter hver kommando.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO4-N2-02",
+      "topic": "monster-og-algoritmer",
+      "area": "koder-lokker",
+      "areaTitle": "Koder med løkker",
+      "level": 2,
+      "title": "Robot rundt et kvadrat",
+      "format": "fullfore-lokke",
+      "purpose": "Eleven fullfører en løkke som får en robot til å gå rundt et kvadrat.",
+      "studentText": "En robot skal gå rundt et kvadrat der hver side er 3 steg. Fyll inn tallene:\ngjenta __ ganger:\n    gå __ steg fram\n    snu til høyre",
+      "solution": "gjenta 4 ganger:\n    gå 3 steg fram\n    snu til høyre",
+      "workedSolution": "Et kvadrat har 4 like lange sider og 4 hjørner.",
+      "representationHint": null,
+      "teacherNote": "Roboten ender der den startet.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO4-N2-03",
+      "topic": "monster-og-algoritmer",
+      "area": "koder-lokker",
+      "areaTitle": "Koder med løkker",
+      "level": 2,
+      "title": "Mønster med løkke",
+      "format": "skrive-lokke",
+      "purpose": "Eleven skriver en løkke som lager et gjentakende mønster.",
+      "studentText": "Skriv et program med «gjenta» som tegner dette mønsteret:\n● ■ ● ■ ● ■ ● ■",
+      "solution": "gjenta 4 ganger:\n    tegn ●\n    tegn ■",
+      "workedSolution": "Gjentakelsen ● ■ står 4 ganger.",
+      "representationHint": null,
+      "teacherNote": "Løkka må inneholde begge figurene, i riktig rekkefølge.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO4-N3-01",
+      "topic": "monster-og-algoritmer",
+      "area": "koder-lokker",
+      "areaTitle": "Koder med løkker",
+      "level": 3,
+      "title": "Hva er feil?",
+      "format": "feilvurdering",
+      "purpose": "Eleven finner og retter feil antall gjentakelser.",
+      "studentText": "Ida vil at programmet skal tegne 6 stjerner. Hun skriver:\ngjenta 5 ganger:\n    tegn stjerne\n    tegn stjerne\nHvor mange stjerner tegner programmet? Rett programmet slik at det tegner 6 stjerner.",
+      "solution": "Programmet tegner 10 stjerner. Riktig: gjenta 3 ganger med to «tegn stjerne», eller gjenta 6 ganger med én «tegn stjerne».",
+      "workedSolution": "Hver runde tegner 2 stjerner. 5 · 2 = 10. 3 · 2 = 6.",
+      "representationHint": null,
+      "teacherNote": "Godta begge rettingene.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO4-N3-02",
+      "topic": "monster-og-algoritmer",
+      "area": "koder-lokker",
+      "areaTitle": "Koder med løkker",
+      "level": 3,
+      "title": "Dobling i løkke",
+      "format": "lese-lokke",
+      "purpose": "Eleven følger en løkke der tallet endres med gange.",
+      "studentText": "Start med 1.\ngjenta 5 ganger:\n    gang tallet med 2\nSkriv tallet etter hver runde. Hva er tallet til slutt?",
+      "solution": "2, 4, 8, 16, 32. Tallet til slutt er 32.",
+      "workedSolution": "Hver runde dobler tallet.",
+      "representationHint": null,
+      "teacherNote": "Koble gjerne til tallfølgen 2, 4, 8, 16.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO4-N3-03",
+      "topic": "monster-og-algoritmer",
+      "area": "koder-lokker",
+      "areaTitle": "Koder med løkker",
+      "level": 3,
+      "title": "Fra 3 til 23",
+      "format": "lag-oppgave",
+      "purpose": "Eleven lager en løkke som når et bestemt tall og forklarer antall gjentakelser.",
+      "studentText": "Lag et program med «gjenta» og «legg til» som starter på 3 og ender på 23. Forklar hvor mange ganger løkka gjentas, og hvorfor.",
+      "solution": "For eksempel gjenta 5 ganger: legg til 4. Antall ganger · tallet som legges til må bli 20, fordi 23 − 3 = 20.",
+      "workedSolution": "Andre riktige svar: 4 ganger +5, 10 ganger +2, 2 ganger +10, 20 ganger +1.",
+      "representationHint": null,
+      "teacherNote": "Godta alle løkker der produktet blir 20.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO5-N1-01",
+      "topic": "monster-og-algoritmer",
+      "area": "koder-vilkar",
+      "areaTitle": "Koder med vilkår",
+      "level": 1,
+      "title": "Partall eller ikke?",
+      "format": "lese-vilkar",
+      "purpose": "Eleven følger et enkelt vilkår med partall.",
+      "studentText": "hvis tallet er et partall:\n    si «ja»\nellers:\n    si «nei»\nHva sier programmet når tallet er 8? Hva sier det når tallet er 5?",
+      "solution": "8: «ja». 5: «nei».",
+      "workedSolution": "8 er et partall. 5 er et oddetall, så programmet går til «ellers».",
+      "representationHint": null,
+      "teacherNote": "Partall og oddetall er kjente begreper.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO5-N1-02",
+      "topic": "monster-og-algoritmer",
+      "area": "koder-vilkar",
+      "areaTitle": "Koder med vilkår",
+      "level": 1,
+      "title": "Større enn 10",
+      "format": "lese-vilkar",
+      "purpose": "Eleven følger et vilkår med «større enn», også i grensetilfellet.",
+      "studentText": "hvis tallet er større enn 10:\n    si «stort»\nellers:\n    si «lite»\nHva sier programmet for tallene 15, 10 og 3?",
+      "solution": "15: «stort». 10: «lite». 3: «lite».",
+      "workedSolution": "10 er ikke større enn 10, så programmet går til «ellers».",
+      "representationHint": null,
+      "teacherNote": "Grensetilfellet 10 er poenget med oppgaven.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO5-N1-03",
+      "topic": "monster-og-algoritmer",
+      "area": "koder-vilkar",
+      "areaTitle": "Koder med vilkår",
+      "level": 1,
+      "title": "Paraply eller caps?",
+      "format": "lese-vilkar",
+      "purpose": "Eleven følger et vilkår i en hverdagssituasjon.",
+      "studentText": "hvis det regner:\n    ta med paraply\nellers:\n    ta med caps\nHva tar du med når det regner? Hva tar du med når det er sol?",
+      "solution": "Når det regner: paraply. Når det er sol: caps.",
+      "workedSolution": "Sol betyr at det ikke regner, så programmet går til «ellers».",
+      "representationHint": null,
+      "teacherNote": "Vilkåret er enten sant eller usant.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO5-N2-01",
+      "topic": "monster-og-algoritmer",
+      "area": "koder-vilkar",
+      "areaTitle": "Koder med vilkår",
+      "level": 2,
+      "title": "Sorter tallene",
+      "format": "lese-vilkar",
+      "purpose": "Eleven bruker et vilkår til å sortere flere tall.",
+      "studentText": "hvis tallet er i femgangen:\n    legg det i kurv A\nellers:\n    legg det i kurv B\nSorter tallene 10, 12, 25, 31 og 40.",
+      "solution": "Kurv A: 10, 25, 40. Kurv B: 12, 31.",
+      "workedSolution": "10, 25 og 40 er i femgangen.",
+      "representationHint": null,
+      "teacherNote": "Alle tallene skal havne i én kurv.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO5-N2-02",
+      "topic": "monster-og-algoritmer",
+      "area": "koder-vilkar",
+      "areaTitle": "Koder med vilkår",
+      "level": 2,
+      "title": "Skriv vilkåret",
+      "format": "skrive-vilkar",
+      "purpose": "Eleven skriver et program med hvis og ellers ut fra en beskrivelse.",
+      "studentText": "Et program skal si «for kaldt» når temperaturen er under 5 grader, og «greit» ellers. Skriv programmet med «hvis» og «ellers».",
+      "solution": "hvis temperaturen er under 5 grader:\n    si «for kaldt»\nellers:\n    si «greit»",
+      "workedSolution": "Vilkåret må være tydelig: under 5 grader.",
+      "representationHint": null,
+      "teacherNote": "Godta «mindre enn 5».",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO5-N2-03",
+      "topic": "monster-og-algoritmer",
+      "area": "koder-vilkar",
+      "areaTitle": "Koder med vilkår",
+      "level": 2,
+      "title": "Oddetall eller partall",
+      "format": "lese-vilkar",
+      "purpose": "Eleven følger et vilkår som endrer et tall.",
+      "studentText": "Start med 7.\nhvis tallet er et oddetall:\n    legg til 3\nellers:\n    legg til 1\nHva blir tallet? Hva blir det hvis du starter med 8 i stedet?",
+      "solution": "Starter med 7: tallet blir 10. Starter med 8: tallet blir 9.",
+      "workedSolution": "7 er oddetall, så 7 + 3 = 10. 8 er partall, så 8 + 1 = 9.",
+      "representationHint": null,
+      "teacherNote": "Programmet kjøres én gang for hvert starttall.",
+      "answerForm": "kort",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO5-N3-01",
+      "topic": "monster-og-algoritmer",
+      "area": "koder-vilkar",
+      "areaTitle": "Koder med vilkår",
+      "level": 3,
+      "title": "Løkke og vilkår",
+      "format": "lese-lokke-vilkar",
+      "purpose": "Eleven følger et program med vilkår inne i en løkke.",
+      "studentText": "Start med 1.\ngjenta 4 ganger:\n    hvis tallet er et oddetall:\n        legg til 1\n    ellers:\n        legg til 3\nSkriv tallet etter hver runde. Hva er tallet til slutt?",
+      "solution": "2, 5, 6, 9. Tallet til slutt er 9.",
+      "workedSolution": "1 er oddetall: 2. 2 er partall: 5. 5 er oddetall: 6. 6 er partall: 9.",
+      "representationHint": null,
+      "teacherNote": "Vilkåret sjekkes på nytt i hver runde.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO5-N3-02",
+      "topic": "monster-og-algoritmer",
+      "area": "koder-vilkar",
+      "areaTitle": "Koder med vilkår",
+      "level": 3,
+      "title": "Gratis billett",
+      "format": "feilvurdering",
+      "purpose": "Eleven finner og retter feil i et vilkår.",
+      "studentText": "Programmet skal si «gratis billett» til barn som er under 6 år. Kim skriver:\nhvis alderen er større enn 6:\n    si «gratis billett»\nHva er feil? Rett programmet. Hva sier ditt program til et barn som er 6 år?",
+      "solution": "Vilkåret er snudd. Riktig: hvis alderen er mindre enn 6: si «gratis billett». Et barn på 6 år får ikke gratis billett, fordi 6 ikke er mindre enn 6.",
+      "workedSolution": "Kims program gir gratis billett til de eldste, ikke de yngste.",
+      "representationHint": null,
+      "teacherNote": "Grensetilfellet 6 er viktig.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    },
+    {
+      "id": "MO5-N3-03",
+      "topic": "monster-og-algoritmer",
+      "area": "koder-vilkar",
+      "areaTitle": "Koder med vilkår",
+      "level": 3,
+      "title": "Lag en sorteringsregel",
+      "format": "lag-oppgave",
+      "purpose": "Eleven lager et vilkår som sorterer gitte tall i to grupper.",
+      "studentText": "Lag et program med «hvis» og «ellers» som sorterer tallene 3, 8, 11, 14 og 20 i to grupper. Skriv programmet og hvilke tall som havner i hver gruppe.",
+      "solution": "For eksempel: hvis tallet er et partall, gruppe 1: 8, 14, 20. Ellers gruppe 2: 3, 11. Vilkåret må ha et tydelig kriterium, og alle tallene må sorteres riktig etter det.",
+      "workedSolution": "Andre riktige vilkår: større enn 10 gir 11, 14, 20 og 3, 8.",
+      "representationHint": null,
+      "teacherNote": "Godta alle tydelige vilkår som sorterer riktig.",
+      "answerForm": "forklaring",
+      "source": {
+        "kind": "lærestien",
+        "document": "monster_og_algoritmer_referanser.json"
+      }
+    }
+  ]
+}

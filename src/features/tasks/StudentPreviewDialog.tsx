@@ -101,6 +101,7 @@ export function StudentPreviewDialog({ session, level, tasks, onClose }: Student
                   tasks={tasks}
                   index={state.index}
                   onNext={next}
+                  topicId={session.topicId}
                   preview={{ answers: state.answers, onAnswer: (taskId, answer) => dispatch({ type: 'answer', taskId, state: answer }) }}
                 />
               </PreviewBoundary>

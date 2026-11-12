@@ -1,8 +1,11 @@
 import { divisionReferences } from './division.ts'
 import { divisionStrategiesReferences } from './divisionStrategies.ts'
 import { geometryReferences } from './geometry.ts'
+import { measurementReferences } from './measurement.ts'
 import { multiplicationReferences } from './multiplication.ts'
 import { numbersAndOperationsReferences } from './numbersAndOperations.ts'
+import { patternReferences } from './patterns.ts'
+import { arithmeticReferences } from './arithmetic.ts'
 import { placeValueReferences } from './placeValue.ts'
 import { problemSolvingReferences } from './problemSolving.ts'
 import type { ReferenceTask } from './types.ts'
@@ -18,4 +21,7 @@ export const referenceBanks: readonly ReferenceTask[] = [
   ...problemSolvingReferences,
   ...numbersAndOperationsReferences,
   ...divisionStrategiesReferences,
+  ...measurementReferences,
+  ...patternReferences,
+  ...arithmeticReferences,
 ]

@@ -115,12 +115,13 @@ describe('multiplikasjon følger overskriften i hver økt', () => {
 })
 
 describe('måling følger enhetene i hver økt', () => {
-  it('5. maling-1 (liter og desiliter) har ingen kubeoppgaver som bare er gangestykker', () => {
+  it('5. maling-1 (liter og desiliter) har ingen kubeoppgaver som bare er gangestykker, og ingen milliliter eller desimaltall', () => {
     const tasks = tasksOf(plan('maling-1'))
     assert.match(plan('maling-1').heading, /liter og desiliter/)
     for (const task of tasks) {
       assert.ok(!/kube/i.test(textOf(task)), textOf(task))
-      assert.match(textOf(task), /liter|dl|desiliter|ml/, `ikke volum: ${textOf(task)}`)
+      assert.match(textOf(task), /liter|dl|desiliter/, `ikke volum: ${textOf(task)}`)
+      assert.ok(!/\bml\b|milliliter|\d,\d/.test(textOf(task)), textOf(task))
     }
   })
 
@@ -137,18 +138,17 @@ describe('måling følger enhetene i hver økt', () => {
     }
   })
 
-  it('6. lengdeoppgavene fra arbeidsarkene hører til økta om lengde', () => {
+  it('6. lengde er ikke med i Måling: maling-3 handler om desimaltall i liter og kilogram', () => {
+    // Lengde med desimaltall hører til Tall og regning. Lengdearkene er tatt ut, og ingen økt i Måling har lengdeoppgaver.
     const lengthIds = /-millimeter-|-sammenlign-lengde-|-hvem-eier-bilene-/
-    const owners = Object.entries(worksheetTasks)
-      .filter(([, tasks]) => tasks.some((t) => lengthIds.test(t.id)))
-      .map(([id]) => id)
-    assert.deepEqual(owners, ['maling-3'])
-    assert.match(plan('maling-3').heading, /Lengde/)
+    assert.deepEqual(Object.entries(worksheetTasks).filter(([, tasks]) => tasks.some((t) => lengthIds.test(t.id))).map(([id]) => id), [])
+    assert.match(plan('maling-3').heading, /Desimaltall i måling/)
     const tasks = tasksOf(plan('maling-3'))
-    assert.ok(tasks.some((t) => textOf(t).startsWith('Hvem eier bilene?')))
-    assert.ok(!tasks.some((t) => /m²|liter|kg/.test(textOf(t))), 'lengdeøkta skal ikke ha areal, volum eller masse')
-    // Sammenligningene med m² ligger i økta om areal.
-    assert.ok(tasksOf(plan('maling-4')).some((t) => textOf(t).includes('m²')))
+    const withSolution = (t: SessionTask) => `${textOf(t)} ${t.kind === 'text' ? t.solution : ''}`
+    assert.ok(tasks.every((t) => /\d,\d/.test(withSolution(t)) && /liter|kg/.test(withSolution(t))), 'desimaltall i liter eller kilogram')
+    assert.ok(!tasks.some((t) => /\b(mm|cm|dm|m)\b|millimeter|centimeter|meter/.test(textOf(t))), 'ingen lengder')
+    // Arealøkta har ikke lenger sammenligninger mellom cm² og m² (20000 cm², 7,5 m²).
+    assert.ok(!tasksOf(plan('maling-4')).some((t) => textOf(t).includes('m²') && !textOf(t).includes('cm²')))
   })
 })
 
@@ -274,7 +274,7 @@ describe('AI-format: regnestykke eller tekst', () => {
     assert.ok(prompt.includes('Beskrivelse av hele temaet (bakgrunn – øktprofilen under gjelder for timen)'))
 
     const measure = taskPrompt(requestFor(plan('maling-1')))
-    assert.ok(measure.includes('- Måleenheter i økta: liter, dl, ml'))
+    assert.ok(measure.includes('- Måleenheter i økta: L, dL'))
     assert.ok(measure.includes('Kubeoppgaver som bare er gangestykker'))
   })
 

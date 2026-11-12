@@ -50,7 +50,8 @@ export function referencePriority(task: SessionTask): number | null {
  */
 export function isUsableReference(task: SessionTask) {
   if (referencePriority(task) === null) return false
-  if (task.kind === 'text') return !task.figure && task.text.trim().length > 0 && task.solution.trim().length > 0
+  // Prikkene i figurtall og fargesirklene tegnes ut fra teksten, så teksten kan brukes som eksempel uten figuren.
+  if (task.kind === 'text') return (!task.figure || task.figure.kind === 'dots' || task.figure.kind === 'colors') && task.text.trim().length > 0 && task.solution.trim().length > 0
   return answerProblem(task) === null && !(task.a === 0 && task.b === 0)
 }
 
@@ -131,7 +132,9 @@ export function summarizeExisting(levelTasks: SessionTask[]): AiExistingTask[] {
   return levelTasks.slice(0, MAX_EXISTING_TASKS).map((task): AiExistingTask => {
     if (task.kind === 'text') {
       const kind = task.figure?.kind === 'shape' || task.figure?.kind === 'angle' ? visualSignature(task.figure) : ''
-      return { taskType: TEXT_TASK, text: task.text.trim().slice(0, 300), ...(task.figure && { figure: true }), ...(kind && { figureKind: kind }) }
+      // Prikkene i figurtall og fargene i fargemønstre står i teksten – oppgaven sammenlignes som en vanlig tekstoppgave.
+      const drawn = task.figure && task.figure.kind !== 'dots' && task.figure.kind !== 'colors'
+      return { taskType: TEXT_TASK, text: task.text.trim().slice(0, 300), ...(drawn && { figure: true }), ...(kind && { figureKind: kind }) }
     }
     return { taskType: task.type, instruction: task.instruction.trim(), a: task.a, operator: task.operator, b: task.b }
   })

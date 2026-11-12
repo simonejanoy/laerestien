@@ -1,8 +1,19 @@
-import { DIVISION_AREAS, DIVISION_STRATEGIES_AREAS, GEOMETRY_AREAS, MULTIPLICATION_AREAS, NUMBERS_AND_OPERATIONS_AREAS, PLACE_VALUE_AREAS, PROBLEM_SOLVING_AREAS } from '../../src/ai/contract.ts'
+import {
+  ARITHMETIC_AREAS,
+  DIVISION_AREAS,
+  DIVISION_STRATEGIES_AREAS,
+  GEOMETRY_AREAS,
+  MEASUREMENT_AREAS,
+  MULTIPLICATION_AREAS,
+  NUMBERS_AND_OPERATIONS_AREAS,
+  PATTERN_AREAS,
+  PLACE_VALUE_AREAS,
+  PROBLEM_SOLVING_AREAS,
+} from '../../src/ai/contract.ts'
 import type { ReferenceBank, ReferenceTask } from './types.ts'
 
 // Kontroll av referansebankene. Kjøres når serveren starter (multiplication.ts, placeValue.ts, division.ts, geometry.ts,
-// problemSolving.ts, numbersAndOperations.ts, divisionStrategies.ts) og i testene.
+// problemSolving.ts, numbersAndOperations.ts, divisionStrategies.ts, measurement.ts, patterns.ts, arithmetic.ts) og i testene.
 
 /** Hva en bank skal inneholde: tema, ID-prefiks (M1-N1-01, T1-N1-01) og fagområdene i rekkefølge. */
 export interface BankSpec {
@@ -18,6 +29,9 @@ export const GEOMETRY_BANK: BankSpec = { topic: 'geometri', idPrefix: 'G', areas
 export const PROBLEM_SOLVING_BANK: BankSpec = { topic: 'problemlosing', idPrefix: 'P', areas: PROBLEM_SOLVING_AREAS }
 export const NUMBERS_AND_OPERATIONS_BANK: BankSpec = { topic: 'tall-og-regning', idPrefix: 'TR', areas: NUMBERS_AND_OPERATIONS_AREAS }
 export const DIVISION_STRATEGIES_BANK: BankSpec = { topic: 'strategier-i-divisjon', idPrefix: 'SD', areas: DIVISION_STRATEGIES_AREAS }
+export const MEASUREMENT_BANK: BankSpec = { topic: 'maling', idPrefix: 'MA', areas: MEASUREMENT_AREAS }
+export const PATTERN_BANK: BankSpec = { topic: 'monster-og-algoritmer', idPrefix: 'MO', areas: PATTERN_AREAS }
+export const ARITHMETIC_BANK: BankSpec = { topic: 'regning', idPrefix: 'RE', areas: ARITHMETIC_AREAS }
 const REQUIRED_TEXT = ['id', 'topic', 'area', 'areaTitle', 'title', 'format', 'purpose', 'studentText', 'solution'] as const
 
 export interface BankCheck {
@@ -106,14 +120,24 @@ const UNIT_WORD = /^\s*(tiere|tier|hundrere|hundrer|enere|ener)\b/i
 /** Rest etter en divisjon: «14 : 4 = 3 rest 2», «… = 3 med 2 til overs» eller «… = 3, og 2 til overs». */
 const REMAINDER_AFTER = /^\s*(?:rest\s+(\d+)|,?\s*(?:og|med)\s+(\d+)\s+til overs)/i
 
-/** Ordet foran en nummerert etikett («Steg 1:», «Trinn 2:»). */
-const STEP_LABEL = /\b(steg|trinn|del)\s*$/i
+/** Teksten rett etter et regnestykke sier at det er usant («er usant», «stemmer ikke», «er feil»). */
+const CALLED_FALSE = /^\s*(?:er\s+(?:usant|feil|ikke\s+(?:sant|riktig))|stemmer\s+ikke)\b/i
+
+/** Eleven skal vurdere om regnestykkene i oppgaveteksten er sanne – de er påstander, ikke utregninger. */
+const TRUE_OR_FALSE = /\bsann?t? eller usann?t?\b|\bsanne eller usanne\b/i
+
+/** Ordet foran en nummerert etikett («Steg 1:», «Trinn 2:», «Figur 4:» i figurtall). */
+const STEP_LABEL = /\b(steg|trinn|del|figur)\s*$/i
 
 /** Om teksten foran en regnerekke slutter med et regnetegn eller et tomt felt (ikke kolon etter et ord, som i «Fyll inn:»). */
 function operatorBefore(text: string) {
   const trimmed = text.trimEnd()
   const last = trimmed.slice(-1)
-  if (last === ':') return /[\d)]$/.test(trimmed.slice(0, -1).trimEnd())
+  // Kolon etter et tall, eller med mellomrom etter en måling («2000 g : 4 = 500 g»), er et deletegn – ikke kolon etter et ord.
+  if (last === ':') {
+    const before = trimmed.slice(0, -1)
+    return /[\d)]$/.test(before.trimEnd()) || /\d\s*(mm|cm|dm|m|cm²|m²|g|kg|l|dl|min)\s$/i.test(before)
+  }
   return last === '_' || (last !== '' && OPERATOR.test(last))
 }
 
@@ -130,12 +154,14 @@ export function checkEquations(text: string): { checked: number; errors: string[
     if (!run.includes('=')) continue
     const before = operatorBefore(text.slice(0, match.index))
     const after = text.slice((match.index ?? 0) + run.length)
-    // «Steg 1: 18 + 12 = 30»: tallet foran kolonet er en etikett, ikke et tall som deles.
+    // «Steg 1: 18 + 12 = 30» og «Figur 4: 6 + 4 = 10»: tallet foran kolonet er en etikett, ikke et tall som deles.
     const label = STEP_LABEL.test(text.slice(0, match.index)) ? /^\d+\s*:\s*/.exec(run) : null
     const sides = (label ? run.slice(label[0].length) : run).split('=').map((s) => s.trim())
     if (before) sides.shift()
     const next = after.trimStart()[0] ?? ''
     if (OPERATOR.test(next) || next === '_' || UNIT_WORD.test(after)) sides.pop()
+    // En påstand fasiten selv kaller usann («12 + 3 = 15 + 2 er usant») er ikke en utregning som skal stemme.
+    if (CALLED_FALSE.test(after)) continue
     const remainder = REMAINDER_AFTER.exec(after)
     if (remainder && sides.length === 2) {
       // Divisjon med rest: venstre side er «a : b», høyre side er antall hele grupper.
@@ -182,7 +208,7 @@ export function checkReferenceMath(
   if (blanks > 0 && answers && answers.length === blanks) {
     let i = 0
     results.push(checkEquations(ref.studentText.replace(/__+/g, () => String(answers[i++]))))
-  } else if (!/feilanalyse|feilvurdering/i.test(ref.format)) {
+  } else if (!/feilanalyse|feilvurdering/i.test(ref.format) && !TRUE_OR_FALSE.test(ref.studentText)) {
     results.push(checkEquations(ref.studentText))
   }
 

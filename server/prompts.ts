@@ -17,6 +17,8 @@ import {
   type SubjectContext,
   type TaskRequest,
 } from '../src/ai/contract.ts'
+import { patternCodeFormat } from './references/patterns.ts'
+import { arithmeticDataFormat } from './references/arithmetic.ts'
 
 // Lager lærerens bestilling (brukermeldingen) ut fra det appen sender.
 // Elevdata er anonymisert i appen før de kommer hit.
@@ -190,6 +192,7 @@ function areaLevelSection(level: AiLevelContext, textOnly = false) {
     `Beskrivelse: ${level.description || 'Ikke oppgitt.'}`,
     level.numbers && `Tallområde og utfordring: ${level.numbers}`,
     level.factors && `Gangetabeller på nivået: ${level.factors.join(', ')}`,
+    level.units && `Måleenheter på nivået: ${level.units.join(', ')}`,
     level.dominantTaskType &&
       `Vanligste oppgavetype i oppgavesettet: ${level.dominantTaskType}${isMathType(level.dominantTaskType) && !textOnly ? ' – lag format «regnestykke»' : ''}`,
     level.support && `Støttestruktur i instruksjonen på nivået: ${level.support}`,
@@ -285,6 +288,64 @@ const AREA_GUIDANCE: Partial<Record<ReferenceArea, string[]>> = {
     'Del av en hel: én gjenstand eller én lengde deles i like store deler, og svaret er en brøkdel (eller en lengde med enhet). Del av en mengde: et antall ting deles i like store grupper, og svaret er et antall. Mengden skal gå opp i nevneren.',
     'Appen har ingen brøkvisning: skriv brøken med ord og med tall i parentes, f.eks. «en fjerdedel (1/4)». Bruk teller 1 – teller 2 bare på nivå 3 (f.eks. «to tredjedeler (2/3)»).',
   ],
+  'volum-liter-desiliter': [
+    'Bruk liter (L) og desiliter (dL), og volum som antall like terninger. 1 L = 10 dL. Bare hele tall – desimaltall hører til økta om desimaltall i måling.',
+    'Volum i terninger er rader · terninger i hver rad · antall lag. Oppgaveteksten må oppgi alle målene (antall rader, terninger i hver rad og antall lag, f.eks. «Det er bare ett lag»), fordi appen ikke viser figuren.',
+    'Svaret skal ha enhet eller benevning (30 dL, 5 glass, 12 terninger). Sammenlignes eller regnes volum i ulike enheter sammen, skal fasiten gjøre dem om til samme enhet, f.eks. «2 L = 20 dL, og 20 dL er mer enn 15 dL.».',
+  ],
+  'desimaltall-maling': [
+    'Desimaltall med én desimal i liter og kilogram, skrevet med komma: 0,1 L = 1 dL og 0,1 kg = 100 g. 1,3 L er 13 dL (ikke 0,13 L), og 1,5 kg er 1500 g (ikke 150 g). Ingen hundredeler (f.eks. 1,25 kg) og ingen desimaltall i dL eller g.',
+    'Enheten skal stå både i oppgaven og i fasiten. Sammenlignes størrelser i ulike enheter, skal fasiten gjøre dem om til samme enhet, f.eks. «0,8 kg = 800 g, og 800 g er mer enn 750 g.».',
+  ],
+  'kilogram-gram': [
+    'Bruk kilogram (kg) og gram (g): 1 kg = 1000 g. Blandede enheter regnes om riktig: 2 kg og 50 g er 2050 g (ikke 2500 g), 3 kg og 250 g er 3250 g.',
+    'Vektene skal være rimelige for tingen som veies (et eple veier omtrent 150 g, en sykkel omtrent 12 kg). Svaret skal ha enhet, og fasiten viser omgjøringen når enhetene er ulike.',
+  ],
+  'areal-omkrets': [
+    'Areal er hvor mye en flate dekker: antall ruter eller kvadratenheter (cm², m²). Areal av et rektangel er lengde · bredde. Omkrets er lengden rundt: summen av alle fire sidene, i lengdeenheter (cm, m) eller rutesider. Skriv kvadratenheter med ² (cm², m²).',
+    'Spør om det oppgaven mener: gjerde, kant og bånd rundt er omkrets; plen, teppe og fliser som dekker er areal. Appen viser ikke figurer: beskriv rektangelet med lengde og bredde i teksten. Spør bare om arealet av en sammensatt figur – omkretsen avhenger av hvordan delene ligger.',
+  ],
+  tid: [
+    '1 time = 60 minutter (ikke 100). Skriv klokkeslett som 24-timers digital tid med kolon, f.eks. kl. 08:45 – aldri med punktum. Tidsintervaller over hel time regnes via hel time: fra 08:45 til 09:20 er 15 + 20 = 35 minutter.',
+    'Sluttid og starttid må stemme med varigheten. Appen viser ikke urskiver i AI-oppgaver: beskriv en analog klokke med ord (hvor viserne peker) og si om det er formiddag eller ettermiddag når svaret er et digitalt klokkeslett. Ikke desimaltall i tid (ikke 1,5 time).',
+  ],
+  'utforske-monster': [
+    'Gjentakende mønstre skrives på én egen linje i oppgaveteksten med figurene ●, ■ og ▲ adskilt med mellomrom (f.eks. «▲ ● ● ▲ ● ●»), eller med fargeord adskilt med komma (f.eks. «gul, grønn, gul, grønn, gul, grønn»). Bruk bare fargene rød, blå, gul, grønn, oransje, lilla og svart, og bare én fargerekke per oppgave. Appen tegner fargerekka som sirkler med fargenavnet under – ikke tegn eller beskriv sirklene selv, og spør om en plass etter rekka (ikke en plass som vises). Ikke bruk andre tegn, emojier eller bilder.',
+    'Vis gjentakelsen minst to ganger, og la alle leddene som vises, følge den. Fasiten starter med svaret (figuren, fargene eller tallene), f.eks. «▲. Gjentakelsen har 3 figurer …». Oppgaver om en feil i mønsteret skal ha nøyaktig én feil, og fasiten oppgir plassene.',
+  ],
+  figurtall: [
+    'Skriv figurene på én egen linje i fast form: «Figur 1: 5 prikker. Figur 2: 8 prikker. Figur 3: 11 prikker.» – fra figur 1 og uten hull, og minst tre figurer (eller skriv regelen tydelig: «hver ny figur får 4 flere prikker»). Appen tegner prikkene ut fra disse antallene: ikke tegn, ikke beskriv hvor prikkene ligger, og ikke ta med figuren det spørres etter i linja. Regelen er lik økning, kvadrattall (rader med like mange i hver rad) eller trekanttall (en ny rad som er én lengre).',
+    'Fasiten starter med antallet for figuren det spørres om, f.eks. «31 klosser.», og verdier for andre figurer skrives «Figur 4: 9 fyrstikker.». Appen viser ikke figurer: eleven kan tegne på papir, men oppgaven må kunne løses ut fra teksten.',
+  ],
+  tallfolger: [
+    'Skriv tallfølgen med komma og mellomrom på én linje, f.eks. «5, 10, 15, 20, ___, ___», med «___» for hvert tall som mangler – appen viser hvert tomme felt som en inputboks i rekka, så fasiten oppgir tallene i samme rekkefølge. Vis minst fire tall, eller beskriv regelen tydelig («starter på 4 og øker med 6 hver gang»). Bare hele tall fra 0 og oppover.',
+    'Bruk enkle regler som bare kan tolkes på én måte: legg til eller trekk fra det samme tallet, gang med det samme tallet, hopp som blir 1 større hver gang, eller summen av de to forrige. Fasiten starter med tallene som mangler eller kommer etter, f.eks. «25 og 30.», og skriver regelen som «Regelen er +5.» eller «Regelen er · 2.».',
+  ],
+  'koder-lokker': [
+    'Oppgavene handler om løkker med «gjenta» – ikke om vilkår med «hvis». Eleven leser, fullfører, skriver eller retter et kort program, og fasiten oppgir resultatet av å kjøre programmet (sluttallet, tallet etter hver runde, alt som skjer i rekkefølge, eller hvor mange det tegner).',
+    'Skriv starttallet på en egen linje før koden, f.eks. «Start med 10.». Bare én løkke – ingen løkker inne i løkker.',
+  ],
+  'koder-vilkar': [
+    'Oppgavene handler om vilkår med «hvis» og «ellers», eventuelt inne i én løkke på nivå 3. Vilkåret må ha et tydelig kriterium som kan avgjøres for hvert tall: partall, oddetall, større enn, mindre enn, under, over eller i en gangetabell (f.eks. «hvis tallet er større enn 10:»).',
+    'Ta gjerne med grensetilfeller: 10 er ikke større enn 10. Fasiten oppgir resultatet for hvert tall eller tilfelle, f.eks. «15: «stort». 10: «lite».», eller tallet etter hver runde når vilkåret står i en løkke (vilkåret sjekkes på nytt i hver runde).',
+  ],
+  diagrammer: [
+    'Søylediagrammet står i oppgaveteksten, én rad per linje: navn, | og like mange ■ som verdien delt på skalaen, f.eks. «Fotball | ■■■■■■». Skriv alltid hvor mye hver ■ er («Hver ■ er 2 elever»), og velg tall som kan vises med hele ■.',
+    'Spør om å lese av, sammenligne, legge sammen eller finne forskjeller, eller vurdere en påstand på nivå 3. Fasiten oppgir verdiene med skalaen regnet inn, f.eks. «Fotball: 6 · 2 = 12 elever.».',
+  ],
+  tabeller: [
+    'Tabellen står i oppgaveteksten, én rad per linje med | mellom kolonnene, og har en overskriftsrad med tydelige kolonnenavn («Klasse | Jenter | Gutter»). Alle radene har like mange kolonner. En kolonne «Til sammen» er summen av de andre.',
+    'Klokkeslett skrives med kolon (08:05), og tidsintervaller regnes med 60 minutter i timen. Tall som mangler i en tabell, skrives «__» – appen viser hver tom rute som en inputboks i tabellen, og fasiten oppgir tallene rad for rad.',
+  ],
+  'fire-regnearter': [
+    'Eleven velger regneart ut fra situasjonen: noe kommer til gir addisjon, noe tas bort eller sammenlignes gir subtraksjon, like grupper gir multiplikasjon og likedeling gir divisjon. Fasiten nevner regnearten når oppgaven spør om den, f.eks. «Subtraksjon. 35 − 12 = 23.».',
+    'Alle delestykker går opp. Svaret må være rimelig ut fra situasjonen. Overslag gjøres med avrundede tall («98 kr er nesten 100 kr, og 3 · 100 = 300 kr»), og nøyaktig svar oppgis når det er nyttig. Skal eleven fylle inn regnetegnet, står ett regnestykke på egen linje med «__» der tegnet mangler («10 __ 5 = 50») – appen viser knappene.',
+    'Lag én situasjon per oppgave. Unngå a)- og b)-deloppgaver.',
+  ],
+  algebra: [
+    'Ukjent tall skrives alltid som □ – aldri x, y eller andre bokstaver, og aldri «__». Skriv likningen på en egen linje («□ + 5 = 18»): appen gjør hver □ til en inputboks. Står □ flere ganger, er det samme tall. Likhetstegnet betyr «like mye som»: begge sider skal være like mye, også når det står et regnestykke på begge sider.',
+    'Fasiten oppgir verdien som «□ = 8.», og verdien må gjøre likningen sann og være den eneste som gjør det. Ved «sant eller usant» skriver fasiten hver likning med «er sant» eller «er usant» og begrunner med verdien på begge sider.',
+  ],
   modeller: [
     'Eleven skal faktisk bruke eller tolke en modell: like grupper, tallinje, rutenett eller blokkmodell. Appen kan ikke vise figurer, så beskriv modellen i teksten (f.eks. «En blokk med totalen 35 er delt i 5 like store deler») eller be eleven tegne en bestemt modell. Å bare nevne ordet «modell» er ikke nok.',
   ],
@@ -299,7 +360,11 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
   const problemSolving = topic === 'problemlosing'
   const numbersAndOperations = topic === 'tall-og-regning'
   const divisionStrategies = topic === 'strategier-i-divisjon'
+  const measurement = topic === 'maling'
+  const patterns = topic === 'monster-og-algoritmer'
+  const arithmetic = topic === 'regning'
   const secondary = profile.secondaryAreas ?? []
+  const code = patterns && (area === 'koder-lokker' || area === 'koder-vilkar')
   const allowsRemainder = area === 'divisjon-med-rest' || secondary.includes('divisjon-med-rest')
   // Todimensjonale figurer og vinkler: hver oppgave skal ha en figur appen tegner, og figurer finnes bare i tekstoppgaver.
   const figureRequired = area === 'todimensjonale-figurer' || area === 'vinkler'
@@ -319,10 +384,19 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
     '- Bruk referansene på samme nivå til å forstå faglig innhold, oppgaveformat, representasjon, nivå og faglig hensikt.',
     figureRequired
       ? '- Lengde, antall steg og svarform skal følge oppgavesettet og øktprofilen, ikke referansene. Alle oppgavene skal være tekstoppgaver (format «tekst») med figur – også når oppgavesettet har regnestykker.'
-      : problemSolving
+      : problemSolving || patterns || arithmetic
         ? '- Lengde, antall steg og svarform skal følge oppgavesettet og øktprofilen. De nye oppgavene er mer øving i det eleven allerede arbeider med i økta – ikke et nytt deltema eller et annet oppgaveformat. Alle oppgavene skal være tekstoppgaver (format «tekst»).'
         : '- Lengde, antall steg og svarform skal følge oppgavesettet og øktprofilen, ikke referansene. Består oppgavesettet av korte regnestykker, skal de nye også være korte regnestykker med format «regnestykke».',
-    ...(AREA_GUIDANCE[area] ?? []).map((g) => `- ${g}`),
+    // Mønster og algoritmer: økt 1 dekker både utforske mønster og figurtall, så føringene for begge følger med.
+    ...(patterns ? [area, ...secondary] : [area]).flatMap((a) => AREA_GUIDANCE[a] ?? []).map((g) => `- ${g}`),
+    code && `- Kodeformat: ${patternCodeFormat}`,
+    arithmetic && `- Dataformat: ${arithmeticDataFormat}`,
+    arithmetic &&
+      '- Bruk bare søylediagram med ■ og tabeller skrevet som tekst – ikke linjediagram, sektordiagram, piktogram eller bilder, heller ikke når ønskene ber om det. Da lager du et søylediagram med ■ og kan nevne i melding at appen viser diagrammer som tekst.',
+    code &&
+      '- Skriv hver kommando på en egen linje i oppgaveteksten, med innrykk på nøyaktig fire mellomrom inne i løkker og vilkår. Bruk bare kommandoene i kodeformatet (pluss klapp, stamp, ta med … og legg det i kurv A/B, som i referansene) og ordet «tallet» – ingen variabler med flere bokstaver, funksjoner, lister, likhetstegn eller løkker inne i løkker.',
+    code &&
+      '- Ikke skriv kode i et ekte programmeringsspråk eller som blokker – heller ikke når ønskene ber om Scratch, Python eller lignende. Da bruker du likevel pseudokoden i kodeformatet og kan nevne i melding at oppgavene følger kodeformatet i økta.',
     profile.requiresCarry &&
       '- Alle oppgavene skal kreve addisjon med tierovergang: minst én nødvendig addisjon må ha veksling i en plassverdi (f.eks. 28 + 7 på nivå 1 og 48 + 37 på nivå 2). Nivå 1 blir lettere gjennom enkle tall og støtte som «Fyll først opp til nærmeste tier.», ikke ved å fjerne tierovergangen. På nivå 3 kan andre regnearter inngå i flere steg, men addisjonen med veksling skal være en sentral del av løsningen.',
     profile.divisionType === 'deling' &&
@@ -332,6 +406,8 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
     (division || divisionStrategies) && !allowsRemainder && '- Alle delestykkene skal gå opp. Ikke lag oppgaver med rest.',
     '- Ikke lag en oppgave som er lik en oppgave som allerede finnes på nivået.',
     !geometry &&
+      !patterns &&
+      !arithmetic &&
       (multiplication || division || divisionStrategies || area === 'sammenheng-multiplikasjon-divisjon'
         ? profile.allowSwappedFactors
           ? '- Byttede faktorer (f.eks. 3 · 7 og 7 · 3) er ulike oppgaver i denne økta, fordi den handler om at faktorene kan bytte plass.'
@@ -345,6 +421,12 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
         ? '- Hold deg til fagområdet i økta og tallområdet i referansene på nivået. Ikke negative tall, ikke hundredeler, og ikke et nytt deltema – heller ikke når ønskene ber om det (f.eks. gir «bruk penger» ikke kroner og øre i en økt om tideler).'
         : divisionStrategies
         ? '- Hold deg til fagområdet i økta og tallområdet i referansene på nivået. Bruk hele tall – ikke desimaltall, negative tall, rest eller deling med 0, og ikke et nytt deltema – heller ikke når ønskene ber om det (f.eks. gir «bruk penger» hele kroner som går opp, ikke øre eller rest).'
+        : arithmetic
+        ? '- Hold deg til fagområdet i økta og tallområdet i referansene og oppgavesettet på nivået. Bare hele tall fra 0 og oppover – ikke negative tall, desimaltall, brøk, prosent, måleenheter eller et annet deltema, heller ikke når ønskene ber om det.'
+        : patterns
+        ? '- Hold deg til fagområdet i økta og tallområdet i referansene og oppgavesettet på nivået. Bare hele tall fra 0 og oppover – ikke negative tall, desimaltall, brøk, penger, måleenheter eller et annet deltema, heller ikke når ønskene ber om det.'
+        : measurement
+        ? `- Hold deg til fagområdet i økta, tallområdet i referansene på nivået og måleenhetene i økta${profile.units?.length ? ` (${profile.units.join(', ')})` : ''}. Ikke andre enheter, ikke negative tall, ikke hundredeler og ikke et nytt deltema – heller ikke når ønskene ber om det (f.eks. gir «bruk matlaging» ikke milliliter, centiliter eller hundredeler).`
         : geometry
         ? '- Hold deg til geometriområdet i økta. Ikke ta inn areal, omkrets eller andre deltema, og ikke bytt til en annen regneart eller et annet tema – heller ikke når ønskene ber om det.'
         : division
@@ -352,6 +434,12 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
         : '- Hold deg til tallområdet og regneartene i økta, og ikke ta inn et nytt deltema (f.eks. avrunding) som læreren ikke har bedt om.',
     divisionStrategies
       ? '- Nivå 1: tydelig støtte og ett faglig steg (oppdelingen, strategien eller brøken er gitt). Nivå 2: eleven deler opp, velger strategi eller skriver divisjonsstykket selv. Nivå 3: forklare, vurdere en påstand, finne feil eller vise to måter – oppgaveteksten ber eleven forklare eller begrunne. Nivåforskjellen skal ikke bare være større tall. Alle nivåene har samme faglige fokus.'
+      : arithmetic
+      ? '- Nivå 1: lese av, ett regnesteg eller finne □ i et enkelt stykke, med tydelig støtte – ingen påstander eller feilsøking. Nivå 2: skala større enn 1, flere kolonner, flere steg, velge regneart selv, □ i minus og gange. Nivå 3: vurdere påstander, finne feil, forklare, lage egne diagrammer, tabeller eller fortellinger, eller □ flere ganger. Alle nivåene har samme faglige fokus.'
+      : patterns
+      ? '- Nivå 1: fortsette, lese av eller følge ett kort mønster eller program med tydelig støtte – ingen påstander eller feilsøking. Nivå 2: finne regelen selv, plasser lenger ut, tall som mangler, to kommandoer i løkka eller flere tall gjennom et vilkår. Nivå 3: forklare, vurdere påstander, finne og rette feil, lage egne mønstre eller programmer, eller vilkår inne i en løkke. Alle nivåene har samme faglige fokus.'
+      : measurement
+      ? '- Nivå 1: tydelig støtte og ett faglig steg (gjøre om med hjelp, telle, legge sammen eller lese av). Nivå 2: eleven gjør om selv, sammenligner i ulike enheter eller løser et problem med to steg. Nivå 3: vurdere en påstand, finne feil, løse flerstegsproblemer eller forklare – ikke bare større tall. Alle nivåene har samme faglige fokus.'
       : numbersAndOperations
       ? '- Nivå 1: tydelig støtte, ett faglig steg (fyll inn, skriv tallet, gjør om med hjelp). Nivå 2: eleven bruker sammenhengen selv – ukjent tall, sammenligning, omgjøring eller addisjon over én hel. Nivå 3: vurdere en påstand, finne feil, forklare eller løse på to måter – oppgaveteksten ber eleven forklare eller begrunne. Nivåforskjellen skal ikke bare være større tall. Alle nivåene har samme faglige fokus.'
       : problemSolving
@@ -374,6 +462,12 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
       ? '- Du kan ikke lage figurer. Modeller skrives som tekst i oppgaveteksten, eller eleven får en nøyaktig tegneinstruksjon. Skriv aldri «se figuren», «se bildet» eller «modellen under» uten at modellen står i teksten.'
       : area === 'modeller'
       ? '- Du kan ikke lage figurer. Modellen må derfor beskrives i teksten eller tegnes av eleven.'
+      : arithmetic
+      ? '- Du kan ikke lage figurer eller bilder. Diagrammer og tabeller skal stå som tekst i oppgaveteksten, én rad per linje. Skriv aldri «se diagrammet», «tabellen under» eller «se figuren» uten at diagrammet eller tabellen står i teksten.'
+      : patterns
+      ? '- Du kan ikke lage figurer eller kodeblokker. Mønstre og kode skal stå som tekst i oppgaveteksten, hver på egne linjer. Skriv aldri «se figuren», «koden under» eller «blokkene» uten at mønsteret eller koden står i teksten.'
+      : measurement
+      ? '- Du kan ikke lage figurer eller klokker. Beskriv rektangler, esker med terninger og klokker med ord og mål i teksten. Skriv aldri «se figuren», «se på klokka» eller «rektangelet under».'
       : '- Du kan ikke lage figurer, så oppgavene må kunne løses uten figur.',
     '- Regn ut og kontroller alle regnestykker og fasiter selv. Ikke viderefør feil fra referansene – noen referanser er feilanalyser med en bevisst feil.',
     '- Lærerens ekstra ønsker går foran referansene og oppgavesettet når ønskene er faglig korrekte, trygge og passer med timens tema og mål.',

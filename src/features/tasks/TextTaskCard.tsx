@@ -9,6 +9,9 @@ import { levelStyles } from '../../components/ui/levelStyles'
 import type { TextTask } from '../../types'
 import { AiReviseForm } from './AiReviseForm'
 import { DiscardChangesDialog } from './DiscardChangesDialog'
+import { keepPatternDisplay } from '../../ai/drafts'
+import { hasDataBlock } from '../../ai/taskText'
+import { TaskText } from '../../components/ui/TaskText'
 
 interface TextTaskCardProps {
   task: TextTask
@@ -39,7 +42,9 @@ export function TextTaskCard({ task, number, topic, className, onChange, onDelet
 
   const save = () => {
     if (!editing?.text.trim() || !editing.solution.trim()) return
-    onChange({ ...task, text: editing.text.trim(), solution: editing.solution.trim() })
+    // Mønster og algoritmer: figurer og bokser følger den nye teksten, og svaret som rettes automatisk fjernes.
+    const edited = { ...task, text: editing.text.trim(), solution: editing.solution.trim() }
+    onChange(edited.text === task.text && edited.solution === task.solution ? task : keepPatternDisplay(edited, task))
     close()
   }
 
@@ -109,7 +114,11 @@ export function TextTaskCard({ task, number, topic, className, onChange, onDelet
         <>
           <section className="flex flex-col gap-1.5 rounded-md bg-tertiary p-3">
             <h4 className="text-xs text-secondary">Til eleven</h4>
-            <p className="text-small whitespace-pre-wrap text-primary">{task.text}</p>
+            {hasDataBlock(task.text) ? (
+              <TaskText text={task.text} className="text-small text-primary" />
+            ) : (
+              <p className="text-small whitespace-pre-wrap text-primary">{task.text}</p>
+            )}
             {task.figure && <TaskFigure figure={task.figure} size="sm" />}
           </section>
           <section className="flex flex-col gap-1.5 rounded-md border border-dashed border-secondary p-3">

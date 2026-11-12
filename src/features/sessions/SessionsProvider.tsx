@@ -4,7 +4,7 @@ import { describeSlots, timeSlots, weekdays, type WeekRef } from '../calendar/mo
 import { topicDetails, unitById } from '../topics/mockData'
 import { initialProgress, initialTasks, sessionBase, sessions as initialSessions } from './mockData'
 import { scheduled } from './schedule'
-import { mergeTasks } from './sessionTasks'
+import { mergeTasks, refreshStoredTasks } from './sessionTasks'
 import { browserStorage, loadTaskSets, saveTaskSets, type TaskSets } from './taskStorage'
 import { worksheetTasks } from './worksheetTasks'
 import { SessionsContext, type SessionInput } from './sessionsContext'
@@ -55,8 +55,10 @@ export function SessionsProvider({ children }: { children: ReactNode }) {
     const all: Record<string, SessionTask[]> = { ...initialTasks, ...scheduled.tasks }
     // Oppgavene fra arbeidsarkene kommer først i øktene sine. Like oppgaver på samme nivå tas med én gang.
     for (const [sessionId, added] of Object.entries(worksheetTasks)) all[sessionId] = mergeTasks(added, all[sessionId] ?? [])
-    // Oppgavesett læreren har lagret, går foran standardoppgavene.
-    return { ...all, ...stored.sets }
+    // Oppgavesett læreren har lagret, går foran standardoppgavene. Uendrede grunnoppgaver i et eldre lagret sett får
+    // svaret som rettes automatisk og inputboksene fra grunnoppgavene (se refreshStoredTasks).
+    const refreshed = Object.fromEntries(Object.entries(stored.sets).map(([id, set]) => [id, refreshStoredTasks(set, all[id] ?? [])]))
+    return { ...all, ...refreshed }
   })
 
   /** Skriver lærerens lagrede oppgavesett til nettleseren. Bare oppgavesett – aldri elevdata. */

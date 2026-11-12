@@ -36,96 +36,181 @@ export interface NumbersContext {
 // ---------------------------------------------------------------------------------------------
 // Tall med desimalkomma.
 
-const merge = (text: string) => text.replace(/(\d) (?=\d{3}\b)/g, '$1')
-const NUMBER = String.raw`\d+(?:,\d+)?`
-const toNumber = (text: string) => Number(text.replace(/\s/g, '').replace(',', '.'))
-const same = (a: number, b: number) => Math.abs(a - b) < 1e-9
+export const merge = (text: string) => text.replace(/(\d) (?=\d{3}\b)/g, '$1')
+export const NUMBER = String.raw`\d+(?:,\d+)?`
+export const toNumber = (text: string) => Number(text.replace(/\s/g, '').replace(',', '.'))
+export const same = (a: number, b: number) => Math.abs(a - b) < 1e-9
 /** Alle tallene i teksten, med desimalkomma («1,3» er ett tall). */
 const numbersIn = (text: string) => (merge(text).match(new RegExp(NUMBER, 'g')) ?? []).map(toNumber)
-const digitsIn = (text: string) => (merge(text).match(/\d+/g) ?? []).map(Number)
+export const digitsIn = (text: string) => (merge(text).match(/\d+/g) ?? []).map(Number)
 
 /** Desimaltall med punktum («2.4»). */
-const DOT_DECIMAL = /\d\.\d/
+export const DOT_DECIMAL = /\d\.\d/
 /** Hundredeler eller flere desimaler («1,25», «12,50»), også med ord. */
-const HUNDREDTHS = /\d,\d{2,}|hundredel|tusendel/i
-const ANY_DECIMAL = /\d,\d/
+export const HUNDREDTHS = /\d,\d{2,}|hundredel|tusendel/i
+export const ANY_DECIMAL = /\d,\d/
 const OUTSIDE_TOPIC = /\bbrøk|\bvinkel|\bareal\b|\bomkrets|\bprosent|\bvolum\b|liter\b|\bdl\b|\bkilo(gram)?\b|\bkg\b|\bgram\b/i
 /** Påstand eller feil som eleven skal vurdere (nivå 3, og ikke på nivå 1). */
 const ASSESSMENT = new RegExp(`${CLAIM.source}|stemmer (det|dette)|finn feil|gjort feil|hva er galt`, 'iu')
 
 const NUMBER_WORDS: Record<string, number> = { én: 1, en: 1, ett: 1, ei: 1, to: 2, tre: 3, fire: 4, fem: 5, seks: 6, sju: 7, syv: 7, åtte: 8, ni: 9 }
-const countOf = (word: string) => (/^\d+$/.test(word) ? Number(word) : NUMBER_WORDS[word.toLowerCase()])
-const COUNT = String.raw`(\d+|én|en|ett|ei|to|tre|fire|fem|seks|sju|syv|åtte|ni)`
+export const countOf = (word: string) => (/^\d+$/.test(word) ? Number(word) : NUMBER_WORDS[word.toLowerCase()])
+export const COUNT = String.raw`(\d+|én|en|ett|ei|to|tre|fire|fem|seks|sju|syv|åtte|ni)`
 
 // ---------------------------------------------------------------------------------------------
-// Lengder.
+// Måleenheter. Én felles enhetskontroll for lengde (Tall og regning) og for volum, masse, areal, tid og
+// telleenheter (Måling). Hver enhet har en størrelse og en verdi i grunnenheten (mm, ml, g, cm², minutter),
+// så omgjøringer og sammenligninger regnes ut. Tall og regning bruker bare lengdeenhetene, som før.
 
-const UNIT_MM: Record<string, number> = { mm: 1, millimeter: 1, cm: 10, centimeter: 10, dm: 100, desimeter: 100, m: 1000, meter: 1000 }
-const UNIT = String.raw`(millimeter|centimeter|desimeter|meter|mm|cm|dm|m)`
-const MEASURE = new RegExp(String.raw`(${NUMBER})\s*${UNIT}(?![\p{L}])`, 'giu')
-const UNIT_WORD = new RegExp(String.raw`(?<![\p{L}])${UNIT}(?![\p{L}])`, 'iu')
-const short = (unit: string) => ({ millimeter: 'mm', centimeter: 'cm', desimeter: 'dm', meter: 'm' })[unit.toLowerCase()] ?? unit.toLowerCase()
+export type MeasureKind = 'lengde' | 'volum' | 'masse' | 'areal' | 'tid' | 'ruter' | 'rutesider' | 'terninger'
 
-interface Measure {
+interface UnitInfo {
+  kind: MeasureKind
+  /** Verdien av 1 enhet i grunnenheten for størrelsen. */
+  base: number
+  /** Kort skrivemåte (små bokstaver), f.eks. «dl» for både «dL», «dl» og «desiliter». */
+  short: string
+}
+
+const unit = (kind: MeasureKind, base: number, short: string, ...names: string[]) => names.map((name): [string, UnitInfo] => [name, { kind, base, short }])
+
+/** Enhetene kontrollene kjenner. Kilometer er ikke med (ikke i Tall og regning eller Måling på 4. trinn). */
+export const UNITS: Record<string, UnitInfo> = Object.fromEntries([
+  ...unit('lengde', 1, 'mm', 'millimeter', 'mm'),
+  ...unit('lengde', 10, 'cm', 'centimeter', 'cm'),
+  ...unit('lengde', 100, 'dm', 'desimeter', 'dm'),
+  ...unit('lengde', 1000, 'm', 'meter', 'm'),
+  ...unit('volum', 1, 'ml', 'milliliter', 'ml'),
+  ...unit('volum', 10, 'cl', 'centiliter', 'cl'),
+  ...unit('volum', 100, 'dl', 'desiliter', 'dl'),
+  ...unit('volum', 1000, 'l', 'liter', 'l'),
+  ...unit('masse', 0.001, 'mg', 'milligram', 'mg'),
+  ...unit('masse', 1, 'g', 'gram', 'g'),
+  ...unit('masse', 1000, 'kg', 'kilogram', 'kilo', 'kg'),
+  ...unit('masse', 1_000_000, 'tonn', 'tonn'),
+  ...unit('areal', 0.01, 'mm²', 'kvadratmillimeter', 'mm²'),
+  ...unit('areal', 1, 'cm²', 'kvadratcentimeter', 'cm²'),
+  ...unit('areal', 100, 'dm²', 'kvadratdesimeter', 'dm²'),
+  ...unit('areal', 10_000, 'm²', 'kvadratmeter', 'm²'),
+  ...unit('tid', 1 / 60, 'sek', 'sekunder', 'sekund', 'sek'),
+  ...unit('tid', 1, 'min', 'minutter', 'minutt', 'min'),
+  ...unit('tid', 15, 'kvarter', 'kvarter'),
+  ...unit('tid', 60, 't', 'timer', 'time', 't'),
+  ...unit('tid', 1440, 'døgn', 'døgn'),
+  ...unit('ruter', 1, 'ruter', 'ruter', 'rute'),
+  ...unit('rutesider', 1, 'rutesider', 'rutesider', 'rutesiden', 'ruteside'),
+  ...unit('terninger', 1, 'terninger', 'terninger', 'terning'),
+])
+
+/** Tall og regning: bare lengder. */
+export const LENGTH: readonly MeasureKind[] = ['lengde']
+
+const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+/** Enhetsnavnene for størrelsene, lengste først (så «minutter» går foran «min» og «m», og «cm²» foran «cm»). */
+const unitAlternatives = (kinds: readonly MeasureKind[]) =>
+  Object.keys(UNITS)
+    .filter((name) => kinds.includes(UNITS[name].kind))
+    .sort((a, b) => b.length - a.length)
+    .map(escape)
+    .join('|')
+/** Etter enheten: ingen bokstav, ikke ² (cm² er ikke cm) og ikke ^2 eller 2 rett etter (skrivefeil for cm²). */
+const UNIT_END = String.raw`(?![\p{L}²\d^])`
+/** Én enhet som fangegruppe, pakket inn så den kan stå med «?» etter seg. */
+export const unitPattern = (kinds: readonly MeasureKind[] = LENGTH) => String.raw`(?:(${unitAlternatives(kinds)})${UNIT_END})`
+const UNIT = unitPattern()
+const UNIT_WORD = new RegExp(String.raw`(?<![\p{L}])${UNIT}`, 'iu')
+export const unitInfo = (name: string) => UNITS[name.toLowerCase()]
+const short = (name: string) => unitInfo(name)?.short ?? name.toLowerCase()
+const baseOf = (name: string) => unitInfo(name)?.base ?? 1
+
+export interface Measure {
   value: number
+  /** Kort skrivemåte, f.eks. «dl». */
   unit: string
-  /** Lengden i millimeter. */
-  mm: number
+  kind: MeasureKind
+  /** Verdien i grunnenheten (lengde i mm, volum i ml, masse i g, areal i cm², tid i minutter). */
+  base: number
   index: number
   end: number
 }
 
-export function measuresIn(text: string): Measure[] {
-  return [...merge(text).matchAll(MEASURE)].map((m) => {
-    const unit = short(m[2])
+const measurePatterns = new Map<string, RegExp>()
+const measurePattern = (kinds: readonly MeasureKind[]) => {
+  const key = kinds.join()
+  if (!measurePatterns.has(key)) measurePatterns.set(key, new RegExp(String.raw`(${NUMBER})\s*${unitPattern(kinds)}`, 'giu'))
+  return measurePatterns.get(key)!
+}
+
+/** Målingene i teksten (tall med enhet). Posisjonene gjelder teksten med sammenslåtte tall («1 000» → «1000»). */
+export function measuresIn(text: string, kinds: readonly MeasureKind[] = LENGTH): Measure[] {
+  return [...merge(text).matchAll(measurePattern(kinds))].map((m) => {
+    const info = unitInfo(m[2])
     const value = toNumber(m[1])
-    return { value, unit, mm: value * UNIT_MM[unit], index: m.index!, end: m.index! + m[0].length }
+    return { value, unit: info.short, kind: info.kind, base: value * info.base, index: m.index!, end: m.index! + m[0].length }
   })
 }
 
-/** Setninger som bare forklarer enheten («1 cm er 10 mm.») – ikke lengden oppgaven handler om. */
-const DEFINITION = /^\s*1 \p{L}+ er (\d+) \p{L}+\.?\s*$/u
-const sentences = (text: string) => text.split(/(?<=[.?!])\s+|\n+/)
+/**
+ * Målinger med flere enheter lagt sammen: «2 kg og 50 g», «1 time og 30 minutter», «5 t 30 min», «1 liter og 3 desiliter».
+ * Delene må være samme størrelse, med større enhet først, og stå rett etter hverandre (mellomrom eller «og»).
+ */
+export function compoundsIn(text: string, kinds: readonly MeasureKind[]): Measure[] {
+  const flat = merge(text)
+  const result: Measure[] = []
+  for (const m of measuresIn(text, kinds)) {
+    const prev = result.at(-1)
+    const prevPart = prev && measuresIn(flat.slice(prev.index, prev.end), kinds).at(-1)
+    if (prev && prevPart && prev.kind === m.kind && baseOf(prevPart.unit) > baseOf(m.unit) && /^\s*(og\s+)?$/.test(flat.slice(prev.end, m.index))) {
+      result[result.length - 1] = { ...prev, base: prev.base + m.base, end: m.end }
+    } else result.push(m)
+  }
+  return result
+}
 
-/** Lengden oppgaven ber eleven gjøre om: én lengde, eller «1 meter og 3 desimeter» lagt sammen. */
-function lengthToConvert(studentText: string): number | null {
+/** Setninger som bare forklarer enheten («1 cm er 10 mm.») – ikke lengden oppgaven handler om. */
+export const DEFINITION = /^\s*1 \p{L}+ er (\d+) \p{L}+\.?\s*$/u
+export const sentences = (text: string) => text.split(/(?<=[.?!])\s+|\n+/)
+
+/** Målingen oppgaven ber eleven gjøre om: én måling, eller «1 meter og 3 desimeter» lagt sammen (i grunnenheten). */
+export function amountToConvert(studentText: string, kinds: readonly MeasureKind[] = LENGTH): number | null {
   const body = sentences(merge(studentText)).filter((s) => !DEFINITION.test(s)).join(' ')
-  const all = measuresIn(body)
+  const all = measuresIn(body, kinds)
   if (all.length === 0) return null
-  if (all.length === 1) return all[0].mm
+  if (all.length === 1) return all[0].base
   // «1 meter og 3 desimeter», «12 cm og 4 mm»
-  if (all.length === 2 && /^\s*og\s*$/.test(body.slice(all[0].end, all[1].index))) return all[0].mm + all[1].mm
+  if (all.length === 2 && /^\s*og\s*$/.test(body.slice(all[0].end, all[1].index))) return all[0].base + all[1].base
   return null
 }
 
 /** Enheten svaret skal oppgis i («Skriv … i desimeter», «Hvor mange centimeter …», «… er hvor mange cm?»). */
-function targetUnit(studentText: string): string | null {
+export function targetUnit(studentText: string, kinds: readonly MeasureKind[] = LENGTH): string | null {
+  const units = unitPattern(kinds)
   const m =
-    new RegExp(String.raw`(?:skriv|gjør om|hvor lang\w*|regn om)[^.?!]*?\b(?:i|til) ${UNIT}(?![\p{L}])`, 'iu').exec(studentText) ??
-    new RegExp(String.raw`hvor mange ${UNIT}(?![\p{L}])`, 'iu').exec(studentText)
+    new RegExp(String.raw`(?:skriv|gjør om|hvor lang\w*|regn om)[^.?!]*?\b(?:i|til) ${units}`, 'iu').exec(studentText) ??
+    new RegExp(String.raw`hvor mange ${units}`, 'iu').exec(studentText)
   return m ? short(m[1]) : null
 }
 
-/** «A u1 er B u2», «A u1 = B u2», «A u1, som er B u2» (to lengder rett etter hverandre): de må være like lange. */
-function conversionErrors(text: string): boolean {
-  const list = measuresIn(text)
+/** «A u1 er B u2», «A u1 = B u2», «A u1, som er B u2» (to målinger rett etter hverandre): de må være like store. */
+export const SAME_AMOUNT = /^\s*(=|er|er det samme som|,?\s*som er|,?\s*altså|,?\s*det vil si)\s*$/i
+export function conversionErrors(text: string, kinds: readonly MeasureKind[] = LENGTH): boolean {
+  const list = measuresIn(text, kinds)
   const flat = merge(text)
   return list.slice(1).some((m, i) => {
     const prev = list[i]
-    if (prev.unit === m.unit) return false
+    if (prev.unit === m.unit || prev.kind !== m.kind) return false
     const between = flat.slice(prev.end, m.index)
-    return /^\s*(=|er|er det samme som|,?\s*som er|,?\s*altså|,?\s*det vil si)\s*$/i.test(between) && !same(prev.mm, m.mm)
+    return SAME_AMOUNT.test(between) && !same(prev.base, m.base)
   })
 }
 
-/** Lengder i oppgaveteksten som sammenlignes i ulike enheter må stå i samme enhet i løsningen. */
-function missingCommonUnit(studentText: string, solution: string): boolean {
-  const given = measuresIn(studentText)
+/** Målinger i oppgaveteksten som sammenlignes i ulike enheter må stå i samme enhet i løsningen. */
+export function missingCommonUnit(studentText: string, solution: string, kinds: readonly MeasureKind[] = LENGTH): boolean {
+  const given = measuresIn(studentText, kinds)
   if (new Set(given.map((m) => m.unit)).size < 2) return false
-  const shown = measuresIn(solution)
-  return !Object.keys(UNIT_MM)
-    .filter((u) => u.length <= 2)
-    .some((unit) => given.every((g) => shown.some((s) => s.unit === unit && same(s.mm, g.mm))))
+  const shown = measuresIn(solution, kinds)
+  const shorts = [...new Set(Object.values(UNITS).filter((u) => kinds.includes(u.kind)).map((u) => u.short))]
+  return !shorts.some((unit) => given.every((g) => shown.some((s) => s.unit === unit && same(s.base, g.base))))
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -150,9 +235,9 @@ function comparisonProblem(studentText: string, solution: string): boolean {
   const biggest = /størst|lengst/i.test(ask[1])
   const measures = measuresIn(studentText)
   if (measures.length >= 2) {
-    const target = biggest ? Math.max(...measures.map((m) => m.mm)) : Math.min(...measures.map((m) => m.mm))
+    const target = biggest ? Math.max(...measures.map((m) => m.base)) : Math.min(...measures.map((m) => m.base))
     const answer = measuresIn(solution)[0]
-    return !!answer && !same(answer.mm, target)
+    return !!answer && !same(answer.base, target)
   }
   // Bare ett par per oppgave (flere par: ikke sikkert hvilket svar som hører til hvilket).
   const pairs = [...merge(studentText).matchAll(new RegExp(String.raw`(${NUMBER}) (?:eller|og) (${NUMBER})`, 'g'))]
@@ -169,7 +254,7 @@ function orderProblem(studentText: string, solution: string): boolean {
   const ascending = /minst|kortest/i.test(ask[1])
   const first = sentences(solution)[0] ?? ''
   const givenMeasures = measuresIn(studentText)
-  const value = (list: Measure[]) => list.map((m) => m.mm)
+  const value = (list: Measure[]) => list.map((m) => m.base)
   const [given, answer] =
     givenMeasures.length >= 2
       ? [value(givenMeasures), value(measuresIn(first))]
@@ -190,11 +275,11 @@ function claimProblem(studentText: string, solution: string): boolean {
   const compare = new RegExp(String.raw`(${NUMBER})\s*${UNIT}?\s*(?:er|må være) (mindre|større|kortere|lengre) enn (${NUMBER})\s*${UNIT}?`, 'iu').exec(text)
   let truth: boolean | null = null
   if (compare) {
-    const [a, b] = [toNumber(compare[1]) * (compare[2] ? UNIT_MM[short(compare[2])] : 1), toNumber(compare[4]) * (compare[5] ? UNIT_MM[short(compare[5])] : 1)]
+    const [a, b] = [toNumber(compare[1]) * (compare[2] ? baseOf(compare[2]) : 1), toNumber(compare[4]) * (compare[5] ? baseOf(compare[5]) : 1)]
     truth = /mindre|kortere/i.test(compare[3]) ? a < b : a > b
   } else if (/det samme som|like (lange?|langt)/i.test(text)) {
     const list = measuresIn(text)
-    if (list.length === 2) truth = same(list[0].mm, list[1].mm)
+    if (list.length === 2) truth = same(list[0].base, list[1].base)
   }
   return truth !== null && (conclusion === 'ja') !== truth
 }
@@ -296,10 +381,10 @@ export function numbersProblem(task: AiTaskDraft, { area, secondaryAreas = [] }:
     if (measuresIn(solution).length === 0) return 'missingUnit'
     if (conversionErrors(solution) || (!assessment && conversionErrors(studentText))) return 'wrongConversion'
     const target = targetUnit(studentText)
-    const length = lengthToConvert(studentText)
+    const length = amountToConvert(studentText)
     if (target && length !== null && !assessment) {
       const given = measuresIn(solution)[0]
-      if (given.unit !== target || !same(given.mm, length)) return 'wrongConversion'
+      if (given.unit !== target || !same(given.base, length)) return 'wrongConversion'
     }
     if (/\b(lengst|kortest|lengre|kortere|sorter|ordne|rekkefølge|sammenlign)/i.test(studentText) && missingCommonUnit(studentText, solution)) return 'wrongConversion'
   }

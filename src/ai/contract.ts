@@ -107,6 +107,16 @@ export interface AiTextDraft extends AiDraftBase {
   invalidFigure?: true
   /** Satt av serveren når AI-en uttrykkelig svarte «ingen figur» (betyr noe ved justering av en oppgave med figur). */
   noFigure?: true
+  /**
+   * Mønster og algoritmer, satt av serveren etter kontrollene: antall prikker i figur 1, 2, 3 … slik teksten oppgir
+   * dem (appen tegner prikkene), og at tallrekka med tomme felt skal vises med inputbokser.
+   */
+  dotCounts?: number[]
+  answerBoxes?: true
+  /** Mønster og algoritmer: fargerekka i teksten, som appen tegner som sirkler (satt av serveren etter kontrollene). */
+  colorItems?: string[]
+  /** Mønster og algoritmer: det korte svaret kontrollen selv regnet ut og fant i fasiten – appen retter det automatisk. */
+  expected?: { kind: string; value?: number | string; values?: (number | string)[] }
 }
 
 /** Kort regnestykke (tall – regneart – tall), vist som de vanlige hoderegningsoppgavene. Appen retter svaret selv. */
@@ -270,6 +280,25 @@ export type NumbersAndOperationsArea = (typeof NUMBERS_AND_OPERATIONS_AREAS)[num
 export const DIVISION_STRATEGIES_AREAS = ['plassverdi-deling', 'gode-delestrategier', 'sammenhenger-divisjon', 'dividere-10-100', 'del-av-hel-mengde'] as const
 export type DivisionStrategiesArea = (typeof DIVISION_STRATEGIES_AREAS)[number]
 
+/**
+ * Fagområdene i Måling, i progresjonsrekkefølge. Underpunktene i innholdsplanen er slått sammen: «Måle volum» og
+ * «Liter og desiliter» er ett område, det samme er «Måle areal» og «Areal og omkrets». Desimaltall i lengdemåling
+ * hører til Tall og regning; her gjelder desimaltall liter og kilogram.
+ */
+export const MEASUREMENT_AREAS = ['volum-liter-desiliter', 'desimaltall-maling', 'kilogram-gram', 'areal-omkrets', 'tid'] as const
+export type MeasurementArea = (typeof MEASUREMENT_AREAS)[number]
+
+/**
+ * Fagområdene i Mønster og algoritmer, i progresjonsrekkefølge. Temaet har fire økter: den første dekker både
+ * «Utforske mønster» og «Figurtall» (figurtall som tilgrensende område).
+ */
+export const PATTERN_AREAS = ['utforske-monster', 'figurtall', 'tallfolger', 'koder-lokker', 'koder-vilkar'] as const
+export type PatternArea = (typeof PATTERN_AREAS)[number]
+
+/** Fagområdene i Regning, i progresjonsrekkefølge. Seks økter: to per fagområde i uke 1 og 3, og begge i uke 2 om regneartene. */
+export const ARITHMETIC_AREAS = ['diagrammer', 'tabeller', 'fire-regnearter', 'algebra'] as const
+export type ArithmeticArea = (typeof ARITHMETIC_AREAS)[number]
+
 /** Temaene som har en referansebank på serveren, med fagområdene sine. */
 export const REFERENCE_TOPICS = {
   multiplikasjon: MULTIPLICATION_AREAS,
@@ -279,6 +308,9 @@ export const REFERENCE_TOPICS = {
   problemlosing: PROBLEM_SOLVING_AREAS,
   'tall-og-regning': NUMBERS_AND_OPERATIONS_AREAS,
   'strategier-i-divisjon': DIVISION_STRATEGIES_AREAS,
+  maling: MEASUREMENT_AREAS,
+  'monster-og-algoritmer': PATTERN_AREAS,
+  regning: ARITHMETIC_AREAS,
 } as const
 export type ReferenceTopic = keyof typeof REFERENCE_TOPICS
 /** Et fagområde i en av referansebankene. Områdene har unike ID-er på tvers av temaene. */
@@ -290,6 +322,9 @@ export type ReferenceArea =
   | ProblemSolvingArea
   | NumbersAndOperationsArea
   | DivisionStrategiesArea
+  | MeasurementArea
+  | PatternArea
+  | ArithmeticArea
 
 export const TOPIC_TITLES: Record<ReferenceTopic, string> = {
   multiplikasjon: 'Multiplikasjon',
@@ -299,6 +334,9 @@ export const TOPIC_TITLES: Record<ReferenceTopic, string> = {
   problemlosing: 'Problemløsing',
   'tall-og-regning': 'Tall og regning',
   'strategier-i-divisjon': 'Strategier i divisjon',
+  maling: 'Måling',
+  'monster-og-algoritmer': 'Mønster og algoritmer',
+  regning: 'Regning',
 }
 
 export const AREA_TITLES: Record<ReferenceArea, string> = {
@@ -334,6 +372,20 @@ export const AREA_TITLES: Record<ReferenceArea, string> = {
   'sammenhenger-divisjon': 'Sammenhenger i divisjon',
   'dividere-10-100': 'Dividere med 10 og 100',
   'del-av-hel-mengde': 'Del av en hel og del av en mengde',
+  'volum-liter-desiliter': 'Volum, liter og desiliter',
+  'desimaltall-maling': 'Desimaltall i måling',
+  'kilogram-gram': 'Kilogram og gram',
+  'areal-omkrets': 'Areal og omkrets',
+  tid: 'Tid',
+  'utforske-monster': 'Utforske mønster',
+  figurtall: 'Figurtall',
+  tallfolger: 'Mønster i tallfølger',
+  'koder-lokker': 'Koder med løkker',
+  'koder-vilkar': 'Koder med vilkår',
+  diagrammer: 'Lese og tolke diagrammer',
+  tabeller: 'Lese og tolke tabeller',
+  'fire-regnearter': 'De fire regneartene',
+  algebra: 'Utforske algebra',
 }
 
 export const isMultiplicationArea = (value: unknown): value is MultiplicationArea =>
@@ -720,7 +772,11 @@ export function isTaskResult(value: unknown): value is TaskResult {
             t.studentText.length > 0 &&
             typeof t.solution === 'string' &&
             t.solution.length > 0 &&
-            (t.figure === undefined || readStoredVisual(t.figure) !== null),
+            (t.figure === undefined || readStoredVisual(t.figure) !== null) &&
+            (t.dotCounts === undefined || (Array.isArray(t.dotCounts) && t.dotCounts.length > 0 && t.dotCounts.every((c) => Number.isInteger(c) && c > 0))) &&
+            (t.answerBoxes === undefined || t.answerBoxes === true) &&
+            (t.colorItems === undefined || (Array.isArray(t.colorItems) && t.colorItems.every((c) => typeof c === 'string'))) &&
+            (t.expected === undefined || (typeof t.expected === 'object' && t.expected !== null && typeof t.expected.kind === 'string')),
     )
   )
 }

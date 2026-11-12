@@ -545,7 +545,7 @@ describe('13. «Andre ønsker» kan ikke overstyre fagområde, nivå eller matem
 describe('14. andre temaer og referansebanker er uendret', () => {
   const hash = (data: string | Buffer) => createHash('sha256').update(data).digest('hex').slice(0, 16)
 
-  it('de seks andre bankene er byte for byte uendret, og utvalget i dem er det samme som før', () => {
+  it('de andre bankene er byte for byte uendret, og utvalget i dem er det samme som før', () => {
     const file = (name: string) => readFileSync(new URL(`./references/${name}_referanser.json`, import.meta.url))
     assert.equal(hash(file('multiplikasjon')), '4e3e3970c12f95a6')
     assert.equal(hash(file('tall_og_plassverdi')), '21ba85a512aeffed')
@@ -553,27 +553,31 @@ describe('14. andre temaer og referansebanker er uendret', () => {
     assert.equal(hash(file('geometri')), 'f5051a7c950ae47c')
     assert.equal(hash(file('problemlosing')), '380ddf92250336a8')
     assert.equal(hash(file('tall_og_regning')), 'bc0636c64aaef7f8')
-    assert.equal(referenceBanks.filter((r) => r.topic !== 'strategier-i-divisjon').length, 54 + 45 + 36 + 36 + 36 + 36)
+    // Måling, Mønster og algoritmer og Regning er lagt til samtidig (se measurementAi.test.ts, patternAi.test.ts og arithmeticAi.test.ts).
+    assert.equal(referenceBanks.filter((r) => !['strategier-i-divisjon', 'maling', 'monster-og-algoritmer', 'regning'].includes(r.topic)).length, 54 + 45 + 36 + 36 + 36 + 36)
     for (const [area, level] of [['multiplikasjon-divisjon', 2], ['delingsdivisjon-malingsdivisjon', 1], ['modeller', 3]] as const) {
       assert.deepEqual(selectReferences(referenceBanks, { area, level, seed: 11 }).map((r) => r.id), selectReferences(divisionReferences, { area, level, seed: 11 }).map((r) => r.id))
     }
   })
 
   it('alle økter i de andre temaene og arbeidsarkene er uendret – i repetisjon bare oppgavene fra Strategier i divisjon', () => {
-    const all = unitSpecs.filter((u) => u.unitId !== 'strategier-i-divisjon').flatMap((u) => planned(u.unitId))
-    const touched = (s: Planned) => s.skills.some((k) => k.startsWith('sdiv.'))
-    const others = all.filter((s) => !touched(s)).map((s) => ({ id: s.id, heading: s.heading, skills: s.skills, profile: s.profile ?? null, levels: levelsFor(s, 5, 6), tasks: buildTasks(s) }))
-    assert.equal(others.length, 77)
-    assert.equal(hash(JSON.stringify(others)), '82fb84098eaf34bb')
+    // Måling, Mønster og algoritmer, Regning, repetisjonsøkter med undertema derfra og geometri-6 er endret samtidig
+    // (se measurementAi.test.ts, patternAi.test.ts, arithmeticAi.test.ts og geometryAi.test.ts).
+    const all = unitSpecs.filter((u) => !['strategier-i-divisjon', 'maling', 'monster-og-algoritmer', 'regning'].includes(u.unitId)).flatMap((u) => planned(u.unitId))
+    const touched = (s: Planned) => s.skills.some((k) => k.startsWith('sdiv.') || k.startsWith('mal.') || k.startsWith('mon.'))
+    const others = all.filter((s) => !touched(s) && s.id !== 'geometri-6').map((s) => ({ id: s.id, heading: s.heading, skills: s.skills, profile: s.profile ?? null, levels: levelsFor(s, 5, 6), tasks: buildTasks(s) }))
+    assert.equal(others.length, 58)
+    assert.equal(hash(JSON.stringify(others)), '921ec43842aeb44d')
     // Repetisjonsøkta: samme overskrift, undertema og antall oppgaver, og oppgavene om målingsdivisjon og delingsdivisjon er de samme.
-    const rep = all.filter(touched)
+    const rep = all.filter((s) => s.skills.some((k) => k.startsWith('sdiv.')))
     assert.deepEqual(rep.map((s) => [s.id, s.heading, s.skills.join(',')]), [['repetisjon-var-1', 'Repetisjon: divisjon og ulike strategier', 'sdiv.hte,sdiv.malings-delings']])
     const tasks = buildTasks(rep[0])
     assert.equal(tasks.length, 15)
     const kept = tasks.filter((t) => rep[0].skills[(Number(t.id.split('-').at(-1)) - 1) % rep[0].skills.length] !== 'sdiv.hte')
     assert.equal(hash(JSON.stringify(kept)), 'b27fdb0dba94db43')
-    // Arbeidsarket i økt 1 (store delestykker på nivå 3) er uendret.
-    assert.equal(hash(JSON.stringify(worksheetTasks)), 'd20a8f714743442c')
+    // Arbeidsarket i økt 1 (store delestykker på nivå 3) er uendret. Arbeidsarkene i Måling og Mønster og algoritmer er endret samtidig.
+    assert.equal(hash(JSON.stringify(Object.fromEntries(Object.entries(worksheetTasks).filter(([id]) => !id.startsWith('maling-') && !id.startsWith('monster-og-algoritmer-'))))), 'b573e51e205df96d')
+    assert.equal(worksheetTasks['strategier-i-divisjon-1'].length, 6)
   })
 
   it('regelversjon, modeller og tidsgrenser er uendret', () => {
