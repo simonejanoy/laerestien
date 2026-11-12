@@ -5,10 +5,8 @@ import {
   type AiResponseMeta,
   type ChatContent,
   type ChatResponse,
-  type ProfileRequest,
   type TaskRequest,
   type TaskResult,
-  type TextResponse,
 } from './contract'
 
 // Kall fra appen til AI-assistenten. Alt går via API-serveren (/api/ai/…), som har
@@ -62,12 +60,6 @@ export async function requestTasks(request: TaskRequest): Promise<TaskResult> {
     ...(incomplete && { incomplete }),
     meta: readMeta(data),
   }
-}
-
-export async function requestProfile(request: ProfileRequest): Promise<TextResponse> {
-  const data = (await post('profil', request)) as Partial<TextResponse>
-  if (typeof data.text !== 'string') throw new AiError('AI-svaret hadde feil format. Prøv igjen.')
-  return { text: data.text, meta: readMeta(data) }
 }
 
 export async function sendChat(history: ChatContent[]): Promise<ChatResponse> {

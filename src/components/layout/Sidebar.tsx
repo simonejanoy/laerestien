@@ -4,6 +4,7 @@ import {
   House,
   ListOrdered,
   LogOut,
+  PanelLeftClose,
   UserRoundGroup,
   X,
   type LucideIcon,
@@ -31,9 +32,12 @@ interface SidebarProps {
   /** Om menyen er åpen på små skjermer (under 1024 px). Fra 1024 px vises den alltid. */
   open: boolean
   onClose: () => void
+  /** Fra 1024 px: menyen er skjult (læreren har lukket den). */
+  collapsed: boolean
+  onToggleCollapsed: () => void
 }
 
-export function Sidebar({ open, onClose }: SidebarProps) {
+export function Sidebar({ open, onClose, collapsed, onToggleCollapsed }: SidebarProps) {
   const { profile, logout } = useAuth()
   const [classesOpen, setClassesOpen] = useState(false)
   const { pathname } = useLocation()
@@ -52,10 +56,20 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     <aside
       id="sidemeny"
       aria-label="Hovedmeny"
-      className={`fixed inset-y-0 left-0 z-40 flex w-60 flex-col gap-6 overflow-y-auto bg-sidebar px-6 pt-8 pb-6 transition-transform lg:visible lg:translate-x-0 ${
-        open ? 'visible translate-x-0' : 'invisible -translate-x-full'
-      }`}
+      className={`fixed inset-y-0 left-0 z-40 flex w-60 flex-col gap-6 overflow-y-auto bg-sidebar px-6 pt-8 pb-6 transition-transform ${
+        collapsed ? 'lg:invisible lg:-translate-x-full' : 'lg:visible lg:translate-x-0'
+      } ${open ? 'visible translate-x-0' : 'invisible -translate-x-full'}`}
     >
+      <button
+        type="button"
+        onClick={onToggleCollapsed}
+        aria-label="Skjul meny"
+        aria-expanded={!collapsed}
+        aria-controls="sidemeny"
+        className="absolute top-3 right-3 hidden size-10 cursor-pointer items-center justify-center rounded-md text-on-sidebar hover:bg-on-sidebar/15 focus-visible:outline-2 focus-visible:outline-on-sidebar lg:flex"
+      >
+        <PanelLeftClose className="size-6" />
+      </button>
       <button
         type="button"
         onClick={onClose}
@@ -65,7 +79,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         <X className="size-6" />
       </button>
 
-      <div className="flex items-center gap-3">
+      {/* Plass til høyre for knappen som skjuler/lukker menyen (øverst til høyre), så den ikke ligger oppå navnet. */}
+      <div className="flex items-center gap-3 pr-11">
         <Avatar name={profile?.name ?? ''} />
         <div className="flex min-w-0 flex-col items-start">
           <UserMenu name={profile?.name ?? ''} onLogout={logout} />

@@ -6,13 +6,12 @@ import { FullPageMessage } from '../auth/ProtectedRoute'
 import { anonProfile } from '../../ai/anonymize'
 import { useSessions } from '../sessions/sessionsContext'
 import { students, studentsClassId } from '../class/students'
-import { AiProfileSuggestion } from './AiProfileSuggestion'
 import { ProgressChart } from './ProgressChart'
 import { StudentCarousel } from './StudentCarousel'
 import { SuggestedTasksDialog } from './SuggestedTasksDialog'
 import { months, statsFor } from './mockData'
 import { DotTag, MasteryTable, PatternContent, StatPanel } from './parts'
-import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
+import { Breadcrumbs } from '../../components/ui/Breadcrumbs'
 
 const possessive = (name: string) => (name.endsWith('s') ? `${name}'` : `${name}s`)
 
@@ -26,7 +25,7 @@ export function StudentStatsPage() {
   const contentRef = useRef<HTMLDivElement>(null)
   const shownId = useRef(student?.id)
   const { addStudentTasks } = useSessions()
-  // Det AI-en får vite om eleven: anonym ID og resultater, ikke navn.
+  // Det AI-en får vite om eleven i «Foreslåtte oppgaver»: anonym ID og resultater, ikke navn.
   const profile = useMemo(() => student && anonProfile(student, statsFor(student, index)), [student, index])
 
   // Rolig inntoning når man bytter elev. Siden beholdes (ingen remount); bare innholdet tones inn.
@@ -52,8 +51,8 @@ export function StudentStatsPage() {
         Tilbake
       </Link>
 
-      <PageBreadcrumbs
-        inClass
+      {/* Åpnes fra Statistikk i sidemenyen – brødsmulene starter der, ikke på Oversikt. */}
+      <Breadcrumbs
         items={[{ label: 'Statistikk', to: '/statistikk' }, { label: `${firstName} ${student.name.split(' ')[1]?.[0] ?? ''}.` }]}
       />
       <h1 className="text-h1 text-black">Statistikk</h1>
@@ -86,7 +85,6 @@ export function StudentStatsPage() {
           </StatPanel>
         </div>
 
-        <AiProfileSuggestion key={student.id} firstName={firstName} classId={studentsClassId} profile={profile} />
       </div>
 
       <StudentCarousel students={students} activeId={student.id} />

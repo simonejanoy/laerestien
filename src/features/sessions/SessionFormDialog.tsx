@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { Button } from '../../components/ui/Button'
 import { Modal, ModalCloseButton } from '../../components/ui/Modal'
-import type { CalendarSlot, Session, Weekday } from '../../types'
-import { breaks, isSameWeek, lessonSlots, timeSlots, weekdays, type WeekRef } from '../calendar/mockData'
+import type { CalendarSlot, Session } from '../../types'
+import { breaks, dateOf, isSameWeek, lessonSlots, timeSlots, weekOf, weekdays, type WeekRef } from '../calendar/mockData'
 import { terms } from '../topics/mockData'
 import { useSessions, type SessionInput } from './sessionsContext'
 
@@ -20,6 +20,18 @@ const fieldClass =
   'w-full rounded-md border border-surface bg-background px-3 py-2 text-small text-on-background outline-none focus:border-secondary'
 const labelClass = 'flex flex-col gap-1 text-small text-primary'
 
+/** Dato → «2026-11-09» (lokal tid, som datofeltet bruker). */
+const toInputValue = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+
+/** «2026-11-09» → dato (lokal tid), eller null når feltet er tomt eller ugyldig. */
+function fromInputValue(value: string) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!m) return null
+  const date = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
 /** Timen etter `time` samme dag, hvis den ikke er et friminutt. */
 function nextLesson(time: string) {
   const next = timeSlots[timeSlots.indexOf(time) + 1]
@@ -31,7 +43,10 @@ export function SessionFormDialog({ open, session, week, onClose, onSave }: Sess
   const { calendarEntries } = useSessions()
 
   const [topicId, setTopicId] = useState(session?.topicId ?? 'tall')
-  const [day, setDay] = useState<Weekday>(session?.slots[0].day ?? 'Mandag')
+  // Datoen: økta sin dato, ellers mandagen i uka læreren står i (læreren kan velge en annen dato).
+  const [dateValue, setDateValue] = useState(() =>
+    toInputValue(session ? dateOf(session, session.slots[0].day) : dateOf(week ?? weekOf(new Date()), 'Mandag')),
+  )
   const [time, setTime] = useState(session?.slots[0].time ?? lessonSlots[0])
   const [double, setDouble] = useState((session?.slots.length ?? 1) > 1)
   const [heading, setHeading] = useState(session?.heading ?? '')
@@ -41,10 +56,20 @@ export function SessionFormDialog({ open, session, week, onClose, onSave }: Sess
   const secondTime = nextLesson(time)
   const canBeDouble = secondTime !== undefined
 
-  const at = session ?? week
-
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
+    const date = fromInputValue(dateValue)
+    if (!date) {
+      setError('Velg en dato.')
+      return
+    }
+    // Kalenderen har bare skoledagene mandag–fredag.
+    const day = weekdays[(date.getDay() + 6) % 7]
+    if (!day) {
+      setError('Velg en dag fra mandag til fredag.')
+      return
+    }
+    const at = weekOf(date)
     const slots: CalendarSlot[] = [{ day, time }]
     if (double && secondTime) slots.push({ day, time: secondTime })
 
@@ -52,7 +77,7 @@ export function SessionFormDialog({ open, session, week, onClose, onSave }: Sess
       calendarEntries.some(
         (e) =>
           e.sessionId !== session?.id &&
-          (!at || isSameWeek(e, at)) &&
+          isSameWeek(e, at) &&
           e.day === slot.day &&
           e.time === slot.time,
       ),
@@ -61,7 +86,7 @@ export function SessionFormDialog({ open, session, week, onClose, onSave }: Sess
       setError(`Det er allerede en økt ${taken.day.toLowerCase()} kl. ${taken.time}. Velg en annen tid.`)
       return
     }
-    onSave({ topicId, heading: heading.trim(), description: description.trim(), slots })
+    onSave({ topicId, heading: heading.trim(), description: description.trim(), slots, week: at })
   }
 
   const title = session ? 'Rediger økt' : 'Ny undervisningsøkt'
@@ -99,12 +124,17 @@ export function SessionFormDialog({ open, session, week, onClose, onSave }: Sess
 
         <div className="grid grid-cols-2 gap-3">
           <label className={labelClass}>
-            Dag
-            <select value={day} onChange={(e) => setDay(e.target.value as Weekday)} className={`${fieldClass} cursor-pointer`}>
-              {weekdays.map((d) => (
-                <option key={d}>{d}</option>
-              ))}
-            </select>
+            Dato
+            <input
+              type="date"
+              required
+              value={dateValue}
+              onChange={(e) => {
+                setDateValue(e.target.value)
+                setError(null)
+              }}
+              className={`${fieldClass} cursor-pointer`}
+            />
           </label>
           <label className={labelClass}>
             Starttid

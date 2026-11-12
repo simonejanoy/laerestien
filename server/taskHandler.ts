@@ -7,6 +7,8 @@ import {
   readStoredVisual,
   readLevelContexts,
   readSessionProfile,
+  MAX_PER_LEVEL,
+  targetLevelsOf,
   type AiLevel,
   type AiLevelContext,
   type AiResponseMeta,
@@ -91,7 +93,16 @@ export function createTaskHandler({
 
     // Bare kjente felter og høyst tre referanseoppgaver per nivå går videre til AI-en.
     if (request.kind === 'general') {
-      request.levels = readLevelContexts(request.levels)
+      // Antall per nivå: et positivt heltall (høyst MAX_PER_LEVEL). Nivåene: de læreren valgte, ellers alle tre.
+      if (!Number.isInteger(request.perLevel) || request.perLevel < 1 || request.perLevel > MAX_PER_LEVEL) {
+        throw new HttpError(400, `Antall oppgaver per nivå må være et helt tall fra 1 til ${MAX_PER_LEVEL}.`)
+      }
+      if (request.targetLevels !== undefined && (!Array.isArray(request.targetLevels) || targetLevelsOf(request.targetLevels).length !== new Set(request.targetLevels).size)) {
+        throw new HttpError(400, 'Velg minst ett nivå (1, 2 eller 3).')
+      }
+      request.targetLevels = targetLevelsOf(request.targetLevels)
+      const targets = request.targetLevels
+      request.levels = readLevelContexts(request.levels).filter((l) => targets.includes(l.level))
       request.profile = readSessionProfile(request.profile)
       const area = request.profile?.area
       if (area) {
@@ -174,6 +185,8 @@ export function createTaskHandler({
   async function generalTasks(request: GeneralRequest, trace: AiResponseMeta): Promise<TaskResult> {
     const requestId = trace.requestId!
     const { perLevel } = request
+    // Bare nivåene læreren valgte (alle tre når feltet mangler).
+    const LEVELS = targetLevelsOf(request.targetLevels)
     const { reservePerLevel, maxRefillAttempts } = aiConfig.taskGeneration
     const accepted: AiTaskDraft[] = []
     const rejected: { task: AiTaskDraft; reason: RemovalReason }[] = []
@@ -286,7 +299,7 @@ export function createTaskHandler({
       ...Object.fromEntries(Object.entries(removedTotal).map(([reason, n]) => [`removed_${reason}`, n])),
     }
     log(finalLog)
-    if (!delivered) return { tasks: [], message, warning: incompleteMessage(perLevel * 3), incomplete: true, meta }
+    if (!delivered) return { tasks: [], message, warning: incompleteMessage(perLevel * LEVELS.length), incomplete: true, meta }
     return { tasks, message, meta }
   }
 

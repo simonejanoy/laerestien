@@ -330,7 +330,7 @@ describe('utfylling og logging i Tall og plassverdi', () => {
     assert.equal((result as TaskResult).tasks.length, 6)
     assert.ok(Object.values(result.meta?.referenceIds ?? {}).flat().every((id) => id.startsWith('M2-')))
     assert.ok(prompts[0].includes('Hovedtema: Multiplikasjon') && prompts[0].includes('Bruk bare gangetabellene'))
-    assert.equal(aiConfig.rulesVersion, '8')
+    assert.equal(aiConfig.rulesVersion, '9')
     assert.equal(aiConfig.timeoutMsByUse.tasks?.primary, 4_000)
   })
 })

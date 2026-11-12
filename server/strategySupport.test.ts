@@ -226,9 +226,8 @@ describe('tidsgrense før reservemodellen', () => {
     return { events, callModel }
   }
 
-  it('konfigurasjonen: 4 sekunder for oppgaver, uendret for profil og chat', () => {
+  it('konfigurasjonen: 4 sekunder for oppgaver, uendret for chat', () => {
     assert.deepEqual(timeoutsFor('tasks'), { primary: 4_000, fallback: 20_000 })
-    assert.deepEqual(timeoutsFor('profile'), { primary: 12_000, fallback: 20_000 })
     assert.deepEqual(timeoutsFor('chat'), { primary: 12_000, fallback: 20_000 })
     assert.equal(aiConfig.primaryModel, 'gemini-3.8-flash')
     assert.equal(aiConfig.fallbackModel, 'gemini-3.5-flash-lite')
@@ -256,8 +255,8 @@ describe('tidsgrense før reservemodellen', () => {
     )
   })
 
-  it('profil og chat bruker fortsatt 12 sekunder for primærmodellen', async () => {
-    for (const use of ['profile', 'chat'] as const) {
+  it('chat bruker fortsatt 12 sekunder for primærmodellen', async () => {
+    for (const use of ['chat'] as const) {
       const logs: AiLogEntry[] = []
       const generate = createGenerate({ callModel: async () => ok('svar'), log: (e) => logs.push(e) })
       await generate(use, contents)
@@ -266,15 +265,15 @@ describe('tidsgrense før reservemodellen', () => {
     }
   })
 
-  it('profil avbrytes ikke etter 4 sekunder (skalert: grensene per bruk følges)', async () => {
+  it('chat avbrytes ikke etter 4 sekunder (skalert: grensene per bruk følges)', async () => {
     // Grensene fra konfigurasjonen, delt på 100, så testen går raskt.
-    const scaled = (use: 'tasks' | 'profile' | 'chat') => ({ primary: timeoutsFor(use).primary / 100, fallback: timeoutsFor(use).fallback / 100 })
+    const scaled = (use: 'tasks' | 'chat') => ({ primary: timeoutsFor(use).primary / 100, fallback: timeoutsFor(use).fallback / 100 })
     const { callModel } = hangingPrimary()
     const logs: AiLogEntry[] = []
     const generate = createGenerate({ callModel, timeoutMs: scaled, log: (e) => logs.push(e) })
     const started = Date.now()
-    await generate('profile', contents)
-    assert.ok(Date.now() - started >= 115, 'profil skal vente 12 s-tilsvarende (120 ms)')
+    await generate('chat', contents)
+    assert.ok(Date.now() - started >= 115, 'chat skal vente 12 s-tilsvarende (120 ms)')
     assert.equal(logs[0].timeoutMs, 120)
   })
 })

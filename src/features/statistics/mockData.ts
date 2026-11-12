@@ -1,4 +1,4 @@
-import type { MasteryStatus, Pattern, Student, StudentStats, TopicInsight, TopicMastery } from '../../types'
+import type { MasteryStatus, Pattern, Student, StudentStats, TopicInsight, TopicMastery } from '../../types/index.ts'
 
 // Testdata for statistikken. Tallene for klassen og Emma er fra Figma;
 // de andre elevene får utregnede eksempeltall.
@@ -44,14 +44,6 @@ export const classPatterns: Pattern[] = [
   },
 ]
 
-export const classMastery: TopicMastery[] = [
-  { topic: 'Tallforståelse', status: 'understanding', filled: 6 },
-  { topic: 'Regning', status: 'needsSupport', filled: 6, note: 'Tierovergang' },
-  { topic: 'Geometri', status: 'understanding', filled: 4 },
-  { topic: 'Måling', status: 'insufficient', filled: 2, note: 'Trenger en økt til' },
-  { topic: 'Problemløsning', status: 'needsSupport', filled: 4, note: 'Tolke tekstoppgaver' },
-  { topic: 'Mønstre', status: 'insufficient', filled: 1, note: 'Trenger to økter til' },
-]
 
 /** Elever som er klare for mer utfordring, og i hvilket tema. */
 export const readyForChallenge = [
@@ -64,6 +56,7 @@ export const topicInsights: TopicInsight[] = [
   {
     topic: 'Regning',
     status: 'needsSupport',
+    note: 'Tierovergang',
     tasks: [
       { expression: '23 + 14 =', category: 'Addisjon uten tierovergang', level: 1, attempted: 18, correct: 17 },
       { expression: '56 − 21 =', category: 'Subtraksjon uten tierovergang', level: 1, attempted: 18, correct: 16 },
@@ -81,6 +74,25 @@ export const topicInsights: TopicInsight[] = [
     goingWell: 'Alle har gjort nivå 1-oppgavene, og nesten alle fikk dem riktig.',
   },
 ]
+
+/** Temaene i Temaoversikt, i fast rekkefølge. */
+export const classTopics = ['Tallforståelse', 'Regning', 'Geometri', 'Måling', 'Problemløsning', 'Mønstre']
+
+/**
+ * Raden i Temaoversikt for et tema, regnet ut fra det samme datagrunnlaget som detaljvisningen (topicInsights),
+ * så de aldri sier noe forskjellig:
+ * - uten besvarte oppgaver i temaet: «For lite grunnlag» og ingen fylte felt – ingen faglig vurdering
+ * - ellers: statusen fra datagrunnlaget, og de åtte feltene viser andelen riktige svar i temaets oppgaver
+ *   (riktige / besvarte, avrundet til nærmeste åttendedel)
+ */
+export function masteryOf(topic: string, insight: TopicInsight | undefined): TopicMastery {
+  const attempted = insight?.tasks.reduce((n, t) => n + t.attempted, 0) ?? 0
+  if (!insight || attempted === 0) return { topic, status: 'insufficient', filled: 0, note: 'Ingen oppgaver gjort ennå' }
+  const correct = insight.tasks.reduce((n, t) => n + t.correct, 0)
+  return { topic, status: insight.status, filled: Math.round((correct / attempted) * 8), note: insight.note }
+}
+
+export const classMastery: TopicMastery[] = classTopics.map((topic) => masteryOf(topic, topicInsights.find((t) => t.topic === topic)))
 
 const emmaStats: StudentStats = {
   firstTry: 72,

@@ -1,10 +1,9 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import type { Content } from '@google/genai'
-import type { AiResponseMeta, ChatRequest, ChatResponse, ProfileRequest, TextResponse } from '../src/ai/contract.ts'
-import { requireOwnClass, requireTeacher, type Teacher } from './auth.ts'
+import type { AiResponseMeta, ChatRequest, ChatResponse } from '../src/ai/contract.ts'
+import { requireTeacher, type Teacher } from './auth.ts'
 import { HttpError } from './errors.ts'
 import { generate, logToConsole, type GenerateResult } from './gemini.ts'
-import { profilePrompt } from './prompts.ts'
 import { createTaskHandler } from './taskHandler.ts'
 
 // API-serveren for AI-assistenten. Nettleseren snakker bare med denne – aldri direkte
@@ -13,8 +12,6 @@ import { createTaskHandler } from './taskHandler.ts'
 
 const PORT = Number(process.env.AI_SERVER_PORT ?? 8787)
 const MAX_BODY_BYTES = 200_000
-
-const userTurn = (text: string): Content => ({ role: 'user', parts: [{ text }] })
 
 /** Forteller appen hvilken modell som svarte, så læreren ser om reservemodellen ble brukt. */
 const metaOf = ({ model, fallbackUsed }: GenerateResult): AiResponseMeta => ({ model, fallbackUsed })
@@ -39,14 +36,6 @@ const isObject = (value: unknown): value is Record<string, unknown> => typeof va
 /** Oppgavebestillinger (se taskHandler.ts). Referansebanken lastes og kontrolleres når serveren starter. */
 const tasks = createTaskHandler({ generate, log: logToConsole })
 
-async function profile(body: unknown, teacher: Teacher): Promise<TextResponse> {
-  if (!isObject(body) || !isObject(body.student)) throw new HttpError(400, 'Elevopplysningene mangler.')
-  const request = body as unknown as ProfileRequest
-  requireOwnClass(teacher, request.classId)
-  const answer = await generate('profile', [userTurn(profilePrompt(request))])
-  return { text: answer.text, meta: metaOf(answer) }
-}
-
 async function chat(body: unknown): Promise<ChatResponse> {
   const history = isObject(body) ? (body as unknown as ChatRequest).history : undefined
   const valid =
@@ -62,7 +51,6 @@ async function chat(body: unknown): Promise<ChatResponse> {
 
 const routes: Record<string, (body: unknown, teacher: Teacher) => Promise<unknown>> = {
   '/api/ai/oppgaver': tasks,
-  '/api/ai/profil': profile,
   '/api/ai/chat': chat,
 }
 

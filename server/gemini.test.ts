@@ -61,7 +61,7 @@ describe('generate med fallback', () => {
 
   it('2. primærmodellen gir 503 – reservemodellen svarer', async () => {
     const { generate, models } = setup({ [PRIMARY]: 503, [FALLBACK]: 'ok' })
-    const result = await generate('profile', contents)
+    const result = await generate('chat', contents)
     assert.equal(result.text, `svar fra ${FALLBACK}`)
     assert.deepEqual(models(), [PRIMARY, FALLBACK])
   })
@@ -152,15 +152,15 @@ describe('generate med fallback', () => {
   it('reservemodellen får samme innhold, systemprompt, skjema, thinking level og tokengrense', async () => {
     const schema = { type: 'OBJECT' } as const
     const { generate, calls } = setup({ [PRIMARY]: 503, [FALLBACK]: 'ok' })
-    await generate('profile', contents, schema as never)
+    await generate('tasks', contents, schema as never)
     const [first, second] = calls.map(({ config, ...rest }) => {
       const { abortSignal: _ignored, ...sameConfig } = config ?? {}
       void _ignored
       return { ...rest, model: undefined, config: sameConfig }
     })
     assert.deepEqual(second, first)
-    assert.equal(calls[1]?.config?.maxOutputTokens, aiConfig.maxOutputTokens.profile)
-    assert.equal(calls[1]?.config?.thinkingConfig?.thinkingLevel, ThinkingLevel.HIGH)
+    assert.equal(calls[1]?.config?.maxOutputTokens, aiConfig.maxOutputTokens.tasks)
+    assert.equal(calls[1]?.config?.thinkingConfig?.thinkingLevel, ThinkingLevel.LOW)
     assert.equal(calls[1]?.config?.responseSchema, schema)
     assert.equal(calls[1]?.config?.httpOptions?.retryOptions?.attempts, 1)
   })

@@ -1,8 +1,10 @@
 import { LoaderCircle, Sparkles, X } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { AiError, SLOW_AI_HINT, fallbackNotice, newTaskId, requestTasks, subjectContext, toSessionTask } from '../../ai/client'
+import { AREA_TITLES, MAX_PER_LEVEL, type AiLevel } from '../../ai/contract'
 import { isCompletePackage } from '../../ai/drafts'
 import { buildLevelContexts, toAiProfile } from '../../ai/referenceTasks'
+import { aiProfileFor } from '../../ai/sessionProfile'
 import { Button } from '../../components/ui/Button'
 import { useSlowAiHint } from '../../hooks/useSlowAiHint'
 import type { Session, SessionTask } from '../../types'
@@ -18,10 +20,24 @@ interface AiTaskGeneratorProps {
 const fieldClass =
   'w-full rounded-md border border-surface bg-background px-3 py-2 text-small text-on-background outline-none focus:border-secondary'
 
-/** «Lag oppgaver med AI»: generelle oppgaver på tre nivåer ut fra temaet for økta. */
+const ALL_LEVELS: AiLevel[] = [1, 2, 3]
+
+/** Feilmelding for valgene, eller null når bestillingen kan sendes. */
+function validationError(levels: AiLevel[], count: string) {
+  if (levels.length === 0) return 'Velg minst ett nivå.'
+  const n = Number(count)
+  if (!/^\d+$/.test(count.trim()) || !Number.isInteger(n) || n < 1) return 'Antall oppgaver må være et positivt heltall.'
+  if (n > MAX_PER_LEVEL) return `Du kan bestille høyst ${MAX_PER_LEVEL} oppgaver per nivå om gangen.`
+  return null
+}
+
+/** «Lag oppgaver med AI»: generelle oppgaver på nivåene læreren velger, ut fra temaet for økta. */
 export function AiTaskGenerator({ session, tasks: currentTasks, onAdd }: AiTaskGeneratorProps) {
   const [open, setOpen] = useState(false)
-  const [perLevel, setPerLevel] = useState(2)
+  // Alle nivåene er valgt som standard. Antallet holdes som tekst, så feltet kan valideres slik læreren skrev det.
+  const [selectedLevels, setSelectedLevels] = useState<AiLevel[]>(ALL_LEVELS)
+  const [count, setCount] = useState('2')
+  const [touched, setTouched] = useState(false)
   const [officialGoals, setOfficialGoals] = useState('')
   const [wishes, setWishes] = useState('')
   const [loading, setLoading] = useState(false)
@@ -29,8 +45,21 @@ export function AiTaskGenerator({ session, tasks: currentTasks, onAdd }: AiTaskG
   const [result, setResult] = useState<{ count: number; message: string; warning?: string; failed: boolean; notice: string | null } | null>(null)
   const slow = useSlowAiHint(loading, 'tasks')
 
+  const invalid = validationError(selectedLevels, count)
+  // Fagområdet bestillingen styres etter: øktas egen profil, eller en profil fra årsplanen ut fra undertemaene
+  // (repetisjon) eller overskriften (egne økter). Endrer ikke økta.
+  const derived = aiProfileFor(session)
+  const profile = derived?.profile
+  const areas = profile?.area ? [profile.area, ...(profile.secondaryAreas ?? [])].map((a) => AREA_TITLES[a]) : []
+  const toggleLevel = (level: AiLevel) =>
+    setSelectedLevels((prev) => (prev.includes(level) ? prev.filter((l) => l !== level) : ALL_LEVELS.filter((l) => l === level || prev.includes(l))))
+
   const generate = async (event: FormEvent) => {
     event.preventDefault()
+    setTouched(true)
+    if (invalid) return
+    const perLevel = Number(count)
+    const levels = selectedLevels
     setLoading(true)
     setError(null)
     setResult(null)
@@ -45,19 +74,20 @@ export function AiTaskGenerator({ session, tasks: currentTasks, onAdd }: AiTaskG
           sessionGoals: session.goals,
         },
         perLevel,
+        targetLevels: levels,
         officialGoals: officialGoals.trim(),
         wishes: wishes.trim(),
-        levels: buildLevelContexts(session.levels, currentTasks, session.taskProfile),
-        ...(session.taskProfile && { profile: toAiProfile(session.taskProfile) }),
+        levels: buildLevelContexts(session.levels, currentTasks, profile).filter((l) => levels.includes(l.level)),
+        ...(profile && { profile: toAiProfile(profile) }),
       })
-      // Alt eller ingenting: bare en komplett pakke (nøyaktig det bestilte antallet per nivå) legges i utkastet.
-      const complete = isCompletePackage(tasks, perLevel)
+      // Alt eller ingenting: bare en komplett pakke (nøyaktig det bestilte antallet på hvert valgte nivå) legges i utkastet.
+      const complete = isCompletePackage(tasks, perLevel, levels)
       if (complete) onAdd(tasks.map((t) => toSessionTask(t, newTaskId(session.id), meta)))
       const failed = !complete && tasks.length > 0
       setResult({
         count: complete ? tasks.length : 0,
         message,
-        warning: failed ? `AI-en laget ikke hele det bestilte antallet (${perLevel * 3} oppgaver). Ingen oppgaver ble lagt til. Prøv igjen.` : warning,
+        warning: failed ? `AI-en laget ikke hele det bestilte antallet (${perLevel * levels.length} oppgaver). Ingen oppgaver ble lagt til. Prøv igjen.` : warning,
         failed: failed || !!incomplete,
         notice: fallbackNotice(meta, 'Oppgavene'),
       })
@@ -91,9 +121,15 @@ export function AiTaskGenerator({ session, tasks: currentTasks, onAdd }: AiTaskG
             Lag oppgaver med AI
           </h2>
           <p className="text-small text-secondary">
-            Oppgaver på nivå 1–3 om «{session.heading}». De legges i utkastet, merket som ikke gjennomgått, og du kan endre
-            dem før og etter du lagrer.
+            Oppgaver på nivåene du velger om «{session.heading}». De legges i utkastet, merket som ikke gjennomgått, og du kan
+            endre dem før og etter du lagrer.
           </p>
+          {areas.length > 0 && (
+            <p className="text-xs text-secondary">
+              Fagområde: {areas.join(', ')}
+              {derived?.source !== 'session' && ' (hentet fra årsplanen ut fra undertemaene og overskriften)'}
+            </p>
+          )}
         </div>
         <button
           type="button"
@@ -117,29 +153,58 @@ export function AiTaskGenerator({ session, tasks: currentTasks, onAdd }: AiTaskG
           />
           <span className="text-xs text-secondary">Står feltet tomt, kobler ikke AI-en oppgavene til kompetansemål.</span>
         </label>
+        <label className="flex flex-col gap-1 text-small text-primary">
+          Andre ønsker (valgfritt)
+          <input
+            value={wishes}
+            onChange={(e) => setWishes(e.target.value)}
+            placeholder="F.eks. «tekstoppgaver om penger»"
+            className={fieldClass}
+          />
+        </label>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_10rem]">
+          <fieldset className="flex flex-col gap-1">
+            <legend className="pb-1 text-small text-primary">Velg nivå</legend>
+            <div className="flex flex-wrap gap-2">
+              {ALL_LEVELS.map((level) => (
+                <label
+                  key={level}
+                  className="flex h-[38px] cursor-pointer items-center gap-2 rounded-md border border-surface bg-background px-3 text-small text-on-background has-[:checked]:border-secondary"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedLevels.includes(level)}
+                    onChange={() => toggleLevel(level)}
+                    className="size-4 cursor-pointer accent-primary"
+                  />
+                  Nivå {level}
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <label className="flex flex-col gap-1 text-small text-primary">
-            Andre ønsker (valgfritt)
+            Antall per nivå
             <input
-              value={wishes}
-              onChange={(e) => setWishes(e.target.value)}
-              placeholder="F.eks. «tekstoppgaver om penger»"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={MAX_PER_LEVEL}
+              step={1}
+              value={count}
+              onChange={(e) => setCount(e.target.value)}
+              aria-invalid={touched && !!invalid}
+              aria-describedby={touched && invalid ? 'ai-generator-feil' : undefined}
               className={fieldClass}
             />
           </label>
-          <label className="flex flex-col gap-1 text-small text-primary">
-            Oppgaver per nivå
-            <select value={perLevel} onChange={(e) => setPerLevel(Number(e.target.value))} className={`${fieldClass} cursor-pointer`}>
-              {[1, 2, 3].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </label>
         </div>
+        {touched && invalid && (
+          <p id="ai-generator-feil" role="alert" className="text-small text-error">
+            {invalid}
+          </p>
+        )}
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading || (touched && !!invalid)}>
             {loading ? <LoaderCircle className="size-4 motion-safe:animate-spin" aria-hidden /> : <Sparkles className="size-4" aria-hidden />}
             {loading ? 'Lager oppgaver …' : 'Lag oppgaver'}
           </Button>

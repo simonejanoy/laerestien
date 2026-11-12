@@ -1,4 +1,4 @@
-import { Check, ChevronLeft, ChevronRight, PencilLine, Trash2 } from 'lucide-react'
+import { CalendarClock, Check, ChevronLeft, ChevronRight, Eye, PencilLine, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { PlayIcon } from '../../components/ui/icons'
@@ -14,8 +14,9 @@ import { SessionSummaryCard } from './SessionSummaryCard'
 import { SkipSessionModal } from './SkipSessionModal'
 import { StartSessionModal } from './StartSessionModal'
 import { sessionLabel, useSessions } from './sessionsContext'
-import { sessionCrumbs } from './crumbs'
+import { sessionCrumbs, sessionWhen } from './crumbs'
 import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
+import { StudentPreviewDialog } from '../tasks/StudentPreviewDialog'
 
 const HIDE_EXPLANATION_KEY = 'laerestien:skjulStartForklaring'
 
@@ -34,6 +35,8 @@ export function SessionPage() {
   const [modal, setModal] = useState<'start' | 'skip' | 'edit' | 'delete' | null>(null)
   const { profile } = useAuth()
   const [startError, setStartError] = useState<string | null>(null)
+  // Forhåndsvisningen av oppgavene slik elevene ser dem. Lagrer ingenting, og starter tom hver gang.
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const index = sessions.findIndex((s) => s.id === sessionId)
   const session = sessions[index]
@@ -102,6 +105,12 @@ export function SessionPage() {
             </button>
           </div>
         </div>
+        {sessionWhen(session) && (
+          <p className="-mt-2 flex items-center gap-2 text-body text-secondary">
+            <CalendarClock className="size-5 shrink-0" aria-hidden />
+            {sessionWhen(session)}
+          </p>
+        )}
 
         <div className="flex flex-wrap items-start justify-between gap-4">
           <SessionSummaryCard session={session} />
@@ -142,15 +151,26 @@ export function SessionPage() {
       </div>
 
       <section className="flex flex-col gap-[15px]">
-        <div className="flex items-end justify-between">
+        <div className="flex flex-wrap items-end justify-between gap-2">
           <h2 className="text-h2 text-black">Oppgaver</h2>
-          <Link
-            to={`/okt/${session.id}/rediger`}
-            className="flex items-center gap-2.5 rounded-[10px] border border-surface p-2.5 text-small text-primary hover:bg-surface-light"
-          >
-            <PencilLine className="size-5" />
-            Rediger oppgavene
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            {/* Oppgavene slik elevene ser dem, på nivå 1–3. Ingen svar lagres. */}
+            <button
+              type="button"
+              onClick={() => setPreviewOpen(true)}
+              className="flex cursor-pointer items-center gap-2.5 rounded-[10px] border border-surface p-2.5 text-small text-primary hover:bg-surface-light"
+            >
+              <Eye className="size-5" />
+              Forhåndsvis
+            </button>
+            <Link
+              to={`/okt/${session.id}/rediger`}
+              className="flex items-center gap-2.5 rounded-[10px] border border-surface p-2.5 text-small text-primary hover:bg-surface-light"
+            >
+              <PencilLine className="size-5" />
+              Rediger oppgavene
+            </Link>
+          </div>
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {session.levels.map((group) => (
@@ -209,6 +229,8 @@ export function SessionPage() {
           setModal(null)
         }}
       />
+
+      {previewOpen && <StudentPreviewDialog session={session} level={1} tasks={tasks} onClose={() => setPreviewOpen(false)} />}
     </div>
   )
 }

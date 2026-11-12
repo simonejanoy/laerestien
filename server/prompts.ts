@@ -4,6 +4,7 @@ import {
   DEFAULT_ANGLE_DEGREES,
   SHAPE_NAMES,
   TOPIC_TITLES,
+  targetLevelsOf,
   topicOfArea,
   type AiExistingTask,
   type AiLevel,
@@ -13,7 +14,6 @@ import {
   type AiTextDraft,
   type AnonStudentProfile,
   type ReferenceArea,
-  type ProfileRequest,
   type SubjectContext,
   type TaskRequest,
 } from '../src/ai/contract.ts'
@@ -405,6 +405,7 @@ function areaTaskSetSection(area: ReferenceArea, profile: AiSessionProfile, leve
       '- Alle oppgavene skal være målingsdivisjon: størrelsen på hver gruppe er kjent, og eleven finner antall grupper. Ikke lag delingsdivisjon.',
     (division || divisionStrategies) && !allowsRemainder && '- Alle delestykkene skal gå opp. Ikke lag oppgaver med rest.',
     '- Ikke lag en oppgave som er lik en oppgave som allerede finnes på nivået.',
+    '- De nye oppgavene på samme nivå skal være forskjellige fra hverandre: bruk andre tall og en annen situasjon, og bytt gjerne oppgavetype innenfor fagområdet (f.eks. finne det ukjente tallet, sammenligne, finne feilen eller forklare) – ikke samme formulering med bare nye tall.',
     !geometry &&
       !patterns &&
       !arithmetic &&
@@ -528,18 +529,23 @@ export interface GenerationPlan {
 
 const LEVELS: AiLevel[] = [1, 2, 3]
 
-/** «Antall: …» – bestilt antall, eventuelt med reservekandidater. */
-function countLine(perLevel: number, plan?: GenerationPlan) {
-  if (!plan) return `Antall: ${perLevel} oppgaver på hvert av nivå 1, 2 og 3 (nivå 1 er minst utfordrende).`
+/** «nivå 1, 2 og 3» / «nivå 2» – de valgte nivåene med ord. */
+const levelList = (levels: AiLevel[]) => (levels.length === 1 ? `nivå ${levels[0]}` : `nivå ${levels.slice(0, -1).join(', ')} og ${levels.at(-1)}`)
+
+/** «Antall: …» – bestilt antall på de valgte nivåene, eventuelt med reservekandidater. */
+function countLine(perLevel: number, targetLevels: AiLevel[], plan?: GenerationPlan) {
+  const only = targetLevels.length < 3 ? ` Lag ingen oppgaver på andre nivåer enn ${levelList(targetLevels)}.` : ''
+  if (!plan) return `Antall: ${perLevel} oppgaver på hvert av ${levelList(targetLevels)} (nivå 1 er minst utfordrende).${only}`
   if (plan.refill) {
     return 'Antall: Se bestillingen øverst. Lag bare oppgaver på nivåene som er nevnt der. Antallet er én mer enn det som mangler, i tilfelle en oppgave ikke passer.'
   }
-  const counts = LEVELS.map((l) => plan.counts[l] ?? perLevel)
+  const levels = LEVELS.filter((l) => targetLevels.includes(l))
+  const counts = levels.map((l) => plan.counts[l] ?? perLevel)
   const same = counts.every((c) => c === counts[0])
   return lines(
     same
-      ? `Antall: Lag ${counts[0]} kandidater på hvert av nivå 1, 2 og 3. Læreren har bestilt ${perLevel} per nivå; de ekstra gir rom for å velge bort oppgaver som ikke passer (nivå 1 er minst utfordrende).`
-      : `Antall: ${LEVELS.map((l, i) => `nivå ${l}: ${counts[i]} kandidater`).join(', ')}. Læreren har bestilt ${perLevel} per nivå; de ekstra gir rom for å velge bort oppgaver som ikke passer.`,
+      ? `Antall: Lag ${counts[0]} kandidater på hvert av ${levelList(levels)}. Læreren har bestilt ${perLevel} per nivå; de ekstra gir rom for å velge bort oppgaver som ikke passer (nivå 1 er minst utfordrende).${only}`
+      : `Antall: ${levels.map((l, i) => `nivå ${l}: ${counts[i]} kandidater`).join(', ')}. Læreren har bestilt ${perLevel} per nivå; de ekstra gir rom for å velge bort oppgaver som ikke passer.${only}`,
     'Alle kandidatene skal holde samme kvalitet og være ulike hverandre.',
   )
 }
@@ -575,7 +581,7 @@ export function taskPrompt(request: TaskRequest, plan?: GenerationPlan) {
         list(lesson.sessionGoals),
         '',
         `Offisiell måltekst fra læreplanen, oppgitt ordrett av læreren: ${request.officialGoals || 'Ikke oppgitt.'}`,
-        countLine(request.perLevel, plan),
+        countLine(request.perLevel, targetLevelsOf(request.targetLevels), plan),
         `Ekstra ønsker fra læreren: ${request.wishes || 'Ingen.'}`,
         '',
         profile && profileSection(profile),
@@ -619,16 +625,4 @@ export function taskPrompt(request: TaskRequest, plan?: GenerationPlan) {
         jsonNote,
       )
   }
-}
-
-export function profilePrompt(request: ProfileRequest) {
-  return lines(
-    'Bestilling: Skriv et kort, foreløpig forslag til profiltekst for eleven, og eventuelt et foreløpig forslag til nivå. Teksten vises for læreren som et AI-generert forslag som læreren kan redigere. Den lagres ikke, og nivået endres bare hvis læreren selv gjør det i appen.',
-    'Skill tydelig mellom observasjoner og resultater, lærerens vurderinger og dine egne foreløpige tolkninger. Svar som vanlig tekst, ikke JSON.',
-    subject(request.context),
-    '',
-    studentData(request.student),
-    '',
-    `Lærerens egne observasjoner og vurderinger: ${request.teacherNotes || 'Ikke oppgitt.'}`,
-  )
 }

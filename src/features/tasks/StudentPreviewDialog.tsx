@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Eraser, RotateCcw } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Eraser, RotateCcw, Undo2 } from 'lucide-react'
 import { Component, useCallback, useLayoutEffect, useReducer, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { Modal, ModalCloseButton } from '../../components/ui/Modal'
 import type { Level, Session, SessionTask } from '../../types'
@@ -11,11 +11,14 @@ import { STUDENT_VIEW_WIDTH, fitScale, initialPreviewState, previewControls, pre
 
 interface StudentPreviewDialogProps {
   session: Session
+  /** Nivået forhåndsvisningen starter på. Læreren kan bytte nivå i forhåndsvisningen. */
   level: Level
-  /** Oppgavene på nivået fra lærerens utkast (også ulagrede endringer), i elevens rekkefølge. */
+  /** Oppgavene i økta på alle nivåer (fra utkastet med ulagrede endringer, eller de lagrede), i elevens rekkefølge. */
   tasks: SessionTask[]
   onClose: () => void
 }
+
+const LEVELS: Level[] = [1, 2, 3]
 
 /**
  * Lærerens forhåndsvisning av oppgavene slik en elev på nivået ser dem. Bruker den samme
@@ -25,8 +28,16 @@ interface StudentPreviewDialogProps {
  * Ingenting skrives til localStorage, Firebase, elevprofiler, statistikk eller den aktive økta.
  * Alt forsvinner når popupen lukkes, og den starter på første oppgave neste gang.
  */
-export function StudentPreviewDialog({ session, level, tasks, onClose }: StudentPreviewDialogProps) {
+export function StudentPreviewDialog({ session, level: startLevel, tasks: allTasks, onClose }: StudentPreviewDialogProps) {
   const [state, dispatch] = useReducer(previewReducer, undefined, initialPreviewState)
+  // Nivået som vises. Et nytt nivå starter forhåndsvisningen på nytt (første oppgave, ingen testsvar).
+  const [level, setLevel] = useState(startLevel)
+  const tasks = allTasks.filter((t) => t.level === level)
+  const selectLevel = (next: Level) => {
+    if (next === level) return
+    setLevel(next)
+    dispatch({ type: 'restart' })
+  }
   const { canGoBack, canGoForward, canClear, currentTaskId } = previewControls(
     state,
     tasks.map((t) => t.id),
@@ -45,11 +56,24 @@ export function StudentPreviewDialog({ session, level, tasks, onClose }: Student
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-2 bg-primary px-6 py-2.5 text-on-primary">
         <div className="flex flex-wrap items-baseline gap-x-3">
           <h2 id="elevvisning-tittel" className="text-h2">
-            Elevvisning – nivå {level}
+            Forhåndsvisning – nivå {level}
           </h2>
-          <p className="text-small">Forhåndsvisning – ingen svar lagres</p>
+          <p className="text-small">Slik ser elevene oppgavene. Svarene dine lagres ikke.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <div role="group" aria-label="Velg nivå" className="flex gap-1 rounded-lg border border-on-primary/40 p-0.5">
+            {LEVELS.map((l) => (
+              <button
+                key={l}
+                type="button"
+                aria-pressed={l === level}
+                onClick={() => selectLevel(l)}
+                className={`h-[32px] cursor-pointer rounded-md px-3 text-small ${l === level ? 'bg-on-primary font-semibold text-primary' : 'hover:bg-on-primary/10'}`}
+              >
+                Nivå {l}
+              </button>
+            ))}
+          </div>
           {tasks.length > 0 && (
             <>
               <p className="text-small" aria-live="polite">
@@ -65,6 +89,10 @@ export function StudentPreviewDialog({ session, level, tasks, onClose }: Student
               </FrameButton>
             </>
           )}
+          <FrameButton onClick={onClose}>
+            <Undo2 className="size-4" strokeWidth={2.2} />
+            Tilbake til økta
+          </FrameButton>
           <ModalCloseButton onClick={onClose} />
         </div>
       </header>

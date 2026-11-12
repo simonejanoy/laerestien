@@ -1,5 +1,5 @@
 import type { SessionTask, Task, TextTask } from '../types/index.ts'
-import { asTextDraft, isMathDraft, readStoredVisual, type AiResponseMeta, type AiTaskDraft, type AiTaskMeta, type AiTextDraft, type TaskResult } from './contract.ts'
+import { asTextDraft, isMathDraft, readStoredVisual, type AiLevel, type AiResponseMeta, type AiTaskDraft, type AiTaskMeta, type AiTextDraft, type TaskResult } from './contract.ts'
 import { blankRowIn, colorRowsIn, dotCountsIn, dotLayout, drawableColors, readExpected } from './patternDisplay.ts'
 
 // AI-utkast → oppgaver i appen. Alltid merket som AI-generert og «ikke gjennomgått» til
@@ -26,11 +26,12 @@ export function aiMetaFor(draft: AiTaskDraft, meta?: AiResponseMeta): AiTaskMeta
 }
 
 /**
- * Om AI-oppgavene er en komplett pakke: nøyaktig `perLevel` på hvert av nivå 1, 2 og 3.
+ * Om AI-oppgavene er en komplett pakke: nøyaktig `perLevel` på hvert av de bestilte nivåene (alle tre som standard),
+ * og ingen på andre nivåer.
  * Bare en komplett pakke legges i lærerens utkast – aldri en delvis.
  */
-export function isCompletePackage(drafts: AiTaskDraft[], perLevel: number) {
-  return perLevel > 0 && ([1, 2, 3] as const).every((level) => drafts.filter((d) => d.level === level).length === perLevel) && drafts.length === perLevel * 3
+export function isCompletePackage(drafts: AiTaskDraft[], perLevel: number, levels: readonly AiLevel[] = [1, 2, 3]) {
+  return perLevel > 0 && levels.every((level) => drafts.filter((d) => d.level === level).length === perLevel) && drafts.length === perLevel * levels.length
 }
 
 /** Korte regnestykker blir vanlige regneoppgaver (samme format som hoderegningen), resten tekstoppgaver. */

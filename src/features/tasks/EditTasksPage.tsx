@@ -9,7 +9,7 @@ import { LevelTabs } from './LevelTabs'
 import { StudentPreviewDialog } from './StudentPreviewDialog'
 import { TaskCard } from './TaskCard'
 import { TextTaskCard } from './TextTaskCard'
-import { sessionCrumbs } from '../sessions/crumbs'
+import { sessionCrumbs, sessionWhen } from '../sessions/crumbs'
 import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
 
 const toLevel = (value: string | null): Level => (value === '2' ? 2 : value === '3' ? 3 : 1)
@@ -25,7 +25,7 @@ export function EditTasksPage() {
   const [dirty, setDirty] = useState(false)
   // Oppgaven som redigeres, og hvordan den så ut før redigeringen startet («Avbryt» setter den tilbake).
   const [editing, setEditing] = useState<{ id: string; original: Task } | null>(null)
-  // Elevvisningen viser utkastet på valgt nivå. Den endrer ikke utkastet og lagrer ingenting.
+  // Forhåndsvisningen viser utkastet (starter på valgt nivå). Den endrer ikke utkastet og lagrer ingenting.
   const [previewOpen, setPreviewOpen] = useState(false)
   const closePreview = useCallback(() => setPreviewOpen(false), [])
 
@@ -93,10 +93,8 @@ export function EditTasksPage() {
               <span className="text-small text-secondary">
                 {parseInt(session.className)}. trinn · {draft.length} oppgaver
               </span>
-              {session.date && (
-                <span className="rounded-[5px] bg-tertiary px-2 py-[3px] text-xs text-secondary">
-                  Dato: {session.date}
-                </span>
+              {sessionWhen(session) && (
+                <span className="rounded-[5px] bg-tertiary px-2 py-[3px] text-xs text-secondary">{sessionWhen(session)}</span>
               )}
             </div>
           </div>
@@ -145,7 +143,7 @@ export function EditTasksPage() {
               className="flex h-[38px] cursor-pointer items-center gap-[7px] rounded-[7px] border border-surface bg-background px-3.5 text-small text-primary hover:bg-surface-light"
             >
               <Eye className="size-4" strokeWidth={2.2} />
-              Elevvisning
+              Forhåndsvis
             </button>
             <button
               type="button"
@@ -203,7 +201,7 @@ export function EditTasksPage() {
         )}
       </section>
 
-      {previewOpen && <StudentPreviewDialog session={session} level={level} tasks={levelTasks} onClose={closePreview} />}
+      {previewOpen && <StudentPreviewDialog session={session} level={level} tasks={draft} onClose={closePreview} />}
     </div>
   )
 }

@@ -359,7 +359,7 @@ describe('14 og full flyt: fra AI-svar med figur til synlig SVG i elevvisningen'
     const first = stored[0] as TextTask
     assert.deepEqual(first.figure, shape('pentagon'))
     assert.equal(first.aiGenerated, true)
-    assert.equal(first.aiMeta?.rulesVersion, '8')
+    assert.equal(first.aiMeta?.rulesVersion, '9')
     const markup = svg(first.figure as AiVisual)
     assert.match(markup, /<svg[^>]*data-shape="pentagon"/)
     assert.equal(count(markup, 'data-part="corner"'), 5)
@@ -403,7 +403,7 @@ describe('15. lagring med og uten figur', () => {
 
 describe('13. andre tema, referansebanker og regelversjon', () => {
   it('regelversjon 8, dokumentert i config', () => {
-    assert.equal(aiConfig.rulesVersion, '8')
+    assert.equal(aiConfig.rulesVersion, '9')
     assert.match(source('../src/ai/config.ts'), /8: figurer i geometri/)
   })
 

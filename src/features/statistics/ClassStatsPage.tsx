@@ -8,7 +8,6 @@ import { StudentCarousel } from './StudentCarousel'
 import { TopicTasksDialog } from './TopicTasksDialog'
 import { classMastery, classPatterns, readyForChallenge, topicInsights, weekTopic } from './mockData'
 import { MasteryTable, PatternContent, StatPanel } from './parts'
-import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
 
 const levels: Level[] = [1, 2, 3]
 const levelNumber = { 1: 'text-level1', 2: 'text-level2', 3: 'text-level3' } as const
@@ -21,8 +20,8 @@ export function ClassStatsPage() {
 
   return (
     <div className="flex max-w-[1133px] flex-col gap-8">
+      {/* Statistikk er et toppnivå i sidemenyen: tittelen holder, uten brødsmuler. */}
       <div className="flex flex-col gap-8">
-        <PageBreadcrumbs inClass items={[{ label: 'Statistikk' }]} />
         <h1 className="text-h1 text-black">Statistikk</h1>
         <p className="text-h3 text-black">Matematikk - klasse 4A</p>
       </div>
@@ -73,7 +72,7 @@ export function ClassStatsPage() {
             <button
               type="button"
               onClick={() => setShowAllPatterns((s) => !s)}
-              className="flex max-w-[480px] cursor-pointer items-center justify-between rounded bg-secondary px-4 py-2 text-[15px] tracking-[0.3px] text-on-secondary hover:bg-secondary/90"
+              className="flex w-full cursor-pointer items-center justify-between rounded bg-secondary px-4 py-2 text-[15px] tracking-[0.3px] text-on-secondary hover:bg-secondary/90"
             >
               {showAllPatterns ? 'Vis færre mønstre' : 'Se flere mønstre'}
               {showAllPatterns ? <ChevronUp className="size-6" /> : <ChevronDown className="size-6" />}
@@ -83,6 +82,7 @@ export function ClassStatsPage() {
 
         <div className="flex flex-col gap-8">
           <StatPanel title="Temaoversikt">
+            <p className="-mt-1 text-small text-secondary">Fylte felt viser andelen riktige svar i temaet. Velg et tema for å se grunnlaget.</p>
             <MasteryTable
               rows={classMastery}
               columns={['Tema', 'Status', 'Trenger mer øving på']}

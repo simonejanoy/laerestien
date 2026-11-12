@@ -107,16 +107,18 @@ export function SessionsProvider({ children }: { children: ReactNode }) {
       const base = sibling
         ? { ...sessionBase, title: sibling.title, topic: sibling.topic, area: sibling.area, className: sibling.className }
         : { ...sessionBase, title: topicName, topic: topicName, area: 'Matematikk' }
+      const week = input.week ?? at
       const session: Session = {
         ...base,
         id,
         topicId: input.topicId,
         heading: input.heading,
         description: input.description,
-        ...at,
+        year: week.year,
+        week: week.week,
         slots: input.slots,
         numbers: [],
-        ...describeSlots(at, input.slots),
+        ...describeSlots(week, input.slots),
         levels: emptyLevels,
         goals: [],
       }
@@ -130,7 +132,11 @@ export function SessionsProvider({ children }: { children: ReactNode }) {
       normalize(
         prev.map((s) =>
           s.id === id
-            ? { ...s, heading: input.heading, description: input.description, slots: input.slots, ...describeSlots(s, input.slots) }
+            ? (() => {
+                // Læreren kan flytte økta til en annen dato – også i en annen uke.
+                const week = input.week ?? { year: s.year, week: s.week }
+                return { ...s, year: week.year, week: week.week, heading: input.heading, description: input.description, slots: input.slots, ...describeSlots(week, input.slots) }
+              })()
             : s,
         ),
       ),

@@ -1,5 +1,6 @@
 import {
   isMathDraft,
+  targetLevelsOf,
   visualSignature,
   type AiExistingTask,
   type AiLevel,
@@ -43,8 +44,6 @@ import { checkEquations, checkReferenceMath } from './references/validate.ts'
 // Kontroller av generelle oppgaver etter at AI-en har svart. Stiltreff styres av
 // øktprofilen, referansene og AI-reglene – her sjekkes bare det som kan måles sikkert.
 // Ingen nye Gemini-kall: oppgaver som ikke passer, tas bort, og læreren får beskjed om hvorfor.
-
-const LEVELS: AiLevel[] = [1, 2, 3]
 
 /** Tekstoppgaver som er minst så like en referanses formulering (tall ikke medregnet), avvises. Justeres etter testing. */
 export const TEXT_SIMILARITY_THRESHOLD = 0.75
@@ -888,6 +887,40 @@ export function checkCandidates(candidates: AiTaskDraft[], request: GeneralReque
     // Regning: godkjente oppgaver får svaret appen retter automatisk (regnetegn, tomme ruter i tabeller og □).
     if (arithmetic) tasks = tasks.map((t) => (isMathDraft(t) || !expectedOf.has(t) ? t : { ...t, expected: expectedOf.get(t) }))
   } else {
+    // Uten fagområde (økter uten øktprofil): de samme duplikatkontrollene som med fagområde – like oppgaver i svaret
+    // og i oppgavesettet (byttede faktorer og ledd regnes som like), og nesten like tekstoppgaver.
+    const inResponse = new Set<string>()
+    const inSetExact = new Set<string>()
+    const inSetSwapped = new Set<string>()
+    for (const level of levels) {
+      for (const task of level.existing ?? []) {
+        const keys = keysOf(level.level, task)
+        inSetExact.add(keys.exact)
+        inSetSwapped.add(keys.swapped)
+      }
+    }
+    for (const task of accepted) {
+      const keys = keysOf(task.level, task)
+      inResponse.add(keys.exact)
+      inResponse.add(keys.swapped)
+    }
+    const texts: { level: AiLevel; text: string }[] = [
+      ...levels.flatMap((l) => (l.existing ?? []).flatMap((t) => (t.text && !t.figure ? [{ level: l.level, text: t.text }] : []))),
+      ...accepted.flatMap((t) => (isMathDraft(t) ? [] : [{ level: t.level, text: t.studentText }])),
+    ]
+    tasks = tasks.filter((task) => {
+      const keys = keysOf(task.level, task)
+      if (inResponse.has(keys.exact) || inResponse.has(keys.swapped)) return remove(task, 'duplicateInResponse')
+      if (inSetExact.has(keys.exact)) return remove(task, 'duplicateInSet')
+      if (inSetSwapped.has(keys.swapped)) return remove(task, 'swappedFactors')
+      if (!isMathDraft(task) && !task.figure && texts.some((t) => t.level === task.level && isNearDuplicate(task.studentText, t.text))) {
+        return remove(task, 'nearDuplicate')
+      }
+      inResponse.add(keys.exact)
+      inResponse.add(keys.swapped)
+      if (!isMathDraft(task)) texts.push({ level: task.level, text: task.studentText })
+      return true
+    })
     const outside = tasks.filter((t) => outsideTables(t, factorsOf(t.level))).length
     if (outside) issues.push(`${outside} gangestykker utenfor øktas gangetabeller`)
   }
@@ -934,7 +967,7 @@ export function checkGeneralResult(result: TaskResult, request: GeneralRequest):
   }
 
   const missing: string[] = []
-  tasks = LEVELS.flatMap((level) => {
+  tasks = targetLevelsOf(request.targetLevels).flatMap((level) => {
     const onLevel = tasks.filter((t) => t.level === level)
     if (onLevel.length > perLevel) issues.push(`nivå ${level}: ${onLevel.length} oppgaver, ${perLevel} bestilt`)
     if (onLevel.length === 0) missing.push(`nivå ${level} mangler`)

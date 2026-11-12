@@ -81,7 +81,7 @@ describe('regler versjon 8', () => {
   })
 
   it('2. konfigurasjonen angir regelversjon 8, og systemprompten har regelen om referansebanken og støttestrukturen', () => {
-    assert.equal(aiConfig.rulesVersion, '8')
+    assert.equal(aiConfig.rulesVersion, '9')
     assert.ok(systemPrompt.includes('skal strategien være matematisk gyldig for akkurat det regnestykket oppgaven gjelder'))
     assert.ok(systemPrompt.includes('Nye oppgaver skal følge støttestrukturen på nivået'))
     assert.ok(systemPrompt.includes('Referansene skal ikke returneres direkte.'))
@@ -147,7 +147,9 @@ describe('referanseoppgaver', () => {
     ]
     const contexts = buildLevelContexts(levels, tasks)
     const json = JSON.stringify(contexts)
-    for (const forbidden of ['hemmelig-id', 'reviewed', 'aiGenerated', 'competenceGoal', 'adaptation', 'Intern', '"figure"', '08:30', 'studentCount', 'taskCount', '"id"']) {
+    // Oppsummeringen av oppgavesettet (til duplikatkontrollen) kan si at en oppgave har figur («figure»: true), men aldri
+    // sende selve figuren.
+    for (const forbidden of ['hemmelig-id', 'reviewed', 'aiGenerated', 'competenceGoal', 'adaptation', 'Intern', '"figure":{', '08:30', 'studentCount', 'taskCount', '"id"']) {
       assert.ok(!json.includes(forbidden), `fant ${forbidden}`)
     }
     for (const ref of contexts.flatMap((c) => c.referenceTasks)) {
@@ -239,9 +241,11 @@ describe('prompt for generelle oppgaver', () => {
 })
 
 describe('kontroll etter generering', () => {
+  // Hver oppgave har sin egen tekst – like oppgaver på samme nivå er duplikater og tas bort.
+  let counter = 0
   const draft = (level: 1 | 2 | 3, competenceGoal = ''): AiTaskDraft => ({
     level,
-    studentText: 'Oppgave',
+    studentText: `Oppgave nummer ${++counter} om epler`,
     solution: 'Fasit',
     competenceGoal,
     adaptation: '',

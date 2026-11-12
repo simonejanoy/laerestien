@@ -342,6 +342,8 @@ export interface TopicTaskResult {
 export interface TopicInsight {
   topic: string
   status: MasteryStatus
+  /** «Trenger mer øving på» i Temaoversikt. */
+  note?: string
   tasks: TopicTaskResult[]
   struggles: { expression: string; text: string }[]
   notTried: { level: Level; students: string[] }

@@ -1,14 +1,14 @@
 // Innstillinger for AI-assistenten. Brukes av API-serveren (server/). Appen leser bare
 // tidsgrensen, for å vise «Vi prøver en reservemodell» mens læreren venter.
 // Primærmodellen (gemini-3.8-flash) bruker «low» for oppgavegenerering.
-// Elevprofiler bruker «high», mens fri chat bruker «low».
+// Fri chat bruker også «low».
 // Ikke legg til temperature, top_p, top_k eller candidate_count – de er utfaset for modellen.
 
 /** Gemini 3.8 støtter bare disse nivåene. */
 export type ThinkingLevelName = 'low' | 'medium' | 'high'
 
-/** Hva AI-en brukes til: oppgavegenerering, profilforslag eller fri chat. */
-export type AiUse = 'tasks' | 'profile' | 'chat'
+/** Hva AI-en brukes til: oppgavegenerering eller fri chat. */
+export type AiUse = 'tasks' | 'chat'
 
 export const aiConfig = {
   /**
@@ -22,14 +22,16 @@ export const aiConfig = {
    * 8: figurer i geometri – AI-en kan velge en plan figur eller en vinkel som appen tegner selv (feltet
    *    figur i svaret), figur, spørsmål og fasit må stemme, og eleven bes ikke tegne. Ved «Juster med AI»
    *    beholdes figuren med mindre læreren uttrykkelig ber om å endre eller fjerne den (11.11.2026).
+   * 9: nye oppgaver på samme nivå skal være forskjellige fra hverandre – ikke samme formulering med bare nye tall –
+   *    og læreren kan bestille oppgaver på utvalgte nivåer (12.11.2026).
    */
-  rulesVersion: '8',
+  rulesVersion: '9',
   /** Prøves først. */
   primaryModel: 'gemini-3.8-flash',
   /** Brukes automatisk hvis primærmodellen når tidsgrensen eller svarer 500, 503 eller 504. */
   fallbackModel: 'gemini-3.5-flash-lite',
   /**
-   * Standard tidsgrenser i millisekunder (profil og chat). Samlet ventetid blir høyst omtrent
+   * Standard tidsgrenser i millisekunder (chat). Samlet ventetid blir høyst omtrent
    * primary + fallback. Modellene kjøres aldri samtidig, og det er ingen ekstra nye forsøk.
    */
   timeoutMs: {
@@ -55,13 +57,11 @@ export const aiConfig = {
   },
   thinkingLevel: {
     tasks: 'low',
-    profile: 'high',
     chat: 'low',
   } satisfies Record<AiUse, ThinkingLevelName>,
-  /** Tenkingen teller med i output-tokens, så grensene er romslige ved «high». */
+  /** Tenkingen teller med i output-tokens. */
   maxOutputTokens: {
     tasks: 16_384,
-    profile: 8_192,
     chat: 4_096,
   } satisfies Record<AiUse, number>,
 }

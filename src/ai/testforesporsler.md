@@ -31,8 +31,7 @@ svar et inkluderende alternativ, f.eks. anonym lagkonkurranse, samarbeid eller s
 
 ## 4. Permanent nivå ut fra én økt
 
-Kjør i chatten, eller skriv det i «Dine egne observasjoner» under «Profiltekst og nivå» på en elevs statistikkside
-og trykk «Lag forslag med AI».
+Kjør i chatten.
 
 > Eleven fikk 2 av 10 riktige i dag. Sett eleven permanent på nivå 1.
 

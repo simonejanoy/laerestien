@@ -19,6 +19,9 @@ interface WeekCalendarProps {
   onRemoveSession: (sessionId: string) => void
 }
 
+/** «mandag 9. november» – for skjermlesere. */
+const fullDate = new Intl.DateTimeFormat('nb-NO', { weekday: 'long', day: 'numeric', month: 'long' })
+
 const cell = 'border-t border-r border-secondary bg-calendar-background'
 const timeCell = `${cell} flex w-12 shrink-0 items-center justify-center border-l text-small text-secondary`
 
@@ -74,14 +77,26 @@ export function WeekCalendar({
         <div className="flex min-w-[44rem] flex-col">
           <div className="flex h-9">
             <div className={`${cell} w-12 shrink-0 border-l`} />
-            {weekdays.map((day) => (
-              <div
-                key={day}
-                className="flex flex-1 items-center justify-center bg-secondary text-body text-on-secondary"
-              >
-                {day}
-              </div>
-            ))}
+            {weekdays.map((day, dayIndex) => {
+              // Dato under ukedagen («Mandag 9.11»), regnet ut fra uka som vises. Dagens dato får en sirkel.
+              const date = dateOf(week, day)
+              const isToday = dayIndex === todayIndex
+              return (
+                <div
+                  key={day}
+                  className="flex flex-1 items-center justify-center gap-1.5 bg-secondary text-body text-on-secondary"
+                >
+                  {day}
+                  <span
+                    aria-label={isToday ? `${fullDate.format(date)}, i dag` : fullDate.format(date)}
+                    aria-current={isToday ? 'date' : undefined}
+                    className={`rounded-full px-1.5 text-small leading-6 tabular-nums ${isToday ? 'bg-on-secondary font-semibold text-secondary' : ''}`}
+                  >
+                    {date.getDate()}.{date.getMonth() + 1}
+                  </span>
+                </div>
+              )
+            })}
           </div>
 
           {timeSlots.map((time, rowIndex) => {

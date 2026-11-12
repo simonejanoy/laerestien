@@ -8,6 +8,8 @@ export interface SessionInput {
   heading: string
   description: string
   slots: CalendarSlot[]
+  /** Uka datoen læreren valgte ligger i. Uten den blir økta i uka den legges til i (eller allerede har). */
+  week?: WeekRef
 }
 
 export interface SessionsContextValue {

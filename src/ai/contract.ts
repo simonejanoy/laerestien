@@ -483,11 +483,23 @@ export interface AiSessionProfile {
   divisionType?: DivisionType
 }
 
+/** Høyeste antall oppgaver per nivå i én bestilling (holder svartiden og kostnaden nede). */
+export const MAX_PER_LEVEL = 10
+
+/** De valgte nivåene i en bestilling, sortert og uten duplikater – alle tre når ingen gyldige er oppgitt. */
+export function targetLevelsOf(value: unknown): AiLevel[] {
+  const chosen = Array.isArray(value) ? ([1, 2, 3] as const).filter((l) => value.includes(l)) : []
+  return chosen.length > 0 ? [...chosen] : [1, 2, 3]
+}
+
 export type TaskRequest =
   | {
       kind: 'general'
       lesson: LessonContext
+      /** Antall oppgaver på hvert valgte nivå: et helt tall fra 1 til MAX_PER_LEVEL. */
       perLevel: number
+      /** Nivåene læreren har valgt. Uten feltet lages oppgaver på alle tre nivåene (som før). */
+      targetLevels?: AiLevel[]
       /** Offisiell måltekst, limt inn ordrett av læreren (kan være tom). */
       officialGoals: string
       wishes: string
@@ -517,14 +529,6 @@ export type TaskRequest =
       student?: AnonStudentProfile
     }
 
-export interface ProfileRequest {
-  classId: string
-  context: SubjectContext
-  student: AnonStudentProfile
-  /** Lærerens egne observasjoner (valgfritt). */
-  teacherNotes: string
-}
-
 /** Én tur i samtalen. Sendes tilbake uendret, så thought signatures blir med. */
 export interface ChatContent {
   role: 'user' | 'model'
@@ -539,11 +543,6 @@ export interface ChatResponse {
   text: string
   /** Modellens tur, slik den kom fra API-et – legges uendret til i historikken. */
   content: ChatContent
-  meta?: AiResponseMeta
-}
-
-export interface TextResponse {
-  text: string
   meta?: AiResponseMeta
 }
 

@@ -180,6 +180,8 @@ export function buildLevelContexts(levels: LevelGroup[], tasks: SessionTask[], p
       ...(own?.factors && { factors: own.factors }),
       ...(own?.units && { units: own.units }),
       referenceTasks: selectReferenceTasks(tasks.filter((t) => t.level === level)).map(toReferenceTask),
+      // Hele oppgavesettet (oppsummert), så serveren kan avvise duplikater også i økter uten fagområde.
+      existing: summarizeExisting(tasks.filter((t) => t.level === level)),
     }
   })
 }

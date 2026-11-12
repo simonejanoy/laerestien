@@ -6,7 +6,7 @@ import { SessionFormDialog } from '../sessions/SessionFormDialog'
 import { useSessions } from '../sessions/sessionsContext'
 import { SessionOverviewCard } from './SessionOverviewCard'
 import { WeekCalendar } from './WeekCalendar'
-import { breaks, hasEnded, isSameWeek, shiftWeek, timeSlots, weekOf, weekdays } from './mockData'
+import { breaks, dateOf, hasEnded, isSameWeek, shiftWeek, timeSlots, weekOf, weekdays, type WeekRef } from './mockData'
 import { useNow } from '../../hooks/useNow'
 import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
 
@@ -33,6 +33,12 @@ export function HomePage() {
   const now = useNow()
   const thisWeek = weekOf(now)
   const shownWeek = shiftWeek(thisWeek, offset)
+  // Viser uka en lagret økt havnet i, så læreren ser den i kalenderen (datoen kan ligge i en annen uke).
+  const showWeek = (week?: WeekRef) => {
+    if (!week) return
+    const days = Math.round((dateOf(week, 'Mandag').getTime() - dateOf(thisWeek, 'Mandag').getTime()) / 86_400_000)
+    setOffset(Math.round(days / 7))
+  }
 
   // Alt under regnes ut fra øktene, så kalenderen oppdaterer seg når økter legges til, endres eller fjernes.
   const weekEntries = calendarEntries
@@ -101,6 +107,7 @@ export function HomePage() {
           onClose={() => setCreating(false)}
           onSave={(input) => {
             setCreatedId(addSession(input, shownWeek))
+            showWeek(input.week)
             setCreating(false)
           }}
         />
@@ -113,6 +120,7 @@ export function HomePage() {
           onClose={() => setEditingId(null)}
           onSave={(input) => {
             updateSession(editing.id, input)
+            showWeek(input.week)
             setEditingId(null)
           }}
         />
