@@ -5,6 +5,8 @@ import type { Level, SessionTask, Task } from '../../types'
 import { FullPageMessage } from '../auth/ProtectedRoute'
 import { sessionLabel, useSessions } from '../sessions/sessionsContext'
 import { AiTaskGenerator } from './AiTaskGenerator'
+import { isPeriod } from '../repetition/analysis'
+import { RepetitionPlanner } from '../repetition/RepetitionPlanner'
 import { LevelTabs } from './LevelTabs'
 import { StudentPreviewDialog } from './StudentPreviewDialog'
 import { TaskCard } from './TaskCard'
@@ -118,6 +120,11 @@ export function EditTasksPage() {
           </div>
         </div>
       </div>
+
+      {/* Repetisjonsøkter: oppgaver ut fra hva hvert nivå har strevd med i perioden. */}
+      {isPeriod(session.topicId) && (
+        <RepetitionPlanner session={session} period={session.topicId} tasks={draft} onAdd={(tasks) => update([...draft, ...tasks])} />
+      )}
 
       <AiTaskGenerator session={session} tasks={draft} onAdd={(tasks) => update([...draft, ...tasks])} />
 

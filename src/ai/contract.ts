@@ -483,6 +483,35 @@ export interface AiSessionProfile {
   divisionType?: DivisionType
 }
 
+/**
+ * AI-støttet repetisjon: hva klassen har strevd med, regnet ut i appen og samlet per nivå og undertema. Bare tall og
+ * navn på undertemaer – aldri elevnavn, elev-ID-er eller enkeltsvar.
+ */
+export interface RepetitionContext {
+  /** «Nivå 2: Divisjon med rest (Divisjon) – 54 % riktige av 28 besvarelser fra 4 elever …» (høyst MAX_REPETITION_LINES). */
+  lines: string[]
+  /** «real»: lagrede elevsvar. «demo»: eksempeldata (ikke ekte resultater). */
+  source: 'real' | 'demo'
+}
+
+export const MAX_REPETITION_LINES = 8
+const MAX_REPETITION_LINE = 240
+/** Det som ligner personopplysninger (e-post eller et fornavn foran «sier», «har», «fikk» …) slipper ikke gjennom. */
+const PERSONAL = /@|\b\p{Lu}\p{Ll}+ (sier|har|fikk|svarte|er)\b/u
+
+/** Leser repetisjonsoppsummeringen fra appen: bare korte linjer av riktig form, uten personopplysninger. */
+export function readRepetition(raw: unknown): RepetitionContext | undefined {
+  if (typeof raw !== 'object' || raw === null) return undefined
+  const { lines, source } = raw as Partial<RepetitionContext>
+  if (!Array.isArray(lines) || (source !== 'real' && source !== 'demo')) return undefined
+  const clean = lines
+    .filter((l): l is string => typeof l === 'string')
+    .map((l) => l.trim().slice(0, MAX_REPETITION_LINE))
+    .filter((l) => /^Nivå [123]: /.test(l) && !PERSONAL.test(l))
+    .slice(0, MAX_REPETITION_LINES)
+  return clean.length > 0 ? { lines: clean, source } : undefined
+}
+
 /** Høyeste antall oppgaver per nivå i én bestilling (holder svartiden og kostnaden nede). */
 export const MAX_PER_LEVEL = 10
 
@@ -509,6 +538,8 @@ export type TaskRequest =
       profile?: AiSessionProfile
       /** Bare for å gjenskape et tidligere utvalg av referanser. Ellers lager serveren et nytt frø. */
       referenceSeed?: number
+      /** Repetisjon ut fra klassens resultater: en anonym oppsummering per nivå og undertema (se RepetitionContext). */
+      repetition?: RepetitionContext
     }
   | {
       kind: 'individual'

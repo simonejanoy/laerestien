@@ -527,7 +527,7 @@ describe('13. andre temaer og referansebanker er uendret', () => {
   })
 
   it('regelversjon, modeller og tidsgrenser er uendret', () => {
-    assert.equal(aiConfig.rulesVersion, '9')
+    assert.equal(aiConfig.rulesVersion, '10')
     assert.equal(aiConfig.primaryModel, 'gemini-3.8-flash')
     assert.equal(aiConfig.fallbackModel, 'gemini-3.5-flash-lite')
     assert.deepEqual(aiConfig.timeoutMsByUse.tasks, { primary: 4000 })

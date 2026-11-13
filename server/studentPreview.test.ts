@@ -121,7 +121,9 @@ describe('elevvisning: ingenting lagres', () => {
     const home = code('src/features/student/StudentHomePage.tsx')
     // Eleven sender ikke forhåndsvisningstilstand – hver oppgaveskjerm holder sin egen.
     // Temaet sendes med (Mønster og algoritmer har egen melding for tekstsvar), men ingen forhåndsvisningstilstand.
-    assert.match(home, /<StudentTaskFlow tasks=\{tasks\} index=\{index\} onNext=\{\(\) => setIndex\(index \+ 1\)\} topicId=\{session\.topicId\} \/>/)
+    // Eleven lagrer ferdige resultater (anonymt) til repetisjonen via onResult – det gjør ikke forhåndsvisningen.
+    assert.match(home, /<StudentTaskFlow tasks=\{tasks\} index=\{index\} onNext=\{\(\) => setIndex\(index \+ 1\)\} topicId=\{session\.topicId\} onResult=\{saveResult\} \/>/)
+    assert.ok(!code('src/features/tasks/StudentPreviewDialog.tsx').includes('onResult'))
     assert.ok(!home.includes('preview'))
     assert.match(home, /useSavedIndex\(/)
     // Uten `controlled` brukes skjermens egen useState.

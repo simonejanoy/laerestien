@@ -5,7 +5,7 @@ import lightbulb from '../../assets/student/lyspaere.svg'
 import type { Task } from '../../types'
 import { answerOf, formatNumber, hintFor, operatorSymbol } from '../tasks/taskUtils'
 import { AppleGroup } from './AppleGroup'
-import { checkMathAnswer, cleanMathAnswer, initialMathState, retryMathAnswer, type MathTaskState } from './studentTasks'
+import { checkMathAnswer, cleanMathAnswer, initialMathState, retryMathAnswer, type MathTaskState, type TaskResultSummary } from './studentTasks'
 import { TaskStepper } from './TaskStepper'
 import { useTaskState, type ControlledTaskState } from './useTaskState'
 import { WrongAnswerDialog } from './WrongAnswerDialog'
@@ -18,11 +18,13 @@ interface TaskScreenProps {
   onNext: () => void
   /** Bare i lærerens forhåndsvisning: tilstanden holdes utenfor, så den beholdes når læreren blar. */
   controlled?: ControlledTaskState<MathTaskState>
+  /** Bare i elevvisningen: resultatet når oppgaven er ferdig rettet (lagres for repetisjonen). */
+  onResult?: (result: TaskResultSummary) => void
 }
 
 /** Én oppgave for eleven: svar, sjekk, hint og videre. */
-export function TaskScreen({ task, index, total, onNext, controlled }: TaskScreenProps) {
-  const [state, setState] = useTaskState(initialMathState, controlled)
+export function TaskScreen({ task, index, total, onNext, controlled, onResult }: TaskScreenProps) {
+  const [state, setState] = useTaskState(initialMathState, controlled, onResult)
   const { answer, phase, attemptsLeft, showHint, dialogOpen } = state
   const inputRef = useRef<HTMLInputElement>(null)
 

@@ -195,7 +195,7 @@ describe('fagområde for økter uten egen profil (repetisjon og egne økter)', (
     const profile = aiProfileFor({ heading: 'Klokka', topicId: 'maling' })!.profile
     const request = { kind: 'general', lesson, perLevel: 2, officialGoals: '', wishes: '', levels: buildLevelContexts(levels, [], profile), profile: toAiProfile(profile) } as const
     assert.ok(taskPrompt(request).includes('ikke samme formulering med bare nye tall'))
-    assert.equal(aiConfig.rulesVersion, '9')
+    assert.equal(aiConfig.rulesVersion, '10')
   })
 })
 

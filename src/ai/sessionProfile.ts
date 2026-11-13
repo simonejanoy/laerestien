@@ -59,6 +59,24 @@ function mainTopicFirst(profiles: TaskProfile[]) {
   return [first, ...profiles.filter((p) => p !== first)]
 }
 
+/**
+ * Profilen for et sett undertemaer (repetisjon): profilene til øktene i årsplanen som øver på dem, slått sammen.
+ * Hovedområdet kommer fra temaet flest av undertemaene hører til; undertemaer i andre tema bør bestilles for seg
+ * (se repetisjonen, som lager én bestilling per tema). Null når ingen av undertemaene har en profil.
+ */
+export function profileForSkills(skills: readonly string[], focus: string): TaskProfile | null {
+  const all = profiled()
+  const unique = [...new Set(skills.flatMap((skill) => all.find((p) => p.skills.includes(skill))?.profile ?? []))]
+  if (unique.length === 0) return null
+  return combine(mainTopicFirst(unique), `${focus} ${unique.map((p) => p.focus).join(' ')}`.trim())
+}
+
+/** Faget (referansebanken) et undertema hører til – til å dele en repetisjonsbestilling per tema. */
+export function topicOfSkill(skill: string) {
+  const profile = profiled().find((p) => p.skills.includes(skill))?.profile
+  return profile?.area ? topicOfArea(profile.area) : null
+}
+
 export interface DerivedProfile {
   profile: TaskProfile
   /** Hvor profilen kommer fra: øktas egen, undertemaene, overskriften eller hele temaet. */
@@ -78,12 +96,8 @@ export function aiProfileFor(session: Pick<Session, 'taskProfile' | 'skillIds' |
   const own = session.taskProfile ? ({ profile: session.taskProfile, source: 'session' } as const) : null
   const all = profiled()
 
-  const fromSkills = (session.skillIds ?? []).flatMap((skill) => {
-    const match = all.find((p) => p.skills.includes(skill))
-    return match?.profile ? [match.profile] : []
-  })
-  const unique = [...new Set(fromSkills)]
-  if (unique.length > 0) return { profile: combine(mainTopicFirst(unique), `Repetisjon: ${session.heading}. ${unique.map((p) => p.focus).join(' ')}`), source: 'skills' }
+  const fromSkills = profileForSkills(session.skillIds ?? [], `Repetisjon: ${session.heading}.`)
+  if (fromSkills) return { profile: fromSkills, source: 'skills' }
 
   const inTopic = all.filter((p) => p.spec.unitId === session.topicId)
   if (inTopic.length === 0) return own

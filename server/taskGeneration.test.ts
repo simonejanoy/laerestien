@@ -81,7 +81,7 @@ describe('regler versjon 8', () => {
   })
 
   it('2. konfigurasjonen angir regelversjon 8, og systemprompten har regelen om referansebanken og støttestrukturen', () => {
-    assert.equal(aiConfig.rulesVersion, '9')
+    assert.equal(aiConfig.rulesVersion, '10')
     assert.ok(systemPrompt.includes('skal strategien være matematisk gyldig for akkurat det regnestykket oppgaven gjelder'))
     assert.ok(systemPrompt.includes('Nye oppgaver skal følge støttestrukturen på nivået'))
     assert.ok(systemPrompt.includes('Referansene skal ikke returneres direkte.'))

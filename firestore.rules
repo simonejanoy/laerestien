@@ -47,5 +47,21 @@ service cloud.firestore {
       allow read: if signedIn() && profile().classId == classId;
       allow write: if teacherOfClass(classId);
     }
+
+    // Elevsvar til repetisjonen (anonyme: undertema, nivå, riktig/galt og forsøk – ingen navn eller svartekst).
+    // Eleven kan bare legge til sine egne svar i sin egen klasse, ikke lese, endre eller slette dem.
+    // Bare læreren i klassen kan lese dem.
+    match /results/{classId}/answers/{answerId} {
+      allow read: if teacherOfClass(classId);
+      allow create: if signedIn()
+        && profile().role == 'student'
+        && profile().classId == classId
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.keys().hasOnly(['studentId', 'sessionId', 'topicId', 'skill', 'level', 'taskType', 'correct', 'attempts', 'at'])
+        && request.resource.data.level in [1, 2, 3]
+        && request.resource.data.correct is bool
+        && request.resource.data.attempts is int && request.resource.data.attempts >= 1 && request.resource.data.attempts <= 5;
+      allow update, delete: if false;
+    }
   }
 }

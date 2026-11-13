@@ -20,7 +20,7 @@ import { OPERATOR_OPTIONS, asksExplanation, hasDataBlock, labelsIn, lettered, op
 import { TaskFigure } from '../../components/ui/TaskFigure'
 import { NumberInput, TaskText } from '../../components/ui/TaskText'
 import type { TextTask } from '../../types'
-import { checkTextAnswer, initialTextState, showsSolution, solutionHeading, textSlots, typeInSlot, type TextTaskState } from './studentTasks'
+import { checkTextAnswer, initialTextState, showsSolution, solutionHeading, textSlots, typeInSlot, type TaskResultSummary, type TextTaskState } from './studentTasks'
 import { TaskStepper } from './TaskStepper'
 import { useTaskState, type ControlledTaskState } from './useTaskState'
 
@@ -31,6 +31,8 @@ interface TextTaskScreenProps {
   onNext: () => void
   /** Bare i lærerens forhåndsvisning: tilstanden holdes utenfor, så den beholdes når læreren blar. */
   controlled?: ControlledTaskState<TextTaskState>
+  /** Bare i elevvisningen: resultatet når oppgaven er ferdig rettet (lagres for repetisjonen). */
+  onResult?: (result: TaskResultSummary) => void
   /**
    * Økta hører til Mønster og algoritmer eller Regning: svarene lagres ikke, så oppgaver som ikke rettes automatisk får
    * meldingen «Ferdig! Fortell læreren hva du svarte.» og knappen «Ferdig med oppgaven». Andre temaer har meldingen som før.
@@ -48,8 +50,8 @@ interface TextTaskScreenProps {
  * med en gang: «Riktig!», ett nytt forsøk etter første feil, og deretter riktig svar – med løsningsforslaget når eleven
  * kan se det. Andre tekstoppgaver rettes ikke av appen.
  */
-export function TextTaskScreen({ task, index, total, onNext, controlled, honestDone = false, splitParts = false, textBoxes = false }: TextTaskScreenProps) {
-  const [state, setState] = useTaskState(initialTextState, controlled)
+export function TextTaskScreen({ task, index, total, onNext, controlled, onResult, honestDone = false, splitParts = false, textBoxes = false }: TextTaskScreenProps) {
+  const [state, setState] = useTaskState(initialTextState, controlled, onResult)
   const { answer, submitted, result } = state
   const isLast = index === total - 1
   const auto = !!task.expected

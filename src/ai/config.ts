@@ -24,8 +24,10 @@ export const aiConfig = {
    *    beholdes figuren med mindre læreren uttrykkelig ber om å endre eller fjerne den (11.11.2026).
    * 9: nye oppgaver på samme nivå skal være forskjellige fra hverandre – ikke samme formulering med bare nye tall –
    *    og læreren kan bestille oppgaver på utvalgte nivåer (12.11.2026).
+   * 10: AI-støttet repetisjon – en anonym oppsummering av klassens resultater per nivå og undertema styrer innholdet,
+   *     og AI-en begrunner kort forslaget i melding (12.11.2026).
    */
-  rulesVersion: '9',
+  rulesVersion: '10',
   /** Prøves først. */
   primaryModel: 'gemini-3.8-flash',
   /** Brukes automatisk hvis primærmodellen når tidsgrensen eller svarer 500, 503 eller 504. */

@@ -14,6 +14,7 @@ import {
   type AiTextDraft,
   type AnonStudentProfile,
   type ReferenceArea,
+  type RepetitionContext,
   type SubjectContext,
   type TaskRequest,
 } from '../src/ai/contract.ts'
@@ -550,6 +551,25 @@ function countLine(perLevel: number, targetLevels: AiLevel[], plan?: GenerationP
   )
 }
 
+/**
+ * AI-støttet repetisjon: hva nivået har strevd med (regnet ut i appen, samlet og anonymt). AI-en velger faglig innhold
+ * og begrunner kort hvorfor – men tar ingen beslutninger om enkeltelever eller nivåer.
+ */
+function repetitionSection(repetition: RepetitionContext) {
+  return lines(
+    'Repetisjon ut fra klassens resultater (samlet per nivå og undertema – ingen enkeltelever):',
+    ...repetition.lines.map((l) => `- ${l}`),
+    repetition.source === 'demo' &&
+      'Tallene over er eksempeldata som viser hvordan repetisjonen fungerer – ikke ekte elevresultater. Ikke skriv at klassen faktisk har strevd med dette.',
+    '',
+    'Slik skal repetisjonsoppgavene lages:',
+    '- Øv på undertemaene over, på nivået de står på. Fordel oppgavene på undertemaene med flest på det som har lavest andel riktige, og bruk gjerne oppgavetypene som gikk dårligst.',
+    '- Hold deg innenfor fagområdet og nivået i øktprofilen, og følg de samme reglene som for andre oppgaver.',
+    '- Skriv i melding en kort begrunnelse (1–2 setninger) for hvorfor innholdet foreslås, ut fra tallene over.',
+    '- Ikke flytt elever mellom nivåer, ikke fastsett varige nivåer, ikke diagnostiser og ikke trekk slutninger om enkeltelever. Læreren tar beslutningene.',
+  )
+}
+
 /** Utfylling: hvilke nivåer som mangler, og hva som ikke kan brukes. */
 function refillSection(plan: GenerationPlan) {
   const refill = plan.refill!
@@ -584,6 +604,8 @@ export function taskPrompt(request: TaskRequest, plan?: GenerationPlan) {
         countLine(request.perLevel, targetLevelsOf(request.targetLevels), plan),
         `Ekstra ønsker fra læreren: ${request.wishes || 'Ingen.'}`,
         '',
+        request.repetition && repetitionSection(request.repetition),
+        request.repetition && '',
         profile && profileSection(profile),
         profile && '',
         profile?.area && levels.length > 0 ? areaTaskSetSection(profile.area, profile, levels) : levels.length > 0 && taskSetSection(levels),

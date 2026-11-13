@@ -1,4 +1,4 @@
-import type { PlanUnit, Skill, Term, Topic } from '../../types'
+import type { PlanUnit, Skill, Term, Topic } from '../../types/index.ts'
 
 // Årsplan i matematikk for 4. trinn. Ukeantallene er forslag til prototypen, ikke en
 // offisiell årsplan. Tema (fag) og periode (når det undervises) er skilt: et tema har

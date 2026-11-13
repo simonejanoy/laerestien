@@ -126,6 +126,28 @@ export const retryMathAnswer = (state: MathTaskState, withHint: boolean): MathTa
   showHint: state.showHint || withHint,
 })
 
+/** Resultatet av en ferdig oppgave: riktig eller ikke, og hvor mange forsøk eleven brukte. */
+export interface TaskResultSummary {
+  correct: boolean
+  attempts: number
+}
+
+/**
+ * Resultatet når oppgaven er ferdig rettet, ellers null: regnestykker er ferdige når svaret er riktig eller vist etter
+ * siste forsøk, tekstoppgaver når et automatisk rettet svar er riktig eller vist. Tekstsvar læreren vurderer selv
+ * (uten svar som rettes automatisk), gir ikke noe resultat.
+ */
+export function finalResultOf(state: TaskAnswerState): TaskResultSummary | null {
+  if (isMathState(state)) {
+    if (state.phase === 'correct') return { correct: true, attempts: MAX_ATTEMPTS - state.attemptsLeft + 1 }
+    if (state.phase === 'revealed') return { correct: false, attempts: MAX_ATTEMPTS }
+    return null
+  }
+  if (state.result === 'correct') return { correct: true, attempts: (state.wrongTries ?? 0) + 1 }
+  if (state.result === 'revealed') return { correct: false, attempts: state.wrongTries ?? TEXT_ATTEMPTS }
+  return null
+}
+
 /** Om oppgaven er påbegynt (noe å tømme). */
 export function hasAnswerState(state: TaskAnswerState | undefined) {
   if (!state) return false

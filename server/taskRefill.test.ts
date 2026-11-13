@@ -258,7 +258,7 @@ describe('ønsker, logging og uendrede regler', () => {
   })
 
   it('13. regelversjon 8 og referansebanken er uendret', () => {
-    assert.equal(aiConfig.rulesVersion, '9')
+    assert.equal(aiConfig.rulesVersion, '10')
     const hash = createHash('sha256').update(readFileSync(multiplicationBankFile)).digest('hex')
     assert.equal(hash, '4e3e3970c12f95a663fc0ea355e56713f112a5a5b03549a226df8ac4495317c1')
   })

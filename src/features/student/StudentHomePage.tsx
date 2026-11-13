@@ -5,7 +5,10 @@ import { sessionLabel, useSessions } from '../sessions/sessionsContext'
 import { Greeting, MessageCard, PausedScreen } from './StatusScreens'
 import { StudentLayout } from './StudentLayout'
 import { StudentTaskFlow } from './StudentTaskFlow'
-import { verbFor } from './studentTasks'
+import { answerRecord } from '../repetition/answers'
+import { saveAnswer } from '../../lib/results'
+import { verbFor, type TaskResultSummary } from './studentTasks'
+import type { SessionTask } from '../../types'
 
 /** Hvor langt eleven har kommet, lagret i nettleseren så eleven fortsetter der hen slapp. */
 function useSavedIndex(key: string | null) {
@@ -74,6 +77,12 @@ export function StudentHomePage() {
 
   const verb = verbFor(tasks)
 
+  // Ferdig rettet oppgave: lagres anonymt (undertema, nivå, riktig/galt og forsøk) til repetisjonen.
+  const saveResult = (task: SessionTask, result: TaskResultSummary) => {
+    const record = session && profile && answerRecord(profile.uid, session, task, result)
+    if (record) void saveAnswer(classId, record)
+  }
+
   return (
     <StudentLayout label={label} onLogout={logout}>
       <Greeting text={session ? `Hei, ${firstName}! ${verb}` : `Hei, ${firstName}!`} />
@@ -84,7 +93,7 @@ export function StudentHomePage() {
       ) : !session ? (
         <MessageCard title="Venter på læreren" text="Oppgavene dukker opp her når læreren starter økta." />
       ) : (
-        <StudentTaskFlow tasks={tasks} index={index} onNext={() => setIndex(index + 1)} topicId={session.topicId} />
+        <StudentTaskFlow tasks={tasks} index={index} onNext={() => setIndex(index + 1)} topicId={session.topicId} onResult={saveResult} />
       )}
     </StudentLayout>
   )

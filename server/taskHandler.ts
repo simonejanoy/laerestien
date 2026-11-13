@@ -7,6 +7,7 @@ import {
   readStoredVisual,
   readLevelContexts,
   readSessionProfile,
+  readRepetition,
   MAX_PER_LEVEL,
   targetLevelsOf,
   type AiLevel,
@@ -103,6 +104,8 @@ export function createTaskHandler({
       request.targetLevels = targetLevelsOf(request.targetLevels)
       const targets = request.targetLevels
       request.levels = readLevelContexts(request.levels).filter((l) => targets.includes(l.level))
+      // Repetisjon: bare den anonyme, samlede oppsummeringen går videre (se readRepetition).
+      request.repetition = readRepetition(request.repetition)
       request.profile = readSessionProfile(request.profile)
       const area = request.profile?.area
       if (area) {
