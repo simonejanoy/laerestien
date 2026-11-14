@@ -20,10 +20,12 @@ interface TaskScreenProps {
   controlled?: ControlledTaskState<MathTaskState>
   /** Bare i elevvisningen: resultatet når oppgaven er ferdig rettet (lagres for repetisjonen). */
   onResult?: (result: TaskResultSummary) => void
+  /** Bare i elevvisningen: hvilke oppgaver som er levert (til trinnene nederst). */
+  doneSteps?: boolean[]
 }
 
 /** Én oppgave for eleven: svar, sjekk, hint og videre. */
-export function TaskScreen({ task, index, total, onNext, controlled, onResult }: TaskScreenProps) {
+export function TaskScreen({ task, index, total, onNext, controlled, onResult, doneSteps }: TaskScreenProps) {
   const [state, setState] = useTaskState(initialMathState, controlled, onResult)
   const { answer, phase, attemptsLeft, showHint, dialogOpen } = state
   const inputRef = useRef<HTMLInputElement>(null)
@@ -148,7 +150,7 @@ export function TaskScreen({ task, index, total, onNext, controlled, onResult }:
             Jeg trenger et hint
           </button>
 
-          <TaskStepper total={total} current={index} currentDone={phase !== 'answering'} />
+          <TaskStepper total={total} current={index} currentDone={phase !== 'answering'} done={doneSteps} />
 
           <button
             type="button"

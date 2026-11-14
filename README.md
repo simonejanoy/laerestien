@@ -59,9 +59,22 @@ src/
 
 Farger og tekststiler fra Figma ligger som Tailwind-tokens i `src/index.css`.
 
+## Testkonto (fiktiv elev)
+
+Amalie Berg i klasse 4A brukes til å demonstrere flyten mellom lærer og elev. Kontoen lages som andre elevkontoer: logg inn som lærer i 4A, gå til «Elever» og lag kontoen med navn `Amalie Berg`, e-post `amalie@teigen.no` og et passord du velger selv. Passord skal aldri stå i koden, README eller testene. Amalie står allerede i klasselista (nivå 1); kontoen kobles til henne på e-posten og får nivået hennes. Det kan aldri lages to kontoer med samme e-post, og en elev i klasselista får bare én konto. Alle elevene og kontoene i prototypen er fiktive.
+
+## Økta som pågår
+
+- Læreren starter økta (Start økt). Hver start er en ny gjennomføring med egen ID, så framdrift fra en tidligere gjennomføring aldri vises i en ny.
+- Eleven ser «Venter på læreren» til økta er startet, og får oppgavene på sitt nivå av seg selv. Å avslutte økta beholder økta i Firestore med status «avsluttet», så eleven får beskjed og læreren ser de endelige resultatene.
+- Når eleven leverer en oppgave, lagres det i `liveSessions/{klasse}/progress/{gjennomføring}__{uid}` (hvilke oppgaver som er levert, og om de var riktige – ingen navn eller svartekst). «Følg elevenes arbeid» lytter på dette og oppdateres med en gang.
+- Elevens svar og hvor eleven er, lagres også i nettleseren, så de er der etter omlasting.
+- **Husk å publisere [`firestore.rules`](firestore.rules) på nytt** etter denne endringen – ellers kan ikke elevene levere.
+- Innloggingen deles mellom alle faner i samme nettleserprofil. Ha læreren og eleven i hver sin profil, f.eks. et vanlig og et privat vindu.
+
 ## Status
 
-Øktene, oppgavene, «Følg elevenes arbeid» og statistikken bruker foreløpig testdata. Innlogging, lærer- og elevkontoer og start/pause av økter går mot Firebase.
+Øktene, oppgavene og statistikken bruker foreløpig testdata. Innlogging, lærer- og elevkontoer, start, pause og avslutning av økter og elevenes framdrift i «Følg elevenes arbeid» går mot Firebase.
 
 ## Kommandoer
 
@@ -69,3 +82,5 @@ Farger og tekststiler fra Figma ligger som Tailwind-tokens i `src/index.css`.
 - `npm run dev:api` – API-serveren for AI-assistenten
 - `npm run build` – typesjekk og produksjonsbygg
 - `npm run lint` – lint med oxlint
+- `npm test` – tester (Node)
+- `npm run test:e2e` – nettlesertester (Playwright, bruker den lokale Chrome-installasjonen)

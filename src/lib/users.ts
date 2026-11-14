@@ -9,6 +9,8 @@ export interface NewStudent {
   email: string
   password: string
   classId: string
+  /** Nivået eleven står på i klasselista. Uten nivå starter eleven på nivå 1. */
+  level?: Level
 }
 
 /** Lytter på elevene i en klasse, sortert på navn. */
@@ -30,10 +32,10 @@ export function subscribeClassStudents(
   )
 }
 
-/** Lager eleven uten nivå – alle elever starter på nivå 1 i et tema. */
-export async function createStudent({ name, email, password, classId }: NewStudent) {
+/** Lager innloggingen og elevprofilen. Med nivå fra klasselista får eleven det; ellers starter eleven på nivå 1. */
+export async function createStudent({ name, email, password, classId, level }: NewStudent) {
   const uid = await createAccount(email, password)
-  await setDoc(doc(db, 'users', uid), { name, email, role: 'student', classId })
+  await setDoc(doc(db, 'users', uid), { name, email, role: 'student', classId, ...(level && { level }) })
 }
 
 export function updateStudentLevel(uid: string, level: Level) {

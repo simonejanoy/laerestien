@@ -289,6 +289,8 @@ export interface Student {
   level: Level
   /** Bilde av eleven (valgfritt). */
   photo?: string
+  /** Innloggingen (e-post) når eleven har en elevkonto. Kobler eleven i klasselista til kontoen. */
+  email?: string
 }
 
 /** Elevens framdrift i en pågående økt. */

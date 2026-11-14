@@ -3,7 +3,9 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { PlayIcon } from '../../components/ui/icons'
 import { useAuth } from '../../hooks/useAuth'
-import { liveClassId, startLiveSession } from '../../lib/liveSession'
+import { useLiveBackend } from '../live/liveBackend'
+import { liveClassId, RUN_STATE_LABELS, runStateFor } from '../live/liveProgress'
+import { useLiveSession } from '../live/useLiveSession'
 import { FullPageMessage } from '../auth/ProtectedRoute'
 import { DeleteSessionDialog } from './DeleteSessionDialog'
 import { LevelCard } from './LevelCard'
@@ -34,24 +36,33 @@ export function SessionPage() {
   const { sessions, getStatus, getBlockers, skip, getTasks, updateSession, removeSession } = useSessions()
   const [modal, setModal] = useState<'start' | 'skip' | 'edit' | 'delete' | null>(null)
   const { profile } = useAuth()
+  const backend = useLiveBackend()
   const [startError, setStartError] = useState<string | null>(null)
   // Forhåndsvisningen av oppgavene slik elevene ser dem. Lagrer ingenting, og starter tom hver gang.
   const [previewOpen, setPreviewOpen] = useState(false)
 
   const index = sessions.findIndex((s) => s.id === sessionId)
   const session = sessions[index]
-  if (!session) return <FullPageMessage text="Fant ikke økten." />
+  const classId = session ? liveClassId(profile?.classId, session.className) : null
+  // Om økta bare er planlagt, er i gang (eller på pause) eller er avsluttet – fra økta som er lagret for klassen.
+  const { live } = useLiveSession(classId)
+  if (!session || !classId) return <FullPageMessage text="Fant ikke økten." />
 
   const previous = sessions[index - 1]
   const next = sessions[index + 1]
   const status = getStatus(session.id)
   const blockers = getBlockers(session.id)
-  const canStart = status === 'available' || status === 'skipped'
+  const runState = runStateFor(live, session.id)
+  const isActive = runState === 'running' || runState === 'paused'
+  // En økt som er i gang, startes ikke på nytt – læreren går til «Følg elevenes arbeid».
+  const canStart = isActive || status === 'available' || status === 'skipped'
+  // En annen økt er i gang i klassen: den erstattes når denne startes.
+  const otherActive = !!live && live.sessionId !== session.id && (live.status === 'running' || live.status === 'paused')
   const tasks = getTasks(session.id)
 
   const startSession = async () => {
     setStartError(null)
-    const started = await startLiveSession(liveClassId(profile?.classId, session.className), session.id)
+    const started = await backend.startLiveSession(classId, session.id)
     if (!started) {
       setModal(null)
       setStartError('Klarte ikke å starte økta for elevene. Sjekk at du er logget inn som lærer i klassen, og prøv igjen.')
@@ -61,7 +72,8 @@ export function SessionPage() {
   }
 
   const handleStartClick = () => {
-    if (readHideExplanation()) void startSession()
+    if (isActive) navigate(`/okt/${session.id}/live`)
+    else if (readHideExplanation()) void startSession()
     else setModal('start')
   }
 
@@ -123,8 +135,26 @@ export function SessionPage() {
               className="flex h-12 cursor-pointer items-center gap-2.5 rounded-lg bg-primary px-5 text-body text-on-primary drop-shadow-[0_2px_2px_rgba(0,0,0,0.25)] transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-primary/50 disabled:shadow-[0_2px_4px_rgba(0,0,0,0.25)] disabled:drop-shadow-none"
             >
               <PlayIcon />
-              Start økt
+              {isActive ? 'Følg elevenes arbeid' : 'Start økt'}
             </button>
+
+            {live !== undefined && (
+              <p data-testid="okt-status" className="flex items-center gap-2 text-small text-secondary">
+                <span
+                  aria-hidden
+                  className={`size-2 rounded-full ${runState === 'running' ? 'bg-understanding' : runState === 'paused' ? 'bg-needs-support' : 'bg-step'}`}
+                />
+                {RUN_STATE_LABELS[runState]}
+                {runState === 'ended' && (
+                  <Link to={`/okt/${session.id}/live`} className="text-primary underline">
+                    Se resultatene
+                  </Link>
+                )}
+              </p>
+            )}
+            {otherActive && !isActive && (
+              <p className="max-w-xs text-right text-small text-secondary">En annen økt er i gang i klassen. Den avsluttes for elevene når du starter denne.</p>
+            )}
 
             {startError && (
               <p role="alert" className="max-w-xs text-right text-small text-error">

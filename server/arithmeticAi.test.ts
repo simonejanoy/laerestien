@@ -714,7 +714,7 @@ describe('16. det går an å skrive i boksene, og svaret rettes med tallene i bo
     const flow = readFileSync(new URL('../src/features/student/StudentTaskFlow.tsx', import.meta.url), 'utf8')
     assert.match(flow, /textBoxes=\{topicId === 'regning'\}/)
     assert.match(readFileSync(new URL('../src/features/tasks/StudentPreviewDialog.tsx', import.meta.url), 'utf8'), /<StudentTaskFlow[\s\S]*topicId=\{session\.topicId\}/)
-    assert.match(readFileSync(new URL('../src/features/student/StudentHomePage.tsx', import.meta.url), 'utf8'), /<StudentTaskFlow [\s\S]*?topicId=\{session\.topicId\}/)
+    assert.match(readFileSync(new URL('../src/features/student/StudentHomePage.tsx', import.meta.url), 'utf8'), /<StudentTaskFlow\s[\s\S]*?topicId=\{session\.topicId\}/)
   })
 
   it('Mønster og algoritmer: boksene i tallrekkene tar imot tall, og eldre lagrede sett får boksene og svaret igjen', () => {

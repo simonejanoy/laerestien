@@ -6,16 +6,18 @@ interface TaskStepperProps {
   current: number
   /** Er oppgaven eleven er på, besvart riktig? */
   currentDone: boolean
+  /** Hvilke oppgaver som er levert, når eleven kan bla fritt (elevvisningen). Uten den: alle før den eleven er på. */
+  done?: boolean[]
 }
 
 /** ①—②—③—④: hvor langt eleven har kommet i økta. */
-export function TaskStepper({ total, current, currentDone }: TaskStepperProps) {
+export function TaskStepper({ total, current, currentDone, done: doneSteps }: TaskStepperProps) {
   const doneCount = currentDone ? current + 1 : current
 
   return (
     <ol aria-label="Oppgaver i økta" className="flex min-w-0 flex-1 items-center justify-center px-9">
       {Array.from({ length: total }, (_, i) => {
-        const done = i < doneCount
+        const done = doneSteps ? !!doneSteps[i] || (i === current && currentDone) : i < doneCount
         const isCurrent = i === current && !done
         return (
           <Fragment key={i}>

@@ -33,6 +33,8 @@ interface TextTaskScreenProps {
   controlled?: ControlledTaskState<TextTaskState>
   /** Bare i elevvisningen: resultatet når oppgaven er ferdig rettet (lagres for repetisjonen). */
   onResult?: (result: TaskResultSummary) => void
+  /** Bare i elevvisningen: hvilke oppgaver som er levert (til trinnene nederst). */
+  doneSteps?: boolean[]
   /**
    * Økta hører til Mønster og algoritmer eller Regning: svarene lagres ikke, så oppgaver som ikke rettes automatisk får
    * meldingen «Ferdig! Fortell læreren hva du svarte.» og knappen «Ferdig med oppgaven». Andre temaer har meldingen som før.
@@ -50,7 +52,7 @@ interface TextTaskScreenProps {
  * med en gang: «Riktig!», ett nytt forsøk etter første feil, og deretter riktig svar – med løsningsforslaget når eleven
  * kan se det. Andre tekstoppgaver rettes ikke av appen.
  */
-export function TextTaskScreen({ task, index, total, onNext, controlled, onResult, honestDone = false, splitParts = false, textBoxes = false }: TextTaskScreenProps) {
+export function TextTaskScreen({ task, index, total, onNext, controlled, onResult, doneSteps, honestDone = false, splitParts = false, textBoxes = false }: TextTaskScreenProps) {
   const [state, setState] = useTaskState(initialTextState, controlled, onResult)
   const { answer, submitted, result } = state
   const isLast = index === total - 1
@@ -238,7 +240,7 @@ export function TextTaskScreen({ task, index, total, onNext, controlled, onResul
 
       <div className="flex min-h-[125px] w-full items-center justify-between gap-4">
         <span className="w-[236px] shrink-0" aria-hidden />
-        <TaskStepper total={total} current={index} currentDone={submitted} />
+        <TaskStepper total={total} current={index} currentDone={submitted} done={doneSteps} />
         <button
           type="button"
           disabled={!submitted && !ready}

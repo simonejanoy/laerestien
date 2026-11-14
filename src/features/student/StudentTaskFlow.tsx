@@ -1,10 +1,14 @@
+import type { ReactNode } from 'react'
 import type { SessionTask } from '../../types'
 import { MessageCard } from './StatusScreens'
 import { initialMathState, initialTextState, isMathState, type TaskAnswerState, type TaskResultSummary } from './studentTasks'
 import { TaskScreen } from './TaskScreen'
 import { TextTaskScreen } from './TextTaskScreen'
 
-/** Bare i lærerens forhåndsvisning: svarene holdes utenfor skjermene, per oppgave-ID. */
+/**
+ * Svarene holdes utenfor skjermene, per oppgave-ID: i lærerens forhåndsvisning (bare i minnet), og i elevvisningen
+ * (lagres i nettleseren, så svarene er der når eleven blar tilbake eller laster siden på nytt).
+ */
 export interface PreviewAnswers {
   answers: Record<string, TaskAnswerState>
   onAnswer: (taskId: string, state: TaskAnswerState) => void
@@ -16,8 +20,12 @@ interface StudentTaskFlowProps {
   /** Oppgaven eleven er på (0-basert). Etter siste oppgave vises avslutningen. */
   index: number
   onNext: () => void
-  /** Uten denne (som for eleven) holder hver oppgaveskjerm sin egen tilstand. */
+  /** Uten denne holder hver oppgaveskjerm sin egen tilstand. */
   preview?: PreviewAnswers
+  /** Bare i elevvisningen: hvilke oppgaver som er levert (eleven kan bla fritt mellom oppgavene). */
+  doneSteps?: boolean[]
+  /** Det som vises etter siste oppgave. Standard er «Bra jobba!». */
+  ending?: ReactNode
   /** Perioden i årsplanen økta hører til (Session.topicId). Mønster og algoritmer og Regning har egen melding for tekstsvar. */
   topicId?: string
   /** Bare i elevvisningen: resultatet når en oppgave er ferdig rettet. Forhåndsvisningen sender den ikke. */
@@ -29,8 +37,9 @@ interface StudentTaskFlowProps {
  * elevvisningen og i lærerens forhåndsvisning. Hvor framdriften og svarene lagres (eller ikke),
  * bestemmer den som bruker flyten.
  */
-export function StudentTaskFlow({ tasks, index, onNext, preview, topicId, onResult }: StudentTaskFlowProps) {
+export function StudentTaskFlow({ tasks, index, onNext, preview, topicId, onResult, doneSteps, ending }: StudentTaskFlowProps) {
   const task = tasks[index]
+  if (!task && ending) return <>{ending}</>
   if (!task) return <MessageCard title="Bra jobba!" text="Du har gjort alle oppgavene i denne økta." />
 
   const saved = preview?.answers[task.id]
@@ -51,6 +60,7 @@ export function StudentTaskFlow({ tasks, index, onNext, preview, topicId, onResu
           textBoxes={topicId === 'regning'}
           controlled={preview && { state: saved && !isMathState(saved) ? saved : initialTextState(), onChange }}
           onResult={report}
+          doneSteps={doneSteps}
         />
       ) : (
         <TaskScreen
@@ -61,6 +71,7 @@ export function StudentTaskFlow({ tasks, index, onNext, preview, topicId, onResu
           onNext={onNext}
           controlled={preview && { state: saved && isMathState(saved) ? saved : initialMathState(), onChange }}
           onResult={report}
+          doneSteps={doneSteps}
         />
       )}
     </div>

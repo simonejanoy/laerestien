@@ -3,8 +3,10 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Button } from '../../components/ui/Button'
 import { levelStyles } from '../../components/ui/levelStyles'
 import { useAuth } from '../../hooks/useAuth'
-import { createStudent, removeStudent, subscribeClassStudents, updateStudentLevel } from '../../lib/users'
 import type { Level, UserProfile } from '../../types'
+import { useLiveBackend } from '../live/liveBackend'
+import { buildRoster, checkNewStudent } from '../live/liveProgress'
+import { students as classList } from './students'
 import { authErrorMessage } from '../auth/authErrors'
 import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
 
@@ -14,13 +16,17 @@ const emptyForm = { name: '', email: '', password: '' }
 const inputClass =
   'w-full rounded-md border border-surface bg-background px-3 py-2 text-small text-primary outline-none focus:border-secondary'
 
-/** Læreren lager og administrerer elevkontoene i klassen sin. */
+/**
+ * Læreren lager og administrerer elevkontoene i klassen sin. Lista er klasselista koblet til kontoene: en ny konto med
+ * samme e-post (eller samme navn, når e-posten mangler) som en elev i lista, kobles til den eleven – det blir aldri to.
+ */
 export function ManageStudentsPage() {
   const { profile } = useAuth()
+  const { createStudent, removeStudent, subscribeClassStudents, updateStudentLevel } = useLiveBackend()
   const classId = profile?.classId ?? '4A'
 
   // undefined = laster
-  const [students, setStudents] = useState<UserProfile[] | undefined>(undefined)
+  const [accounts, setStudents] = useState<UserProfile[] | undefined>(undefined)
   const [loadError, setLoadError] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [submitting, setSubmitting] = useState(false)
@@ -37,16 +43,31 @@ export function ManageStudentsPage() {
         },
         () => setLoadError(true),
       ),
-    [classId],
+    [classId, subscribeClassStudents],
   )
+  const students = accounts && buildRoster(classList, accounts)
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     setMessage(null)
+    if (!students) return
+    const name = form.name.trim()
+    const email = form.email.trim()
+    // Ingen doble elever: samme e-post gir aldri to kontoer, og en elev i klasselista får bare én konto.
+    const check = checkNewStudent(students, { name, email })
+    if ('error' in check) {
+      setMessage({ tone: 'error', text: check.error })
+      return
+    }
     setSubmitting(true)
     try {
-      await createStudent({ ...form, name: form.name.trim(), email: form.email.trim(), classId })
-      setMessage({ tone: 'ok', text: `Kontoen til ${form.name.trim()} er laget. Gi eleven e-posten og passordet.` })
+      await createStudent({ name, email, password: form.password, classId, ...(check.match && { level: check.match.level }) })
+      setMessage({
+        tone: 'ok',
+        text: check.match
+          ? `Kontoen er laget og koblet til ${check.match.name} i klasselista (nivå ${check.match.level}). Gi eleven e-posten og passordet.`
+          : `Kontoen til ${name} er laget. Gi eleven e-posten og passordet.`,
+      })
       setForm(emptyForm)
     } catch (error) {
       setMessage({ tone: 'error', text: authErrorMessage(error) })
@@ -63,8 +84,8 @@ export function ManageStudentsPage() {
         <PageBreadcrumbs inClass />
         <h1 className="text-h1 text-on-background">Elever i klasse {classId}</h1>
         <p className="text-small text-secondary">
-          Lag innlogging til elevene dine. Eleven logger inn med e-posten og passordet du velger her. Alle elever
-          starter på nivå 1, og du kan endre nivået i listen.
+          Lag innlogging til elevene dine. Eleven logger inn med e-posten og passordet du velger her. En elev som står i
+          klasselista, beholder nivået sitt; nye elever starter på nivå 1. Du kan endre nivået i listen.
         </p>
       </div>
 
@@ -128,17 +149,33 @@ export function ManageStudentsPage() {
             {students.map((student) => {
               const level = student.level ?? 1
               const style = levelStyles[level]
+              const uid = student.uid
               return (
-                <li key={student.uid} className="flex items-center gap-4 border-b border-surface bg-background px-4 py-3 last:border-b-0">
+                <li key={student.id} data-student={student.name} className="flex items-center gap-4 border-b border-surface bg-background px-4 py-3 last:border-b-0">
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="text-body text-primary">{student.name}</span>
-                    <span className="text-small text-secondary">{student.email}</span>
+                    <span className="text-small text-secondary">
+                      {uid ? student.email : 'Ingen konto ennå'}
+                      {student.duplicateOf && (
+                        <span className="ml-2 text-error">Mulig dobbel av {student.duplicateOf} – fjern kontoen hvis den er laget ved en feil.</span>
+                      )}
+                    </span>
                   </span>
+                  {!uid && (
+                    <button
+                      type="button"
+                      onClick={() => setForm({ name: student.name, email: student.email ?? '', password: '' })}
+                      className="cursor-pointer text-small text-primary underline"
+                    >
+                      Lag konto
+                    </button>
+                  )}
                   <select
                     aria-label={`Nivå for ${student.name}`}
                     value={level}
-                    onChange={(e) => updateStudentLevel(student.uid, Number(e.target.value) as Level).catch(fail)}
-                    className={`cursor-pointer rounded-full px-3 py-1 text-small outline-none ${style.surface} ${style.text}`}
+                    disabled={!uid}
+                    onChange={(e) => uid && updateStudentLevel(uid, Number(e.target.value) as Level).catch(fail)}
+                    className={`cursor-pointer rounded-full px-3 py-1 text-small outline-none disabled:cursor-default disabled:opacity-70 ${style.surface} ${style.text}`}
                   >
                     {levels.map((l) => (
                       <option key={l} value={l}>
@@ -146,14 +183,14 @@ export function ManageStudentsPage() {
                       </option>
                     ))}
                   </select>
-                  {confirmRemove === student.uid ? (
+                  {!uid ? null : confirmRemove === uid ? (
                     <span className="flex items-center gap-2 text-small">
                       Fjerne {student.name.split(' ')[0]}?
                       <button
                         type="button"
                         onClick={() => {
                           setConfirmRemove(null)
-                          removeStudent(student.uid).catch(fail)
+                          removeStudent(uid).catch(fail)
                         }}
                         className="cursor-pointer rounded bg-error px-2.5 py-1 text-on-error"
                       >
@@ -167,7 +204,7 @@ export function ManageStudentsPage() {
                     <button
                       type="button"
                       aria-label={`Fjern ${student.name}`}
-                      onClick={() => setConfirmRemove(student.uid)}
+                      onClick={() => setConfirmRemove(uid)}
                       className="cursor-pointer text-secondary hover:text-error"
                     >
                       <Trash2 className="size-5" />

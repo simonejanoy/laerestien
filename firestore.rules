@@ -42,10 +42,45 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Økta som pågår i en klasse: alle i klassen kan lese, bare læreren kan endre.
+    // Økta som pågår i en klasse: alle i klassen kan lese, bare læreren i klassen kan starte, pause og avslutte den.
     match /liveSessions/{classId} {
       allow read: if signedIn() && profile().classId == classId;
-      allow write: if teacherOfClass(classId);
+      allow create, update: if teacherOfClass(classId)
+        && request.resource.data.status in ['running', 'paused', 'ended'];
+      allow delete: if teacherOfClass(classId);
+
+      // Elevenes framdrift i én gjennomføring av økta: hvilke oppgaver som er levert, og om de ble riktige
+      // (ingen navn eller svartekst). Eleven skriver bare sitt eget dokument ({runId}__{uid}), og bare mens akkurat
+      // denne gjennomføringen er i gang – etter at læreren har satt økta på pause eller avsluttet den, kan det ikke
+      // leveres. Nivået må være nivået på elevens konto (når kontoen har nivå), og levert er levert: en oppgave kan
+      // ikke fjernes igjen. Bare læreren i klassen kan lese. Ingenting slettes, så resultatene står igjen.
+      match /progress/{docId} {
+        allow read: if teacherOfClass(classId);
+        allow create: if validProgress(classId, docId);
+        allow update: if validProgress(classId, docId)
+          && request.resource.data.delivered.keys().hasAll(resource.data.delivered.keys());
+        allow delete: if false;
+      }
+    }
+
+    function validProgress(classId, docId) {
+      let data = request.resource.data;
+      let live = get(/databases/$(database)/documents/liveSessions/$(classId)).data;
+      return signedIn()
+        && profile().role == 'student'
+        && profile().classId == classId
+        && data.studentId == request.auth.uid
+        && docId == data.runId + '__' + request.auth.uid
+        && data.keys().hasOnly(['studentId', 'runId', 'sessionId', 'level', 'total', 'delivered', 'updatedAt'])
+        && data.keys().hasAll(['studentId', 'runId', 'sessionId', 'level', 'total', 'delivered', 'updatedAt'])
+        && data.level in [1, 2, 3]
+        && data.level == profile().get('level', data.level)
+        && data.total is int && data.total >= 0 && data.total <= 100
+        && data.delivered is map && data.delivered.size() <= 100
+        && data.updatedAt is number
+        && live.status == 'running'
+        && live.runId == data.runId
+        && live.sessionId == data.sessionId;
     }
 
     // Elevsvar til repetisjonen (anonyme: undertema, nivå, riktig/galt og forsøk – ingen navn eller svartekst).

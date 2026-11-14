@@ -2,8 +2,10 @@ import { FirebaseError } from 'firebase/app'
 
 /** Gjør Firebase-feil om til en forståelig melding på norsk. */
 export function authErrorMessage(error: unknown) {
-  if (error instanceof FirebaseError) {
-    switch (error.code) {
+  // Feil fra Firebase har en kode. Testenes lokale erstatning kaster samme koder (uten å være en FirebaseError).
+  const code = error instanceof FirebaseError ? error.code : typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : null
+  if (code) {
+    switch (code) {
       case 'auth/invalid-credential':
       case 'auth/wrong-password':
       case 'auth/user-not-found':

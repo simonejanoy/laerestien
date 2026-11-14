@@ -1,6 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppLayout } from './components/layout/AppLayout'
 import { AuthProvider } from './context/AuthContext'
+import { LiveBackendContext } from './features/live/liveBackend'
+import { firebaseLiveBackend } from './lib/liveSession'
 import { LoginPage } from './features/auth/LoginPage'
 import { RegisterPage } from './features/auth/RegisterPage'
 import { ManageStudentsPage } from './features/class/ManageStudentsPage'
@@ -19,6 +21,7 @@ import { TopicPage } from './features/topics/TopicPage'
 export default function App() {
   return (
     <AuthProvider>
+      <LiveBackendContext.Provider value={firebaseLiveBackend}>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -58,6 +61,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+      </LiveBackendContext.Provider>
     </AuthProvider>
   )
 }

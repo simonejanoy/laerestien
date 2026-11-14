@@ -112,20 +112,23 @@ describe('elevvisning: ingenting lagres', () => {
   })
 
   it('elevens lagrede framdrift ligger bare i elevvisningen, ikke i den felles flyten', () => {
-    assert.match(read('src/features/student/StudentHomePage.tsx'), /<StudentTaskFlow /)
+    assert.match(read('src/features/student/StudentHomePage.tsx'), /<StudentTaskFlow\s/)
     assert.match(read('src/features/tasks/StudentPreviewDialog.tsx'), /<StudentTaskFlow\s/)
-    assert.ok(code('src/features/student/StudentHomePage.tsx').includes('localStorage'))
+    // Eleven lagrer svarene i nettleseren per gjennomføring (liveProgress.ts: saveRun) – den felles flyten lagrer ingenting.
+    assert.ok(code('src/features/student/StudentHomePage.tsx').includes('saveRun(browserStorage()'))
+    assert.ok(!/localStorage|saveRun|browserStorage/.test(code('src/features/student/StudentTaskFlow.tsx')))
   })
 
-  it('den virkelige elevflyten er uendret: egen tilstand i skjermene og lagret framdrift', () => {
+  it('den virkelige elevflyten: svarene per oppgave lagres per gjennomføring, så eleven kan bla og laste siden på nytt', () => {
     const home = code('src/features/student/StudentHomePage.tsx')
-    // Eleven sender ikke forhåndsvisningstilstand – hver oppgaveskjerm holder sin egen.
-    // Temaet sendes med (Mønster og algoritmer har egen melding for tekstsvar), men ingen forhåndsvisningstilstand.
+    // Eleven kan bla mellom oppgavene: svarene holdes utenfor skjermene, per oppgave-ID, og lagres i nettleseren per
+    // gjennomføring av økta (useSavedRun). Temaet sendes med (Mønster og algoritmer har egen melding for tekstsvar).
     // Eleven lagrer ferdige resultater (anonymt) til repetisjonen via onResult – det gjør ikke forhåndsvisningen.
-    assert.match(home, /<StudentTaskFlow tasks=\{tasks\} index=\{index\} onNext=\{\(\) => setIndex\(index \+ 1\)\} topicId=\{session\.topicId\} onResult=\{saveResult\} \/>/)
+    assert.match(home, /<StudentTaskFlow[\s\S]*?topicId=\{session\.topicId\}[\s\S]*?onResult=\{saveResult\}[\s\S]*?preview=\{\{ answers: run\.answers, onAnswer: answer \}\}/)
     assert.ok(!code('src/features/tasks/StudentPreviewDialog.tsx').includes('onResult'))
-    assert.ok(!home.includes('preview'))
-    assert.match(home, /useSavedIndex\(/)
+    assert.match(home, /useSavedRun\(/)
+    // Forhåndsvisningen lagrer fortsatt ingenting.
+    assert.ok(!/localStorage|saveRun|saveDelivery/.test(code('src/features/tasks/StudentPreviewDialog.tsx')))
     // Uten `controlled` brukes skjermens egen useState.
     assert.match(code('src/features/student/useTaskState.ts'), /const state = controlled \? controlled\.state : own/)
   })
