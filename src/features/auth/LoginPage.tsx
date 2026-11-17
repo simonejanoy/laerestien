@@ -6,7 +6,7 @@ import { AuthCard, TextField } from './AuthCard'
 import { authErrorMessage } from './authErrors'
 
 export function LoginPage() {
-  const { user, profile, loading, login } = useAuth()
+  const { user, profile, profileError, loading, login, logout } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -45,6 +45,15 @@ export function LoginPage() {
         <p role="alert" className="text-small text-error">
           {error}
         </p>
+      )}
+      {/* Innloggingen gikk, men profilen i Firestore mangler eller er ufullstendig. */}
+      {!error && !loading && user && profileError && (
+        <div role="alert" className="flex flex-col gap-2 text-small text-error">
+          <p>{profileError}</p>
+          <button type="button" onClick={() => void logout()} className="cursor-pointer self-start text-primary underline">
+            Logg ut og prøv en annen konto
+          </button>
+        </div>
       )}
 
       <Button type="submit" disabled={submitting}>

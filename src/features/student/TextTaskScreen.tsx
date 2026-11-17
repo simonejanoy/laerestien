@@ -16,11 +16,14 @@ import {
   withoutDotSentences,
   type BlankRow,
 } from '../../ai/patternDisplay'
-import { OPERATOR_OPTIONS, asksExplanation, hasDataBlock, labelsIn, lettered, operatorTemplate, questionsIn, withoutOperatorChoices, withoutQuestions } from '../../ai/taskText'
+import { asksExplanation, hasDataBlock, labelsIn, lettered, operatorTemplate, questionsIn, withoutOperatorChoices, withoutQuestions } from '../../ai/taskText'
 import { TaskFigure } from '../../components/ui/TaskFigure'
 import { NumberInput, TaskText } from '../../components/ui/TaskText'
 import type { TextTask } from '../../types'
 import { checkTextAnswer, initialTextState, showsSolution, solutionHeading, textSlots, typeInSlot, type TaskResultSummary, type TextTaskState } from './studentTasks'
+import { EquationLines } from './EquationLines'
+import { changeLine, checkEquations, equationSpec, equationsReady } from './equationTemplates'
+import { OperatorChoices } from './OperatorChoices'
 import { TaskStepper } from './TaskStepper'
 import { useTaskState, type ControlledTaskState } from './useTaskState'
 
@@ -44,6 +47,11 @@ interface TextTaskScreenProps {
   splitParts?: boolean
   /** Regning: tomme ruter i tabeller og □ i likninger vises alltid som inputbokser (se textSlots). */
   textBoxes?: boolean
+  /**
+   * Multiplikasjon: oppgaver som ber eleven skrive regnestykker til en figur eller et plusstykke, får regnestykke-maler
+   * (tallbokser og regnetegnknapper) og rettes automatisk ut fra figuren (se equationTemplates.ts). Andre temaer som før.
+   */
+  equationLines?: boolean
 }
 
 /**
@@ -52,11 +60,13 @@ interface TextTaskScreenProps {
  * med en gang: «Riktig!», ett nytt forsøk etter første feil, og deretter riktig svar – med løsningsforslaget når eleven
  * kan se det. Andre tekstoppgaver rettes ikke av appen.
  */
-export function TextTaskScreen({ task, index, total, onNext, controlled, onResult, doneSteps, honestDone = false, splitParts = false, textBoxes = false }: TextTaskScreenProps) {
+export function TextTaskScreen({ task, index, total, onNext, controlled, onResult, doneSteps, honestDone = false, splitParts = false, textBoxes = false, equationLines = false }: TextTaskScreenProps) {
   const [state, setState] = useTaskState(initialTextState, controlled, onResult)
   const { answer, submitted, result } = state
   const isLast = index === total - 1
-  const auto = !!task.expected
+  // Multiplikasjon: regnestykke-maler når oppgaven ber om regnestykker og appen kan lese figuren (ellers null).
+  const equation = equationLines ? equationSpec(task) : null
+  const auto = !!task.expected || !!equation
   // Fargemønstre og figurtall: fargerekka og antallene vises i figuren, så de vises ikke i teksten i tillegg.
   const text =
     task.figure?.kind === 'colors' ? withoutColorRow(task.text, task.figure.items) : task.figure?.kind === 'dots' ? withoutDotSentences(task.text) : task.text
@@ -88,10 +98,12 @@ export function TextTaskScreen({ task, index, total, onNext, controlled, onResul
     setState({ ...state, parts: next, answer: joinParts(next), result: result === 'retry' ? undefined : result })
   }
   // Oppgaver med a) og b) (helst ikke i Regning): ett skrivefelt under hver del.
-  const parts = splitParts && !row && !inText && !operatorButtons && !choices && !questionParts ? lettered(shown) : null
-  const explain = (inText || operatorButtons || !!questionParts) && asksExplanation(body)
+  const parts = splitParts && !row && !inText && !operatorButtons && !choices && !questionParts && !equation ? lettered(shown) : null
+  const explain = (inText || operatorButtons || !!questionParts || !!equation) && asksExplanation(body)
   const partAnswers = parts ? parts.parts.map((_, i) => state.parts?.[i] ?? '') : []
-  const ready = row
+  const ready = equation
+    ? equationsReady(state, equation)
+    : row
     ? boxesComplete(answer, row.blanks)
     : inText
       ? boxesComplete(answer, slotTotal)
@@ -147,6 +159,7 @@ export function TextTaskScreen({ task, index, total, onNext, controlled, onResul
         <h2 className="w-full text-h2 whitespace-pre-wrap text-primary">{questionParts ? body : text}</h2>
       )}
       {task.figure && <TaskFigure figure={task.figure} />}
+      {equation && <EquationLines spec={equation} state={state} onChange={(i, line) => setState(changeLine(state, equation, i, line))} />}
 
       {questionParts && (
         <ol className="flex w-full flex-col gap-6">
@@ -191,7 +204,7 @@ export function TextTaskScreen({ task, index, total, onNext, controlled, onResul
         </label>
       )}
 
-      {!row && !choices && !operatorButtons && !inText && !parts && !questionParts && (
+      {!row && !choices && !operatorButtons && !inText && !parts && !questionParts && !equation && (
         <label className="flex w-full flex-col gap-2 text-body text-primary">
           Ditt svar
           <textarea
@@ -216,10 +229,16 @@ export function TextTaskScreen({ task, index, total, onNext, controlled, onResul
           Ikke riktig. Prøv én gang til.
         </p>
       )}
-      {finished && task.expected && (
+      {finished && (task.expected || equation) && (
         <div role="status" className="flex w-full flex-col gap-3 rounded-xl bg-surface-light p-5 text-body text-primary">
           <p className="text-h3">
-            {result === 'correct' ? 'Riktig!' : questionParts ? 'Se riktig svar ved hvert spørsmål.' : `Riktig svar: ${formatExpected(task.expected)}`}
+            {result === 'correct'
+              ? 'Riktig!'
+              : equation
+                ? 'Se et eksempel på riktig svar ved hvert regnestykke.'
+                : questionParts
+                  ? 'Se riktig svar ved hvert spørsmål.'
+                  : task.expected && `Riktig svar: ${formatExpected(task.expected)}`}
           </p>
           {showsSolution(task) && (
             <div className="flex flex-col gap-1">
@@ -244,7 +263,7 @@ export function TextTaskScreen({ task, index, total, onNext, controlled, onResul
         <button
           type="button"
           disabled={!submitted && !ready}
-          onClick={submitted ? onNext : () => setState(checkTextAnswer(state, task))}
+          onClick={submitted ? onNext : () => setState(equation ? checkEquations(state, equation) : checkTextAnswer(state, task))}
           className="flex h-[52px] w-[224px] shrink-0 cursor-pointer items-center justify-center gap-[47px] rounded-lg bg-primary text-body text-on-primary hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {submitted ? (isLast ? 'Ferdig' : 'Neste oppgave') : auto ? 'Sjekk svaret mitt' : honestDone ? 'Ferdig med oppgaven' : 'Lever svaret'}
@@ -252,43 +271,6 @@ export function TextTaskScreen({ task, index, total, onNext, controlled, onResul
         </button>
       </div>
     </section>
-  )
-}
-
-/** Regning: fire knapper for regnetegnet (laget av appen, ikke av AI-en). */
-function OperatorChoices({
-  value,
-  disabled,
-  onChange,
-  label = 'Velg regnetegnet',
-  align = 'center',
-}: {
-  value: string
-  disabled: boolean
-  onChange: (value: string) => void
-  label?: string
-  align?: 'center' | 'start'
-}) {
-  const names: Record<string, string> = { '+': 'pluss', '−': 'minus', '·': 'gange', ':': 'dele' }
-  return (
-    <div role="radiogroup" aria-label={label} className={`flex w-full flex-wrap gap-4 ${align === 'center' ? 'justify-center' : 'justify-start'}`}>
-      {OPERATOR_OPTIONS.map((sign) => (
-        <button
-          key={sign}
-          type="button"
-          role="radio"
-          aria-checked={value === sign}
-          aria-label={names[sign]}
-          disabled={disabled}
-          onClick={() => onChange(sign)}
-          className={`flex size-16 cursor-pointer items-center justify-center rounded-xl border-2 text-3xl leading-none text-primary disabled:cursor-default ${
-            value === sign ? 'border-primary bg-surface-light' : 'border-secondary bg-background'
-          }`}
-        >
-          {sign}
-        </button>
-      ))}
-    </div>
   )
 }
 

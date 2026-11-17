@@ -58,6 +58,7 @@ export function StudentTaskFlow({ tasks, index, onNext, preview, topicId, onResu
           honestDone={topicId === 'monster-og-algoritmer' || topicId === 'regning'}
           splitParts={topicId === 'regning'}
           textBoxes={topicId === 'regning'}
+          equationLines={topicId === 'multiplikasjon'}
           controlled={preview && { state: saved && !isMathState(saved) ? saved : initialTextState(), onChange }}
           onResult={report}
           doneSteps={doneSteps}

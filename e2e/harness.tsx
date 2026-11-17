@@ -39,7 +39,7 @@ function Harness() {
       </MemoryRouter>
     )
   }
-  if (view === 'okt') return <LiveHarness role={params.get('rolle') === 'laerer' ? 'laerer' : 'elev'} sessionId={sessionId} />
+  if (view === 'okt') return <LiveHarness role={params.get('rolle') === 'laerer' ? 'laerer' : params.get('rolle') === 'okt-side' ? 'okt-side' : 'elev'} sessionId={sessionId} />
   if (view === 'forhandsvisning') return <StudentPreviewDialog session={session} level={level} tasks={tasks.slice(start)} onClose={() => {}} />
   return <StudentTaskFlow tasks={tasks} index={index} onNext={() => setIndex(index + 1)} topicId={session.topicId} />
 }

@@ -8,6 +8,7 @@ import {
 } from 'firebase/auth'
 import { doc, onSnapshot, setDoc } from 'firebase/firestore'
 import { useEffect, useState, type ReactNode } from 'react'
+import { checkProfile, unreadableProfile } from '../features/auth/profileCheck'
 import { auth, db } from '../lib/firebase'
 import type { UserProfile } from '../types'
 import { AuthContext, type TeacherRegistration } from './auth'
@@ -15,6 +16,7 @@ import { AuthContext, type TeacherRegistration } from './auth'
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [profileError, setProfileError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -27,6 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!firebaseUser) {
         setProfile(null)
+        setProfileError(null)
         setLoading(false)
         return
       }
@@ -37,11 +40,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       stopProfile = onSnapshot(
         doc(db, 'users', firebaseUser.uid),
         (snapshot) => {
-          setProfile(snapshot.exists() ? ({ uid: firebaseUser.uid, ...snapshot.data() } as UserProfile) : null)
+          // Mangler profilen eller noen av feltene, får brukeren vite nøyaktig hva (se profileCheck.ts).
+          const check = checkProfile(firebaseUser.uid, firebaseUser.email, snapshot.exists() ? snapshot.data() : null)
+          setProfile('profile' in check ? check.profile : null)
+          setProfileError('problem' in check ? check.problem : null)
           setLoading(false)
         },
-        () => {
+        (error) => {
           setProfile(null)
+          setProfileError(unreadableProfile(firebaseUser.uid, (error as { code?: string }).code))
           setLoading(false)
         },
       )
@@ -78,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => signOut(auth)
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, login, registerTeacher, logout }}>
+    <AuthContext.Provider value={{ user, profile, profileError, loading, login, registerTeacher, logout }}>
       {children}
     </AuthContext.Provider>
   )

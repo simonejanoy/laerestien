@@ -6,6 +6,7 @@ import {
   readProgressDoc,
   type DeliveredTask,
   type LiveSession,
+  type LiveSnapshot,
   type LiveStatus,
   type ProgressDoc,
 } from '../features/live/liveProgress'
@@ -32,8 +33,8 @@ export { liveClassId } from '../features/live/liveProgress'
  * Starter en ny gjennomføring av økta for elevene (ny run-ID, så ingen framdrift arves fra før).
  * Gir false hvis det ikke gikk (f.eks. feil klasse eller manglende tilgang).
  */
-export function startLiveSession(classId: string, sessionId: string) {
-  return setDoc(liveDoc(classId), newLiveSession(sessionId))
+export function startLiveSession(classId: string, sessionId: string, snapshot?: LiveSnapshot) {
+  return setDoc(liveDoc(classId), newLiveSession(sessionId, Date.now(), snapshot))
     .then(() => true)
     .catch((error: unknown) => {
       logError('starte')(error)

@@ -4,8 +4,11 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { PlayIcon } from '../../components/ui/icons'
 import { useAuth } from '../../hooks/useAuth'
 import { useLiveBackend } from '../live/liveBackend'
-import { liveClassId, RUN_STATE_LABELS, runStateFor } from '../live/liveProgress'
-import { useLiveSession } from '../live/useLiveSession'
+import { buildRoster, liveClassId, RUN_STATE_LABELS, runStateFor } from '../live/liveProgress'
+import { MissingLevelsWarning } from '../live/MissingLevelsWarning'
+import { makeSnapshot } from '../live/liveSnapshot'
+import { useClassAccounts, useLiveSession } from '../live/useLiveSession'
+import { students } from '../class/students'
 import { FullPageMessage } from '../auth/ProtectedRoute'
 import { DeleteSessionDialog } from './DeleteSessionDialog'
 import { LevelCard } from './LevelCard'
@@ -46,6 +49,7 @@ export function SessionPage() {
   const classId = session ? liveClassId(profile?.classId, session.className) : null
   // Om økta bare er planlagt, er i gang (eller på pause) eller er avsluttet – fra økta som er lagret for klassen.
   const { live } = useLiveSession(classId)
+  const accounts = useClassAccounts(classId)
   if (!session || !classId) return <FullPageMessage text="Fant ikke økten." />
 
   const previous = sessions[index - 1]
@@ -62,7 +66,7 @@ export function SessionPage() {
 
   const startSession = async () => {
     setStartError(null)
-    const started = await backend.startLiveSession(classId, session.id)
+    const started = await backend.startLiveSession(classId, session.id, makeSnapshot(session, tasks))
     if (!started) {
       setModal(null)
       setStartError('Klarte ikke å starte økta for elevene. Sjekk at du er logget inn som lærer i klassen, og prøv igjen.')
@@ -151,6 +155,9 @@ export function SessionPage() {
                   </Link>
                 )}
               </p>
+            )}
+            {runState !== 'ended' && (
+              <MissingLevelsWarning sessionId={session.id} roster={buildRoster(students, accounts)} tasks={tasks} className="max-w-sm" />
             )}
             {otherActive && !isActive && (
               <p className="max-w-xs text-right text-small text-secondary">En annen økt er i gang i klassen. Den avsluttes for elevene når du starter denne.</p>

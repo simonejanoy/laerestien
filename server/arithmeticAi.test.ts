@@ -578,7 +578,9 @@ describe('15. visning og automatisk retting i Regning', () => {
     assert.ok(isCorrect({ kind: 'operator', value: '·' }, 'x') && isCorrect({ kind: 'operator', value: ':' }, '/') && isCorrect({ kind: 'operator', value: '−' }, '-'))
     assert.deepEqual(accepted(OPERATIONS, text(2, 'Hvilket regnetegn mangler? Velg mellom +, −, · og :.\n36 __ 4 = 9', '36 : 4 = 9'))?.expected, { kind: 'operator', value: ':' })
     const screen = read('src/features/student/TextTaskScreen.tsx')
-    assert.match(screen, /OPERATOR_OPTIONS\.map\(\(sign\) =>/)
+    // Knappene ligger i en egen komponent, som også regnestykke-malene i Multiplikasjon bruker.
+    assert.match(read('src/features/student/OperatorChoices.tsx'), /OPERATOR_OPTIONS\.map\(\(sign\) =>/)
+    assert.match(screen, /import \{ OperatorChoices \} from '\.\/OperatorChoices'/)
     assert.match(screen, /const shown = operatorButtons \? withoutOperatorChoices\(text\) : text/)
   })
 
@@ -708,7 +710,7 @@ describe('16. det går an å skrive i boksene, og svaret rettes med tallene i bo
 
   it('skrivefeltet under er bare for forklaringen, og gjelder både elevvisningen og forhåndsvisningen', () => {
     const screen = readFileSync(new URL('../src/features/student/TextTaskScreen.tsx', import.meta.url), 'utf8')
-    assert.match(screen, /\{!row && !choices && !operatorButtons && !inText && !parts && !questionParts && \(/)
+    assert.match(screen, /\{!row && !choices && !operatorButtons && !inText && !parts && !questionParts && !equation && \(/)
     assert.match(screen, /onChange: \(i, v\) => change\(typeInSlot\(answer, slotTotal, i, v\)\)/)
     // Elevvisningen og forhåndsvisningen bruker samme flyt og samme skjerm.
     const flow = readFileSync(new URL('../src/features/student/StudentTaskFlow.tsx', import.meta.url), 'utf8')

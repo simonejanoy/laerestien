@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { UserProfile } from '../../types/index.ts'
 import { useLiveBackend } from './liveBackend'
 import type { LiveSession, ProgressDoc } from './liveProgress'
 
@@ -42,4 +43,19 @@ export function useRunProgress(classId: string, runId: string | null) {
 
   if (state.runId !== runId) return { docs: [], failed: false }
   return { docs: state.docs, failed: state.failed }
+}
+
+/** Elevkontoene i klassen (Firestore), så klasselista kan kobles til elevenes innlogging. */
+export function useClassAccounts(classId: string | null) {
+  const backend = useLiveBackend()
+  const [state, setState] = useState<{ classId: string | null; accounts: UserProfile[] }>({ classId, accounts: [] })
+  useEffect(() => {
+    if (!classId) return
+    return backend.subscribeClassStudents(
+      classId,
+      (accounts) => setState({ classId, accounts }),
+      () => setState({ classId, accounts: [] }),
+    )
+  }, [backend, classId])
+  return state.classId === classId ? state.accounts : []
 }

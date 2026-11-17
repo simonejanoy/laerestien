@@ -18,6 +18,47 @@ export interface LiveSession {
   /** Én ID per gang økta startes. Eldre dokumenter mangler den (se runIdOf). */
   runId?: string
   endedAt?: number
+  /**
+   * Økta slik læreren startet den: navnet (f.eks. «Multiplikasjon økt 7»), tema, ferdigheter og oppgavene (som JSON fra
+   * taskStorage.serializeTaskSets). Eleven får nøyaktig dette – også når læreren har endret oppgavene i sin nettleser.
+   * Eldre dokumenter mangler det; da brukes økta og oppgavene eleven har selv.
+   */
+  label?: string
+  topicId?: string
+  skillIds?: string[]
+  tasks?: string
+}
+
+/** Det læreren legger ved når økta startes (se LiveSession). */
+export type LiveSnapshot = Pick<LiveSession, 'label' | 'topicId' | 'skillIds' | 'tasks'>
+
+/**
+ * Hvor lenge en økt som er i gang eller på pause, gjelder. En undervisningsøkt varer noen timer på det meste; er den
+ * eldre, har læreren glemt å avslutte den (f.eks. fra en tidligere dag), og den regnes som avsluttet. Samme grense står i
+ * firestore.rules, så eleven heller ikke kan levere til en gammel økt.
+ */
+export const LIVE_MAX_AGE_MS = 4 * 60 * 60 * 1000
+
+const LIVE_STATUSES: LiveStatus[] = ['running', 'paused', 'ended']
+
+/** Om dokumentet er en gyldig økt (riktig status og starttid). Eldre eller ødelagte dokumenter er det ikke. */
+export function isValidLive(live: LiveSession | null | undefined): live is LiveSession {
+  return !!live && typeof live.sessionId === 'string' && LIVE_STATUSES.includes(live.status) && Number.isFinite(live.startedAt)
+}
+
+/** Om økta er så gammel at den regnes som glemt (se LIVE_MAX_AGE_MS). */
+export function isExpired(live: Pick<LiveSession, 'startedAt' | 'endedAt'>, now = Date.now()) {
+  return now - (live.endedAt ?? live.startedAt) >= LIVE_MAX_AGE_MS
+}
+
+/**
+ * Status slik den faktisk gjelder nå: en glemt økt som står som i gang eller på pause, er avsluttet. Ugyldige dokumenter
+ * gir null (ingen økt).
+ */
+export function effectiveStatus(live: LiveSession | null | undefined, now = Date.now()): LiveStatus | null {
+  if (!isValidLive(live)) return null
+  if (live.status !== 'ended' && isExpired(live, now)) return 'ended'
+  return live.status
 }
 
 /**
@@ -31,14 +72,15 @@ export const makeRunId = (sessionId: string, startedAt: number) => `${sessionId}
 
 export const runIdOf = (live: Pick<LiveSession, 'sessionId' | 'startedAt' | 'runId'>) => live.runId ?? makeRunId(live.sessionId, live.startedAt)
 
-/** Ny gjennomføring av økta (det læreren skriver når hen trykker «Start økt»). */
-export function newLiveSession(sessionId: string, startedAt = Date.now()): LiveSession {
-  return { sessionId, status: 'running', startedAt, runId: makeRunId(sessionId, startedAt) }
+/** Ny gjennomføring av økta (det læreren skriver når hen trykker «Start økt»), med økta slik læreren har den. */
+export function newLiveSession(sessionId: string, startedAt = Date.now(), snapshot: LiveSnapshot = {}): LiveSession {
+  const extra = Object.fromEntries(Object.entries(snapshot).filter(([, v]) => v !== undefined)) as LiveSnapshot
+  return { sessionId, status: 'running', startedAt, runId: makeRunId(sessionId, startedAt), ...extra }
 }
 
-/** Eleven kan levere svar bare mens akkurat denne gjennomføringen er i gang (ikke på pause, ikke avsluttet). */
-export function canDeliver(live: LiveSession | null | undefined, runId: string | null) {
-  return !!live && !!runId && live.status === 'running' && runIdOf(live) === runId
+/** Eleven kan levere svar bare mens akkurat denne gjennomføringen er i gang (ikke på pause, ikke avsluttet, ikke glemt). */
+export function canDeliver(live: LiveSession | null | undefined, runId: string | null, now = Date.now()) {
+  return !!runId && effectiveStatus(live, now) === 'running' && runIdOf(live!) === runId
 }
 
 /**
@@ -47,21 +89,23 @@ export function canDeliver(live: LiveSession | null | undefined, runId: string |
  */
 export type StudentViewState = 'connecting' | 'failed' | 'waiting' | 'paused' | 'ended' | 'tasks'
 
-export function studentViewState(live: LiveSession | null | undefined, sessionKnown: boolean, failed = false): StudentViewState {
+export function studentViewState(live: LiveSession | null | undefined, sessionKnown: boolean, failed = false, now = Date.now()): StudentViewState {
   if (failed) return 'failed'
   if (live === undefined) return 'connecting'
-  if (!live || !sessionKnown) return 'waiting'
+  // Ingen økt, et ugyldig dokument eller en glemt økt fra tidligere: eleven venter på at læreren starter en.
+  if (!isValidLive(live) || isExpired(live, now) || !sessionKnown) return 'waiting'
   if (live.status === 'paused') return 'paused'
   if (live.status === 'ended') return 'ended'
-  return 'tasks'
+  return live.status === 'running' ? 'tasks' : 'waiting'
 }
 
 /** Hvordan økta står for læreren: bare planlagt, aktiv (i gang eller på pause) eller avsluttet. */
 export type SessionRunState = 'planned' | 'running' | 'paused' | 'ended'
 
-export function runStateFor(live: LiveSession | null | undefined, sessionId: string): SessionRunState {
-  if (!live || live.sessionId !== sessionId) return 'planned'
-  return live.status
+export function runStateFor(live: LiveSession | null | undefined, sessionId: string, now = Date.now()): SessionRunState {
+  const status = effectiveStatus(live, now)
+  if (!status || live!.sessionId !== sessionId) return 'planned'
+  return status
 }
 
 export const RUN_STATE_LABELS: Record<SessionRunState, string> = {
@@ -201,24 +245,33 @@ export interface RosterStudent extends Student {
   duplicateOf?: string
 }
 
-const norm = (value: string | undefined) => (value ?? '').trim().toLowerCase()
+/** Navn og e-post sammenlignes uten å skille på store/små bokstaver og ekstra mellomrom. */
+export const norm = (value: string | undefined) => (value ?? '').normalize('NFC').trim().replace(/\s+/g, ' ').toLowerCase()
 
 /**
- * Om kontoen hører til eleven i klasselista: samme e-post når begge har e-post. Bare når én av dem mangler e-post,
- * brukes samme navn (i samme klasse – lista og kontoene er alltid for én klasse).
+ * Om navnet på kontoen er eleven i klasselista: samme navn, eller fornavn og forbokstav i etternavnet slik appen
+ * forkorter navn («Nora L» eller «Nora L.» for «Nora Lie»). Uten å skille på store/små bokstaver og ekstra mellomrom.
  */
-export function sameStudent(student: Pick<Student, 'name' | 'email'>, profile: Pick<UserProfile, 'name' | 'email'>) {
-  const a = norm(student.email)
-  const b = norm(profile.email)
-  if (a && b) return a === b
-  return norm(student.name) !== '' && norm(student.name) === norm(profile.name)
+export function sameName(listed: string, account: string | undefined) {
+  const a = norm(listed)
+  const b = norm(account).replace(/\.$/, '')
+  if (!a || !b) return false
+  if (a === b) return true
+  const [first, ...rest] = a.split(' ')
+  const last = rest.at(-1)
+  return !!last && b === `${first} ${last[0]}`
 }
 
 /**
- * Klasselista: elevene i klassen, koblet til elevkontoene i Firestore. Først kobles kontoer på e-post, så på navn der
- * e-posten mangler – så en konto aldri «stjeler» en elev fra kontoen med riktig e-post. Nivået er det læreren har satt
- * på kontoen (det eleven faktisk får oppgaver på). Kontoer som ikke står i lista, kommer til slutt; ser de ut som en
- * dobbel av en elev i lista, er de merket med `duplicateOf`, så læreren kan rydde opp.
+ * Klasselista: elevene i klassen, koblet til elevkontoene i Firestore. Kontoene kobles i denne rekkefølgen, så en konto
+ * aldri «stjeler» en elev fra en konto som passer bedre:
+ * 1. samme uid (når eleven i lista har en kjent uid),
+ * 2. samme e-post,
+ * 3. samme navn – når en av dem mangler e-post, eller når ingen konto i klassen har e-posten eleven står med i lista
+ *    (f.eks. en skrivefeil i profilen). Slik står eleven alltid på sin vanlige plass.
+ * 4. forkortet navn («Nora L» for «Nora Lie»), med de samme vilkårene, og bare når det passer én elev.
+ * Nivået er det som står på kontoen (det eleven faktisk får oppgaver på). Kontoer som ikke står i lista, kommer til
+ * slutt; ser de ut som en dobbel av en elev i lista, er de merket med `duplicateOf`, så læreren kan rydde opp.
  */
 export function buildRoster(students: Student[], profiles: UserProfile[]): RosterStudent[] {
   const accounts = profiles.filter((p) => p.role === 'student')
@@ -234,8 +287,14 @@ export function buildRoster(students: Student[], profiles: UserProfile[]): Roste
       }
     }
   }
+  const emailTaken = (email: string) => accounts.some((p) => norm(p.email) === email)
+  link((s, p) => !!s.uid && s.uid === p.uid)
   link((s, p) => !!norm(s.email) && norm(s.email) === norm(p.email))
-  link(sameStudent)
+  const nameLink = (match: (s: Student, p: UserProfile) => boolean) =>
+    link((s, p) => match(s, p) && (!norm(s.email) || !norm(p.email) || !emailTaken(norm(s.email))))
+  nameLink((s, p) => norm(s.name) !== '' && norm(s.name) === norm(p.name))
+  // Forkortet navn («Nora L») – bare når det passer én elev i lista.
+  nameLink((s, p) => sameName(s.name, p.name) && students.filter((o) => sameName(o.name, p.name)).length === 1)
 
   const linked = students.map((student): RosterStudent => {
     const profile = linkedTo.get(student.id)
@@ -244,7 +303,7 @@ export function buildRoster(students: Student[], profiles: UserProfile[]): Roste
   const extra = accounts
     .filter((p) => !used.has(p.uid))
     .map((p): RosterStudent => {
-      const twin = linked.find((s) => (norm(s.email) && norm(s.email) === norm(p.email)) || norm(s.name) === norm(p.name))
+      const twin = linked.find((s) => (norm(s.email) && norm(s.email) === norm(p.email)) || sameName(s.name, p.name))
       return { id: p.uid, uid: p.uid, name: p.name, level: p.level ?? 1, email: p.email, ...(twin && { duplicateOf: twin.name }) }
     })
   return [...linked, ...extra]
@@ -277,11 +336,40 @@ export function checkNewStudent(
   return { match }
 }
 
-/** Nivået eleven får oppgaver på: det læreren har satt på kontoen, ellers nivået i klasselista, ellers nivå 1. */
-export function studentLevel(profile: Pick<UserProfile, 'level' | 'email' | 'name'> | null | undefined, students: Student[]): Level {
+/**
+ * Nivået eleven får oppgaver på: det læreren har satt på kontoen, ellers nivået i klasselista (raden kontoen kobles til,
+ * som i buildRoster), ellers nivå 1.
+ */
+export function studentLevel(profile: Pick<UserProfile, 'level' | 'email' | 'name'> & { uid?: string } | null | undefined, students: Student[]): Level {
   if (profile?.level) return profile.level
-  const listed = profile && (students.find((s) => !!norm(s.email) && norm(s.email) === norm(profile.email)) ?? students.find((s) => sameStudent(s, profile)))
+  if (!profile) return 1
+  const email = norm(profile.email)
+  const listed =
+    (profile.uid ? students.find((s) => s.uid === profile.uid) : undefined) ??
+    (email ? students.find((s) => norm(s.email) === email) : undefined) ??
+    students.find((s) => norm(s.name) !== '' && norm(s.name) === norm(profile.name)) ??
+    (students.filter((s) => sameName(s.name, profile.name)).length === 1 ? students.find((s) => sameName(s.name, profile.name)) : undefined)
   return listed?.level ?? 1
+}
+
+/**
+ * Nivåer der økta ikke har noen oppgaver, men der det står elever i klasselista. Disse elevene ville ikke fått noen
+ * oppgaver – læreren får en advarsel før og etter at økta startes.
+ */
+export function levelsWithoutTasks(roster: Pick<Student, 'name' | 'level'>[], tasks: Pick<SessionTask, 'level'>[]) {
+  const levels = new Set(tasks.map((t) => t.level))
+  return ([1, 2, 3] as Level[])
+    .filter((level) => !levels.has(level))
+    .map((level) => ({ level, students: roster.filter((s) => s.level === level).map((s) => s.name) }))
+    .filter((missing) => missing.students.length > 0)
+}
+
+/** «Økta har ingen oppgaver på nivå 3. Ada Strand og Nora Lie får ingen oppgaver.» */
+export function missingLevelsText(missing: ReturnType<typeof levelsWithoutTasks>) {
+  return missing.map(({ level, students }) => {
+    const names = students.length > 1 ? `${students.slice(0, -1).join(', ')} og ${students.at(-1)}` : students[0]
+    return `Økta har ingen oppgaver på nivå ${level}. ${names} får ingen oppgaver.`
+  })
 }
 
 export interface StudentOverview {

@@ -1,6 +1,6 @@
 import type { UserProfile } from '../../types/index.ts'
 import type { LiveBackend } from './liveBackend.ts'
-import { deliveryUpdate, newLiveSession, progressDocId, readProgressDoc, runIdOf, type LiveSession, type ProgressDoc } from './liveProgress.ts'
+import { canDeliver, deliveryUpdate, newLiveSession, progressDocId, readProgressDoc, type LiveSession, type ProgressDoc } from './liveProgress.ts'
 
 // Lokal variant av LiveBackend for testene og nettlesertest-siden (e2e/harness.html) – ikke brukt i appen.
 // Alt lagres som JSON i en StorageLike (localStorage i nettleseren, et objekt i minnet i Node). Når en annen fane
@@ -53,8 +53,8 @@ export function createLocalLiveBackend(storage: LocalStorageLike, students: User
   return {
     notify,
     subscribeLiveSession: (classId, onChange) => listen(() => onChange(getLive(classId))),
-    startLiveSession: async (classId, sessionId) => {
-      write(liveKey(classId), newLiveSession(sessionId, now()))
+    startLiveSession: async (classId, sessionId, snapshot) => {
+      write(liveKey(classId), newLiveSession(sessionId, now(), snapshot))
       return true
     },
     setLiveStatus: async (classId, status) => {
@@ -69,8 +69,8 @@ export function createLocalLiveBackend(storage: LocalStorageLike, students: User
     },
     saveDelivery: async (classId, base, taskId, delivery) => {
       // Som firestore.rules: bare mens akkurat denne gjennomføringen er i gang.
-      const live = getLive(classId)
-      if (!live || live.status !== 'running' || runIdOf(live) !== base.runId) return false
+      // Og som firestore.rules: ikke til en glemt økt (eldre enn LIVE_MAX_AGE_MS).
+      if (!canDeliver(getLive(classId), base.runId, now())) return false
       const all = getProgress(classId)
       const id = progressDocId(base.runId, base.studentId)
       const update = deliveryUpdate(base, taskId, delivery)

@@ -8,6 +8,7 @@ import {
   answersKey,
   canDeliver,
   deliveryOf,
+  isValidLive,
   loadRun,
   runIdOf,
   saveRun,
@@ -15,11 +16,13 @@ import {
   studentViewState,
   type SavedRun,
 } from '../live/liveProgress'
+import { snapshotTasks } from '../live/liveSnapshot'
 import { useLiveSession } from '../live/useLiveSession'
+import { useNow } from '../../hooks/useNow'
 import { answerRecord } from '../repetition/answers'
 import { sessionLabel, useSessions } from '../sessions/sessionsContext'
 import { browserStorage } from '../sessions/taskStorage'
-import { Greeting, MessageCard, PausedScreen } from './StatusScreens'
+import { BoardScreen, Greeting, MessageCard } from './StatusScreens'
 import { StudentLayout } from './StudentLayout'
 import { StudentTaskFlow } from './StudentTaskFlow'
 import { verbFor, type TaskAnswerState, type TaskResultSummary } from './studentTasks'
@@ -50,21 +53,36 @@ export function StudentHomePage() {
   const level = studentLevel(profile, roster)
   const firstName = profile?.name.split(' ')[0] ?? ''
 
-  // live: undefined = kobler til, null = ingen økt startet.
+  // live: undefined = kobler til, null = ingen økt startet. Elevvisningen styres helt av økta læreren har startet:
+  // uten en gyldig økt som er i gang (ikke glemt fra tidligere), venter eleven og ser ingen oppgaver.
   const { live, failed } = useLiveSession(classId)
-  const session = live ? sessions.find((s) => s.id === live.sessionId) : undefined
-  const tasks = session ? getTasks(session.id).filter((t) => t.level === level) : []
+  const now = useNow(30_000).getTime()
+  const localSession = live ? sessions.find((s) => s.id === live.sessionId) : undefined
+  // Økta og oppgavene slik læreren startet dem. Eldre økt-dokumenter uten dem: elevens egen kopi av økta.
+  const startedTasks = snapshotTasks(live)
+  const session =
+    isValidLive(live) && (localSession || (live.label && startedTasks))
+      ? {
+          id: live.sessionId,
+          topicId: live.topicId ?? localSession?.topicId ?? '',
+          skillIds: live.skillIds ?? localSession?.skillIds ?? [],
+          label: live.label ?? (localSession ? `${localSession.title} økt ${sessionLabel(localSession)}` : ''),
+        }
+      : null
+  const tasks = session ? (startedTasks ?? getTasks(session.id)).filter((t) => t.level === level) : []
   const runId = live && session ? runIdOf(live) : null
   const [run, setRun] = useSavedRun(runId && profile ? answersKey(profile.uid, runId) : null)
   const [sendFailed, setSendFailed] = useState(false)
 
-  const label = session ? `${session.title} økt ${sessionLabel(session)}` : undefined
-  const view = studentViewState(live, !!session, failed)
+  const view = studentViewState(live, !!session, failed, now)
+  const label = view === 'tasks' || view === 'paused' || view === 'ended' ? session?.label : undefined
 
-  if (view === 'paused') {
+  // Venter, pause og avsluttet: mørk tavle med læreren og én kort tekst. Hvor eleven var, står lagret (run.index), så
+  // eleven kommer tilbake til samme oppgave når læreren fortsetter.
+  if (view === 'waiting' || view === 'paused' || view === 'ended') {
     return (
       <StudentLayout label={label} background="board" onLogout={logout}>
-        <PausedScreen />
+        <BoardScreen state={view} />
       </StudentLayout>
     )
   }
@@ -99,14 +117,12 @@ export function StudentHomePage() {
       <Greeting text={greeting} />
       {view === 'failed' ? (
         <MessageCard title="Fikk ikke kontakt" text="Sjekk at du er koblet til nettet, og prøv igjen om litt." />
-      ) : view === 'connecting' ? (
+      ) : view === 'connecting' || !session ? (
         <MessageCard title="Kobler til …" />
-      ) : view === 'waiting' || !session ? (
-        <MessageCard title="Venter på læreren" text="Venter på at læreren skal starte økten. Oppgavene dukker opp her av seg selv." />
-      ) : view === 'ended' ? (
+      ) : tasks.length === 0 ? (
         <MessageCard
-          title="Økten er avsluttet"
-          text={`Læreren har avsluttet økten, så du kan ikke levere flere svar. Du leverte ${doneCount} av ${tasks.length} oppgaver.`}
+          title="Ingen oppgaver til deg ennå"
+          text={`Økten har ingen oppgaver på nivå ${level}. Si fra til læreren, så får du oppgaver.`}
         />
       ) : (
         <>

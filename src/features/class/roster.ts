@@ -7,13 +7,12 @@ import type { Student } from '../../types/index.ts'
 export const studentsClassId = '4A'
 
 export const roster: Omit<Student, 'photo'>[] = [
-  // Amalie har testkontoen amalie@teigen.no (fiktiv elev, se README).
-  { id: 'amalie', name: 'Amalie Berg', level: 1, email: 'amalie@teigen.no' },
   { id: 'sofie', name: 'Sofie Lund', level: 1 },
   { id: 'ella', name: 'Ella Andersen', level: 2 },
   { id: 'noah', name: 'Noah Dahl', level: 2 },
   { id: 'ada', name: 'Ada Strand', level: 3 },
-  { id: 'nora', name: 'Nora Lie', level: 3 },
+  // Nora har testkontoen nora@teigen.no i Firebase (fiktiv elev, se README).
+  { id: 'nora', name: 'Nora Lie', level: 3, email: 'nora@teigen.no' },
   { id: 'aksel', name: 'Aksel Olsen', level: 2 },
   { id: 'filip', name: 'Filip Nilsen', level: 1 },
   { id: 'jakob', name: 'Jakob Solberg', level: 2 },

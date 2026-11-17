@@ -9,6 +9,7 @@ import { WeekCalendar } from './WeekCalendar'
 import { breaks, dateOf, hasEnded, isSameWeek, shiftWeek, timeSlots, weekOf, weekdays, type WeekRef } from './mockData'
 import { useNow } from '../../hooks/useNow'
 import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
+import { ActiveSessionBanner } from '../live/ActiveSessionBanner'
 
 const dayLabel = new Intl.DateTimeFormat('nb-NO', { weekday: 'long', day: 'numeric', month: 'long' })
 
@@ -63,6 +64,7 @@ export function HomePage() {
     <div className="flex max-w-[1061px] flex-col items-start gap-5">
       <PageBreadcrumbs />
       <h1 className="text-h1 text-on-background">Matematikk - 4A</h1>
+      <ActiveSessionBanner />
 
       {topicSessions[0] && (
         <SessionOverviewCard

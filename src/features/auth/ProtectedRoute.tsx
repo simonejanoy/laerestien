@@ -7,12 +7,19 @@ const homeFor: Record<Role, string> = { teacher: '/', student: '/elev' }
 
 /** Slipper bare inn innloggede brukere med riktig rolle. */
 export function ProtectedRoute({ role, children }: { role: Role; children: ReactNode }) {
-  const { user, profile, loading } = useAuth()
+  const { user, profile, profileError, loading, logout } = useAuth()
 
   if (loading) return <FullPageMessage text="Laster …" />
   if (!user) return <Navigate to="/login" replace />
   if (!profile) {
-    return <FullPageMessage text="Fant ingen brukerprofil for denne kontoen. Kontakt læreren din." />
+    return (
+      <div role="alert" className="flex min-h-screen flex-col items-center justify-center gap-3 p-8 text-center text-small text-secondary">
+        <p className="max-w-md">{profileError ?? 'Fant ingen brukerprofil for denne kontoen. Kontakt læreren din.'}</p>
+        <button type="button" onClick={() => void logout()} className="cursor-pointer text-primary underline">
+          Logg ut
+        </button>
+      </div>
+    )
   }
   if (profile.role !== role) return <Navigate to={homeFor[profile.role]} replace />
 

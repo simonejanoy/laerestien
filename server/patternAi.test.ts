@@ -763,7 +763,7 @@ describe('16. tallrekker med inputbokser', () => {
     assert.match(screen, /const row = task\.answerBoxes \? blankRowIn\(text\) : null/)
     assert.match(screen, /<ol className="flex flex-wrap/)
     assert.match(screen, /inputMode="numeric"/)
-    assert.match(screen, /\{!row && !choices && !operatorButtons && !inText && !parts && !questionParts && \(/)
+    assert.match(screen, /\{!row && !choices && !operatorButtons && !inText && !parts && !questionParts && !equation && \(/)
     assert.match(screen, /disabled=\{!submitted && !ready\}/)
   })
 })
@@ -918,7 +918,7 @@ describe('19. automatisk tilbakemelding i Mønster og algoritmer', () => {
     assert.equal(solutionHeading({ ...base, text: 'Hvor mange prikker har figur 4?' }), 'Løsningsforslag')
     const screen = readFileSync(new URL('../src/features/student/TextTaskScreen.tsx', import.meta.url), 'utf8')
     assert.match(screen, /\{showsSolution\(task\) && \(/)
-    assert.match(screen, /result === 'correct' \? 'Riktig!' : questionParts \? 'Se riktig svar ved hvert spørsmål\.' : `Riktig svar: \$\{formatExpected\(task\.expected\)\}`/)
+    assert.match(screen, /result === 'correct'\s*\? 'Riktig!'[\s\S]*?questionParts\s*\? 'Se riktig svar ved hvert spørsmål\.'\s*: task\.expected && `Riktig svar: \$\{formatExpected\(task\.expected\)\}`/)
   })
 
   it('grunnoppgavene i øktene har svar som rettes, og svaret stemmer med fasiten', () => {

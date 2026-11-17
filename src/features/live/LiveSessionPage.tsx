@@ -1,9 +1,8 @@
 import { CircleCheck, Clock3, PencilLine, type LucideIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { PlayIcon } from '../../components/ui/icons'
 import { useAuth } from '../../hooks/useAuth'
-import type { UserProfile } from '../../types'
 import { FullPageMessage } from '../auth/ProtectedRoute'
 import { useSessions } from '../sessions/sessionsContext'
 import { StudentProgressRow } from './StudentProgressRow'
@@ -12,18 +11,12 @@ import { sessionCrumbs } from '../sessions/crumbs'
 import { PageBreadcrumbs } from '../../components/layout/PageBreadcrumbs'
 import { useLiveBackend } from './liveBackend'
 import { buildRoster, classOverview, liveClassId, overviewCounts, RUN_STATE_LABELS, runIdOf, runStateFor } from './liveProgress'
-import { useLiveSession, useRunProgress } from './useLiveSession'
+import { MissingLevelsWarning } from './MissingLevelsWarning'
+import { makeSnapshot, snapshotTasks } from './liveSnapshot'
+import { useClassAccounts, useLiveSession, useRunProgress } from './useLiveSession'
 
 const clock = (date: Date) =>
   date.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' }).replace(':', '.')
-
-/** Elevkontoene i klassen (Firestore), så klasselista kan kobles til elevenes innlogging. */
-function useClassAccounts(classId: string) {
-  const backend = useLiveBackend()
-  const [accounts, setAccounts] = useState<UserProfile[]>([])
-  useEffect(() => backend.subscribeClassStudents(classId, setAccounts, () => setAccounts([])), [backend, classId])
-  return accounts
-}
 
 /**
  * «Følg elevenes arbeid»: økta som pågår, med hver elevs faktiske framdrift. Oppdateres av seg selv når en elev leverer
@@ -36,14 +29,15 @@ export function LiveSessionPage() {
   const { sessions, getTasks, complete } = useSessions()
   const { profile } = useAuth()
   const session = sessions.find((s) => s.id === sessionId)
-  const tasks = getTasks(sessionId)
   const classId = session ? liveClassId(profile?.classId, session.className) : null
 
   const { live, failed } = useLiveSession(classId)
   const runState = runStateFor(live, sessionId)
+  // Oppgavene elevene fikk da økta ble startet (læreren kan ha endret dem siden). Før start: lærerens oppgaver.
+  const tasks = (runState !== 'planned' ? snapshotTasks(live) : null) ?? getTasks(sessionId)
   const runId = live && runState !== 'planned' ? runIdOf(live) : null
   const { docs, failed: progressFailed } = useRunProgress(classId ?? '', runId)
-  const accounts = useClassAccounts(classId ?? '')
+  const accounts = useClassAccounts(classId)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -73,7 +67,10 @@ export function LiveSessionPage() {
   }
 
   const start = () =>
-    run(() => backend.startLiveSession(classId, session.id), 'Klarte ikke å starte økten. Sjekk at du er logget inn som lærer i klassen.')
+    run(
+      () => backend.startLiveSession(classId, session.id, makeSnapshot(session, getTasks(session.id))),
+      'Klarte ikke å starte økten. Sjekk at du er logget inn som lærer i klassen.',
+    )
 
   const togglePause = () => run(() => backend.setLiveStatus(classId, runState === 'paused' ? 'running' : 'paused'), 'Klarte ikke å endre økten.')
 
@@ -173,6 +170,7 @@ export function LiveSessionPage() {
           </p>
         )}
         {runState === 'ended' && <p className="-mt-3 text-small text-secondary">Resultatene under er de endelige for denne økten.</p>}
+        {runState !== 'ended' && <MissingLevelsWarning sessionId={session.id} roster={roster} tasks={tasks} />}
         {progressFailed && (
           <p role="alert" className="text-small text-error">
             Fikk ikke hentet elevenes framdrift. Sjekk at Firestore-reglene i firestore.rules er publisert.

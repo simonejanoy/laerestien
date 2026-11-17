@@ -1,11 +1,22 @@
 import teacher from '../../assets/student/laerer.png'
 
-/** Mørk tavle når læreren har trykket på pause. */
-export function PausedScreen() {
+/** Teksten på tavla i de tre tilstandene der eleven ikke har oppgaver foran seg. */
+const BOARD_TEXT = {
+  waiting: 'Venter på at læreren skal starte økten',
+  paused: 'Følg med på læreren',
+  ended: 'Økten er avsluttet',
+} as const
+
+/**
+ * Mørk tavle med læreren ved tavla og én kort tekst (Figma: «Elevvisning – læreren har trykket på pause»). Brukes når
+ * eleven venter på at økta starter, når læreren har pause, og når økta er avsluttet. Legges i StudentLayout med
+ * background="board".
+ */
+export function BoardScreen({ state }: { state: keyof typeof BOARD_TEXT }) {
   return (
-    <div role="status" className="flex flex-1 flex-col items-center justify-center gap-6 p-8">
+    <div role="status" data-testid={`tavle-${state}`} className="flex flex-1 flex-col items-center justify-center gap-6 p-8">
       <img src={teacher} alt="" width={96} height={96} />
-      <p className="text-h1 text-white">Følg med på læreren</p>
+      <h2 className="max-w-[560px] text-center text-h1 text-white">{BOARD_TEXT[state]}</h2>
     </div>
   )
 }

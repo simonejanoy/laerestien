@@ -9,7 +9,16 @@ export function authErrorMessage(error: unknown) {
       case 'auth/invalid-credential':
       case 'auth/wrong-password':
       case 'auth/user-not-found':
-        return 'Feil e-post eller passord.'
+        return 'Feil e-post eller passord. Sjekk at kontoen finnes under Authentication i Firebase, og at passordet er riktig.'
+      case 'auth/user-disabled':
+        return 'Kontoen er deaktivert i Firebase (Authentication → Users).'
+      case 'auth/missing-password':
+        return 'Skriv inn passordet.'
+      case 'auth/network-request-failed':
+        return 'Fikk ikke kontakt med Firebase. Sjekk nettet og prøv igjen.'
+      case 'auth/invalid-api-key':
+      case 'auth/api-key-not-valid.-please-pass-a-valid-api-key.':
+        return 'Firebase-oppsettet mangler eller er feil. Sjekk VITE_FIREBASE_-verdiene i .env.local.'
       case 'auth/invalid-email':
         return 'E-postadressen er ikke gyldig.'
       case 'auth/email-already-in-use':

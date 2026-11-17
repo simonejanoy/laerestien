@@ -291,6 +291,8 @@ export interface Student {
   photo?: string
   /** Innloggingen (e-post) når eleven har en elevkonto. Kobler eleven i klasselista til kontoen. */
   email?: string
+  /** Uid-en til elevkontoen i Firebase, når den er kjent. Kobler sikrest av alt. */
+  uid?: string
 }
 
 /** Elevens framdrift i en pågående økt. */

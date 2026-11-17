@@ -14,6 +14,8 @@ export interface TeacherRegistration {
 export interface AuthContextValue {
   user: User | null
   profile: UserProfile | null
+  /** Hvorfor innloggingen ikke slipper inn: profilen mangler, mangler felt eller kunne ikke leses. */
+  profileError?: string | null
   loading: boolean
   login: (email: string, password: string) => Promise<void>
   registerTeacher: (registration: TeacherRegistration) => Promise<void>

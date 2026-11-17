@@ -41,7 +41,7 @@ Til produksjon må API-serveren kjøre et sted (f.eks. Cloud Run) med `GEMINI_AP
 ## Brukere
 
 - **Lærere** registrerer seg selv via «Ny lærer? Registrer deg» på innloggingssiden.
-- **Elever** lages av læreren under «Elever» i sidemenyen (navn, e-post, passord og nivå).
+- **Elever** er lagt inn på forhånd i Firebase (prototype). Læreren lager ikke elever selv.
 - Alle logger inn på samme side. Rollen i `users/{uid}` avgjør om man kommer til lærer- eller elevvisningen.
 
 ## Mappestruktur
@@ -59,9 +59,16 @@ src/
 
 Farger og tekststiler fra Figma ligger som Tailwind-tokens i `src/index.css`.
 
-## Testkonto (fiktiv elev)
+## Testelev (fiktiv)
 
-Amalie Berg i klasse 4A brukes til å demonstrere flyten mellom lærer og elev. Kontoen lages som andre elevkontoer: logg inn som lærer i 4A, gå til «Elever» og lag kontoen med navn `Amalie Berg`, e-post `amalie@teigen.no` og et passord du velger selv. Passord skal aldri stå i koden, README eller testene. Amalie står allerede i klasselista (nivå 1); kontoen kobles til henne på e-posten og får nivået hennes. Det kan aldri lages to kontoer med samme e-post, og en elev i klasselista får bare én konto. Alle elevene og kontoene i prototypen er fiktive.
+Nora Lie i klasse 4A brukes til å demonstrere flyten mellom lærer og elev. Hun logger inn med `nora@teigen.no` (passordet står ikke i koden). Alle elevene og kontoene i prototypen er fiktive.
+
+Det som må finnes i Firebase:
+
+- **Authentication → Users:** `nora@teigen.no`.
+- **Firestore → `users/{uid}`** (samme uid som i Authentication): `name: "Nora Lie"`, `role: "student"`, `classId: "4A"`, gjerne `email: "nora@teigen.no"`. Valgfritt: `level` (1–3) – ellers får hun nivået i klasselista (3).
+
+Kontoen kobles til raden hennes i klasselista ([`roster.ts`](src/features/class/roster.ts)) på uid, så e-post, så navn (uten å skille på store/små bokstaver og ekstra mellomrom). Mangler profilen eller noen av feltene, sier innloggingssiden hva som mangler.
 
 ## Økta som pågår
 

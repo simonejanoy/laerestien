@@ -79,6 +79,8 @@ service cloud.firestore {
         && data.delivered is map && data.delivered.size() <= 100
         && data.updatedAt is number
         && live.status == 'running'
+        // En glemt økt (startet for mer enn 4 timer siden) er avsluttet – som LIVE_MAX_AGE_MS i liveProgress.ts.
+        && request.time.toMillis() - live.startedAt < 4 * 60 * 60 * 1000
         && live.runId == data.runId
         && live.sessionId == data.sessionId;
     }

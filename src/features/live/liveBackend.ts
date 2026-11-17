@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react'
 import type { Level, UserProfile } from '../../types/index.ts'
 import type { AnswerRecord } from '../repetition/answers.ts'
-import type { DeliveredTask, LiveSession, LiveStatus, ProgressDoc } from './liveProgress.ts'
+import type { DeliveredTask, LiveSession, LiveSnapshot, LiveStatus, ProgressDoc } from './liveProgress.ts'
 
 type Unsubscribe = () => void
 
@@ -11,7 +11,8 @@ type Unsubscribe = () => void
  */
 export interface LiveBackend {
   subscribeLiveSession(classId: string, onChange: (live: LiveSession | null) => void, onError: (error: Error) => void): Unsubscribe
-  startLiveSession(classId: string, sessionId: string): Promise<boolean>
+  /** Starter en ny gjennomføring. `snapshot` er økta slik læreren har den (navn og oppgaver), som eleven får. */
+  startLiveSession(classId: string, sessionId: string, snapshot?: LiveSnapshot): Promise<boolean>
   setLiveStatus(classId: string, status: Exclude<LiveStatus, 'ended'>): Promise<unknown>
   endLiveSession(classId: string): Promise<boolean>
   saveDelivery(
