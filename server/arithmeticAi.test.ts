@@ -705,7 +705,7 @@ describe('16. det går an å skrive i boksene, og svaret rettes med tallene i bo
     const ai = { ...old, aiGenerated: true }
     assert.equal((refreshStoredTasks([ai], fresh)[0] as { expected?: unknown }).expected, undefined)
     const provider = readFileSync(new URL('../src/features/sessions/SessionsProvider.tsx', import.meta.url), 'utf8')
-    assert.match(provider, /refreshStoredTasks\(set, all\[id\] \?\? \[\]\)/)
+    assert.match(provider, /refreshStoredTasks\(set, full\[id\] \?\? \[\]\)/)
   })
 
   it('skrivefeltet under er bare for forklaringen, og gjelder både elevvisningen og forhåndsvisningen', () => {

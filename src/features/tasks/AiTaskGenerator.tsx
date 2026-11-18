@@ -42,7 +42,6 @@ export function AiTaskGenerator({ session, tasks: currentTasks, onAdd, onClose }
   const [selectedLevels, setSelectedLevels] = useState<AiLevel[]>(ALL_LEVELS)
   const [count, setCount] = useState('2')
   const [touched, setTouched] = useState(false)
-  const [officialGoals, setOfficialGoals] = useState('')
   const [wishes, setWishes] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -78,7 +77,8 @@ export function AiTaskGenerator({ session, tasks: currentTasks, onAdd, onClose }
         },
         perLevel,
         targetLevels: levels,
-        officialGoals: officialGoals.trim(),
+        // Læreren oppgir ikke kompetansemål her, så AI-en kobler ikke oppgavene til kompetansemål (som et tomt felt før).
+        officialGoals: '',
         wishes: wishes.trim(),
         levels: buildLevelContexts(session.levels, currentTasks, profile).filter((l) => levels.includes(l.level)),
         ...(profile && { profile: toAiProfile(profile) }),
@@ -117,17 +117,6 @@ export function AiTaskGenerator({ session, tasks: currentTasks, onAdd, onClose }
       </div>
 
       <form onSubmit={generate} className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-small text-primary">
-          Kompetansemål (valgfritt)
-          <textarea
-            rows={2}
-            value={officialGoals}
-            onChange={(e) => setOfficialGoals(e.target.value)}
-            placeholder="Lim inn målteksten ordrett fra læreplanen"
-            className={`${fieldClass} resize-y`}
-          />
-          <span className="text-xs text-secondary">Står feltet tomt, kobler ikke AI-en oppgavene til kompetansemål.</span>
-        </label>
         <label className="flex flex-col gap-1 text-small text-primary">
           Andre ønsker (valgfritt)
           <input

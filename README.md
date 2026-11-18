@@ -61,14 +61,14 @@ Farger og tekststiler fra Figma ligger som Tailwind-tokens i `src/index.css`.
 
 ## Testelev (fiktiv)
 
-Nora Lie i klasse 4A brukes til å demonstrere flyten mellom lærer og elev. Hun logger inn med `nora@teigen.no` (passordet står ikke i koden). Alle elevene og kontoene i prototypen er fiktive.
+Nora i klasse 4A brukes til å demonstrere flyten mellom lærer og elev. Hun logger inn med `nora@teigen.no` (passordet står ikke i koden). Profilen i Firebase heter «Nora Teigen», men i appen vises hun som «Nora L.» (navnet i klasselista). Alle elevene og kontoene i prototypen er fiktive.
 
 Det som må finnes i Firebase:
 
 - **Authentication → Users:** `nora@teigen.no`.
-- **Firestore → `users/{uid}`** (samme uid som i Authentication): `name: "Nora Lie"`, `role: "student"`, `classId: "4A"`, gjerne `email: "nora@teigen.no"`. Valgfritt: `level` (1–3) – ellers får hun nivået i klasselista (3).
+- **Firestore → `users/{uid}`** (samme uid som i Authentication): `name: "Nora Teigen"`, `role: "student"`, `classId: "4A"`, gjerne `email: "nora@teigen.no"`. Valgfritt: `level` (1–3) – ellers får hun nivået i klasselista (3).
 
-Kontoen kobles til raden hennes i klasselista ([`roster.ts`](src/features/class/roster.ts)) på uid, så e-post, så navn (uten å skille på store/små bokstaver og ekstra mellomrom). Mangler profilen eller noen av feltene, sier innloggingssiden hva som mangler.
+Kontoen kobles til raden hennes i klasselista ([`roster.ts`](src/features/class/roster.ts)) på uid eller e-post – ikke på navn, så navnet i profilen og navnet som vises kan være forskjellige. Mangler e-posten i profilen, skriver appen inn e-posten fra innloggingen første gang eleven logger inn (bare det feltet; se `firestore.rules`). Mangler profilen eller noen av feltene, sier innloggingssiden hva som mangler.
 
 ## Økta som pågår
 
@@ -76,7 +76,7 @@ Kontoen kobles til raden hennes i klasselista ([`roster.ts`](src/features/class/
 - Eleven ser «Venter på læreren» til økta er startet, og får oppgavene på sitt nivå av seg selv. Å avslutte økta beholder økta i Firestore med status «avsluttet», så eleven får beskjed og læreren ser de endelige resultatene.
 - Når eleven leverer en oppgave, lagres det i `liveSessions/{klasse}/progress/{gjennomføring}__{uid}` (hvilke oppgaver som er levert, og om de var riktige – ingen navn eller svartekst). «Følg elevenes arbeid» lytter på dette og oppdateres med en gang.
 - Elevens svar og hvor eleven er, lagres også i nettleseren, så de er der etter omlasting.
-- **Husk å publisere [`firestore.rules`](firestore.rules) på nytt** etter denne endringen – ellers kan ikke elevene levere.
+- **Husk å publisere [`firestore.rules`](firestore.rules) på nytt** etter endringer – ellers kan ikke elevene levere, og e-posten skrives ikke inn i elevprofilen.
 - Innloggingen deles mellom alle faner i samme nettleserprofil. Ha læreren og eleven i hver sin profil, f.eks. et vanlig og et privat vindu.
 
 ## Status

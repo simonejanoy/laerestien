@@ -116,10 +116,10 @@ test('3. elevens svar og resultat kommer fram i lærerens øktvisning', async ({
   await pupil.getByRole('button', { name: 'Sjekk svaret mitt' }).click()
   await expect(pupil.getByRole('status').filter({ hasText: 'Riktig!' })).toBeVisible()
 
-  const row = teacher.locator('li[data-student="Nora Lie"]')
+  const row = teacher.locator('li[data-student="Nora L."]')
   await expect(row.getByLabel('Oppgave 1: riktig')).toBeVisible()
-  await row.getByText('Se svarene til Nora Lie').click()
-  const list = row.getByRole('list', { name: 'Leverte svar fra Nora Lie' })
+  await row.getByText('Se svarene til Nora L.').click()
+  const list = row.getByRole('list', { name: 'Leverte svar fra Nora L.' })
   await expect(list).toContainText('Oppgave 1 · Riktig · 2 forsøk')
   await expect(list).toContainText(`= ${answers[0]}`)
 })

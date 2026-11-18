@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { buildTasks, planned } from '../src/features/sessions/sessionTasks.ts'
+import { buildTasks, evenLevels, mergeTasks, planned } from '../src/features/sessions/sessionTasks.ts'
 import { worksheetTasks } from '../src/features/sessions/worksheetTasks.ts'
 
 // Regnestykke-malene i Multiplikasjon (økt 1): tallbokser i stedet for ett stort skrivefelt, flere ledd i pluss-linjen,
@@ -9,7 +9,8 @@ import { worksheetTasks } from '../src/features/sessions/worksheetTasks.ts'
 // server/equationTemplates.test.ts.)
 
 const SESSION = 'multiplikasjon-1'
-const tasks = [...(worksheetTasks[SESSION] ?? []), ...buildTasks(planned('multiplikasjon')[0])].filter((t) => t.level === 1)
+// Oppgavene på nivå 1 slik eleven får dem (fem per nivå, som i SessionsProvider og testsiden).
+const tasks = evenLevels(mergeTasks(worksheetTasks[SESSION] ?? [], buildTasks(planned('multiplikasjon')[0]))).filter((t) => t.level === 1)
 const pictureIndex = tasks.findIndex((t) => t.kind === 'text' && t.text.startsWith('Se på figuren. Lag to regnestykker') && t.figure?.kind === 'grid' && t.figure.rows.length === 2)
 const sumIndex = tasks.findIndex((t) => t.kind === 'text' && t.text.startsWith('Skriv som gangestykke'))
 

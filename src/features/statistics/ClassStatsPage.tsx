@@ -6,7 +6,9 @@ import type { Level } from '../../types'
 import { students } from '../class/students'
 import { StudentCarousel } from './StudentCarousel'
 import { TopicTasksDialog } from './TopicTasksDialog'
-import { classMastery, classPatterns, readyForChallenge, topicInsights, weekTopic } from './mockData'
+import { useSessions } from '../sessions/sessionsContext'
+import { classPatterns, readyForChallenge, weekTopic } from './mockData'
+import { DEMO_TODAY, semesterOverview } from './semesterOverview'
 import { MasteryTable, PatternContent, StatPanel } from './parts'
 
 const levels: Level[] = [1, 2, 3]
@@ -15,6 +17,10 @@ const levelNumber = { 1: 'text-level1', 2: 'text-level2', 3: 'text-level3' } as 
 export function ClassStatsPage() {
   const [showAllPatterns, setShowAllPatterns] = useState(false)
   const [topic, setTopic] = useState<string | null>(null)
+  const { sessions } = useSessions()
+  // Høstsemesteret tema for tema (simulert mestring, se semesterOverview.ts) – så Temaoversikt aldri står tom.
+  const semester = semesterOverview(sessions)
+  const selected = semester.find((t) => t.topic === topic)
 
   const patterns = showAllPatterns ? classPatterns : classPatterns.slice(0, 1)
 
@@ -82,10 +88,13 @@ export function ClassStatsPage() {
 
         <div className="flex flex-col gap-8">
           <StatPanel title="Temaoversikt">
-            <p className="-mt-1 text-small text-secondary">Fylte felt viser andelen riktige svar i temaet. Velg et tema for å se grunnlaget.</p>
+            <p className="-mt-1 text-small text-secondary">
+              Høstsemesteret, uke {DEMO_TODAY.week}. Fylte felt viser andelen riktige svar i temaet (simulerte data i prototypen).
+              Velg et tema for å se øktene og grunnlaget.
+            </p>
             <MasteryTable
-              rows={classMastery}
-              columns={['Tema', 'Status', 'Trenger mer øving på']}
+              rows={semester.map((t) => t.row)}
+              columns={['Tema', 'Status', 'Framdrift og neste steg']}
               onSelect={(row) => setTopic(row.topic)}
             />
           </StatPanel>
@@ -130,7 +139,8 @@ export function ClassStatsPage() {
 
       <TopicTasksDialog
         topic={topic}
-        insight={topicInsights.find((t) => t.topic === topic) ?? null}
+        insight={selected?.insight ?? null}
+        sessions={selected?.sessions}
         classSize={students.length}
         onClose={() => setTopic(null)}
       />

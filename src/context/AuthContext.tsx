@@ -6,9 +6,9 @@ import {
   signOut,
   type User,
 } from 'firebase/auth'
-import { doc, onSnapshot, setDoc } from 'firebase/firestore'
+import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore'
 import { useEffect, useState, type ReactNode } from 'react'
-import { checkProfile, unreadableProfile } from '../features/auth/profileCheck'
+import { checkProfile, emailToSync, unreadableProfile } from '../features/auth/profileCheck'
 import { auth, db } from '../lib/firebase'
 import type { UserProfile } from '../types'
 import { AuthContext, type TeacherRegistration } from './auth'
@@ -41,7 +41,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         doc(db, 'users', firebaseUser.uid),
         (snapshot) => {
           // Mangler profilen eller noen av feltene, får brukeren vite nøyaktig hva (se profileCheck.ts).
-          const check = checkProfile(firebaseUser.uid, firebaseUser.email, snapshot.exists() ? snapshot.data() : null)
+          const data = snapshot.exists() ? snapshot.data() : null
+          const check = checkProfile(firebaseUser.uid, firebaseUser.email, data)
+          // Elevprofilen får e-posten fra innloggingen, så læreren kan koble kontoen til klasselista på e-post.
+          const email = emailToSync(data, firebaseUser.email)
+          if (email && 'profile' in check) {
+            updateDoc(doc(db, 'users', firebaseUser.uid), { email }).catch((error) =>
+              console.warn('Fikk ikke lagret e-posten i elevprofilen (er firestore.rules publisert?):', error),
+            )
+          }
           setProfile('profile' in check ? check.profile : null)
           setProfileError('problem' in check ? check.problem : null)
           setLoading(false)

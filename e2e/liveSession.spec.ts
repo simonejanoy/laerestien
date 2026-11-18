@@ -17,18 +17,22 @@ async function open(page: Page, rolle: 'laerer' | 'elev') {
   return errors
 }
 
-const noraRow = (teacher: Page) => teacher.locator('li[data-student="Nora Lie"]')
-const noraBar = (teacher: Page) => teacher.getByRole('progressbar', { name: 'Framdrift for Nora Lie' })
+const noraRow = (teacher: Page) => teacher.locator('li[data-student="Nora L."]')
+const noraBar = (teacher: Page) => teacher.getByRole('progressbar', { name: 'Framdrift for Nora L.' })
 const studentNav = (student: Page) => student.getByRole('navigation', { name: 'Bla mellom oppgavene' })
 
-/** Går til oppgave nr. `index` (0-basert) med pilene øverst og leverer riktig svar. */
+/**
+ * Går til oppgave nr. `index` (0-basert) og leverer riktig svar. Tilbake med «Forrige oppgave» øverst; fram bare med
+ * «Neste oppgave» i oppgavekortet, som bare finnes når oppgaven eleven er på, er fullført.
+ */
 async function deliver(student: Page, index: number) {
   const answers = await student.evaluate(() => (window as unknown as { studentAnswers: (number | null)[] }).studentAnswers)
   const nav = studentNav(student)
   for (let i = 0; i < 20; i++) {
     const current = Number((await nav.textContent())?.match(/Oppgave (\d+) av/)?.[1] ?? Infinity) - 1
     if (current === index) break
-    await nav.getByRole('button', { name: current > index ? 'Forrige oppgave' : 'Neste oppgave' }).click()
+    if (current > index) await student.getByRole('button', { name: 'Forrige oppgave' }).click()
+    else await student.getByRole('button', { name: 'Neste oppgave' }).click()
   }
   await expect(nav).toContainText(`Oppgave ${index + 1} av`)
   await student.getByLabel('Ditt svar').fill(String(answers[index]))
@@ -44,7 +48,7 @@ async function sessionName(teacher: Page) {
 }
 
 async function otherStudentsAtZero(teacher: Page) {
-  const others = roster.filter((s) => s.name !== 'Nora Lie')
+  const others = roster.filter((s) => s.name !== 'Nora L.')
   for (const s of others) await expect(teacher.getByRole('progressbar', { name: `Framdrift for ${s.name}` })).toHaveAttribute('aria-valuenow', '0')
 }
 
@@ -72,10 +76,15 @@ test('lærer starter økta, Nora leverer nivå 3-oppgaver, læreren følger med 
   await expect(noraBar(teacher)).toHaveAttribute('aria-valuenow', '0')
   await otherStudentsAtZero(teacher)
 
-  // Å bla forbi en oppgave uten å levere øker ikke framdriften.
-  await studentNav(student).getByRole('button', { name: 'Neste oppgave' }).click()
-  await expect(studentNav(student)).toContainText('Oppgave 2 av')
-  await studentNav(student).getByRole('button', { name: 'Forrige oppgave' }).click()
+  // Nora kan ikke gå videre uten å fullføre oppgaven: ingen «Neste oppgave» (heller ikke øverst), og ingen
+  // «Forrige oppgave» på første oppgave. Knappen i kortet er «Sjekk svaret mitt».
+  await expect(student.getByRole('button', { name: 'Neste oppgave' })).toHaveCount(0)
+  await expect(student.getByRole('button', { name: 'Forrige oppgave' })).toHaveCount(0)
+  await expect(student.getByRole('button', { name: 'Sjekk svaret mitt' })).toBeVisible()
+  // Oppgavenumrene kan ikke klikkes, og piltastene blar ikke.
+  await expect(student.getByRole('list', { name: 'Oppgaver i økta' }).getByRole('button')).toHaveCount(0)
+  await student.keyboard.press('ArrowRight')
+  await expect(studentNav(student)).toContainText('Oppgave 1 av')
   await expect(noraBar(teacher)).toHaveAttribute('aria-valuenow', '0')
 
   // Nora leverer tre oppgaver – læreren ser det uten å laste siden på nytt.
@@ -85,6 +94,27 @@ test('lærer starter økta, Nora leverer nivå 3-oppgaver, læreren følger med 
   await expect(noraRow(teacher)).toContainText(`Pågår · 3 av ${total} levert`)
   await expect(noraRow(teacher).getByLabel('Oppgave 1: riktig')).toBeVisible()
   await otherStudentsAtZero(teacher)
+
+  // Etter sjekk er knappen i kortet «Neste oppgave». Tilbake til en fullført oppgave: «Neste oppgave» vises med en gang.
+  await expect(studentNav(student)).toContainText('Oppgave 3 av')
+  await expect(student.getByRole('button', { name: 'Sjekk svaret mitt' })).toHaveCount(0)
+  // «Forrige oppgave» står nederst til venstre i kortet, på samme rad som «Neste oppgave».
+  const card = student.locator('section').filter({ has: student.getByRole('button', { name: 'Neste oppgave' }) }).last()
+  await expect(card.getByRole('button', { name: 'Forrige oppgave' })).toBeVisible()
+  await expect(studentNav(student).getByRole('button', { name: 'Forrige oppgave' })).toHaveCount(0)
+  const prevBox = (await card.getByRole('button', { name: 'Forrige oppgave' }).boundingBox())!
+  const nextBox = (await card.getByRole('button', { name: 'Neste oppgave' }).boundingBox())!
+  expect(Math.abs(prevBox.y - nextBox.y)).toBeLessThanOrEqual(1)
+  expect(prevBox.height).toBe(nextBox.height)
+  expect(prevBox.x).toBeLessThan(nextBox.x)
+  await card.getByRole('button', { name: 'Forrige oppgave' }).click()
+  await expect(studentNav(student)).toContainText('Oppgave 2 av')
+  await expect(student.getByRole('button', { name: 'Sjekk svaret mitt' })).toHaveCount(0)
+  await student.getByRole('button', { name: 'Neste oppgave' }).click()
+  await student.getByRole('button', { name: 'Neste oppgave' }).click()
+  // Oppgave 4 er ikke fullført: her stopper det, og det går ikke an å komme lenger.
+  await expect(studentNav(student)).toContainText('Oppgave 4 av')
+  await expect(student.getByRole('button', { name: 'Neste oppgave' })).toHaveCount(0)
 
   // Omlasting: svarene og framdriften er der fortsatt hos begge.
   await student.reload()
@@ -128,7 +158,7 @@ test('økta mangler oppgaver på nivå 3: læreren får advarsel, og Nora får e
   await sessionPage.goto(`/e2e/harness.html?visning=okt&rolle=okt-side&okt=${SESSION}`)
   const warning = sessionPage.getByTestId('mangler-niva')
   await expect(warning).toContainText('Økta har ingen oppgaver på nivå 3.')
-  await expect(warning).toContainText('Nora Lie')
+  await expect(warning).toContainText('Nora L.')
   await expect(sessionPage.getByRole('button', { name: 'Start økt' })).toBeVisible()
 
   const teacher = await context.newPage()
@@ -138,7 +168,7 @@ test('økta mangler oppgaver på nivå 3: læreren får advarsel, og Nora får e
   await teacher.getByRole('button', { name: 'Start økt' }).click()
   await expect(teacher.getByTestId('okt-status')).toHaveText('Økten er i gang')
   // Advarselen står fortsatt mens økta er i gang.
-  await expect(teacher.getByTestId('mangler-niva')).toContainText('Nora Lie')
+  await expect(teacher.getByTestId('mangler-niva')).toContainText('Nora L.')
 
   await expect(student.getByRole('heading', { name: 'Ingen oppgaver til deg ennå' })).toBeVisible()
   await expect(student.getByText('Økten har ingen oppgaver på nivå 3.', { exact: false })).toBeVisible()
@@ -152,8 +182,10 @@ test('pause viser tavla «Følg med på læreren», og når læreren fortsetter,
   const student = await context.newPage()
   const errors = [...(await open(teacher, 'laerer')), ...(await open(student, 'elev'))]
   await teacher.getByRole('button', { name: 'Start økt' }).click()
+  // Oppgave 1 og 2 levert, og Nora har gått videre til oppgave 3 (hun kan ikke hoppe over en oppgave).
   await deliver(student, 0)
-  await deliver(student, 2)
+  await deliver(student, 1)
+  await student.getByRole('button', { name: 'Neste oppgave' }).click()
   await expect(studentNav(student)).toContainText('Oppgave 3 av')
 
   await teacher.getByRole('button', { name: 'Pause økt' }).click()

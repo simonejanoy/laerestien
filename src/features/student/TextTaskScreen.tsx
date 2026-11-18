@@ -1,4 +1,5 @@
 import { ChevronRight } from 'lucide-react'
+import { PreviousTaskButton } from './PreviousTaskButton'
 import { autoAnswerOf, usesNumberBox } from '../../ai/autoAnswer'
 import {
   PATTERN_COLORS,
@@ -35,6 +36,8 @@ interface TextTaskScreenProps {
   index: number
   total: number
   onNext: () => void
+  /** «Forrige oppgave» nederst til venstre i kortet (bare når det går an å gå tilbake). */
+  onPrevious?: () => void
   /** Bare i lærerens forhåndsvisning: tilstanden holdes utenfor, så den beholdes når læreren blar. */
   controlled?: ControlledTaskState<TextTaskState>
   /** Bare i elevvisningen: resultatet når oppgaven er ferdig rettet (lagres for repetisjonen). */
@@ -58,7 +61,7 @@ interface TextTaskScreenProps {
  * gang: «Riktig!», ett nytt forsøk etter første feil, og deretter riktig svar – med løsningsforslaget når eleven kan se
  * det. Eleven skriver tall i små bokser der det passer. Åpne svar rettes ikke: de sendes til læreren.
  */
-export function TextTaskScreen({ task, index, total, onNext, controlled, onResult, doneSteps, splitParts = false, textBoxes = false, equationLines = false }: TextTaskScreenProps) {
+export function TextTaskScreen({ task, index, total, onNext, onPrevious, controlled, onResult, doneSteps, splitParts = false, textBoxes = false, equationLines = false }: TextTaskScreenProps) {
   const [state, setState] = useTaskState(initialTextState, controlled, onResult)
   const { answer, submitted, result } = state
   const isLast = index === total - 1
@@ -279,7 +282,7 @@ export function TextTaskScreen({ task, index, total, onNext, controlled, onResul
       <hr className="h-px w-full border-0 bg-rule" />
 
       <div className="flex min-h-[125px] w-full items-center justify-between gap-4">
-        <span className="w-[236px] shrink-0" aria-hidden />
+        <div className="flex w-[236px] shrink-0 items-center">{onPrevious && <PreviousTaskButton onClick={onPrevious} />}</div>
         <TaskStepper total={total} current={index} currentDone={submitted} done={doneSteps} />
         <button
           type="button"

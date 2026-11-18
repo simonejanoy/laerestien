@@ -21,7 +21,7 @@ export function checkProfile(uid: string, email: string | null | undefined, data
     }
   }
   const missing: string[] = []
-  if (typeof data.name !== 'string' || data.name.trim() === '') missing.push('name (f.eks. «Nora Lie»)')
+  if (typeof data.name !== 'string' || data.name.trim() === '') missing.push('name (f.eks. «Nora Teigen»)')
   if (typeof data.role !== 'string' || data.role.trim() === '') missing.push('role («student» eller «teacher»)')
   if (typeof data.classId !== 'string' || data.classId.trim() === '') missing.push('classId (f.eks. «4A»)')
   if (missing.length > 0) return { problem: `Profilen ${where} mangler ${missing.join(', ')}.` }
@@ -34,6 +34,18 @@ export function checkProfile(uid: string, email: string | null | undefined, data
   // Mangler e-posten i profilen, brukes e-posten fra innloggingen (så eleven kobles til klasselista på e-post).
   const profileEmail = typeof data.email === 'string' && data.email.trim() ? data.email : email ?? undefined
   return { profile: { ...(data as Omit<UserProfile, 'uid'>), uid, ...(profileEmail && { email: profileEmail }) } }
+}
+
+/**
+ * E-posten som skal skrives inn i elevprofilen, eller null. Læreren kobler elevkontoen til raden i klasselista på e-post
+ * (se buildRoster i live/liveProgress.ts), men ser bare profilen i Firestore – ikke innloggingen. Mangler e-posten i
+ * profilen (eller den er en annen enn innloggingen), skriver eleven e-posten fra innloggingen inn selv. Navnet i
+ * profilen endres aldri.
+ */
+export function emailToSync(data: Record<string, unknown> | null, authEmail: string | null | undefined): string | null {
+  if (!data || data.role !== 'student' || !authEmail?.trim()) return null
+  const stored = typeof data.email === 'string' ? data.email.trim().toLowerCase() : ''
+  return stored === authEmail.trim().toLowerCase() ? null : authEmail.trim()
 }
 
 /** Når profilen ikke kunne leses (f.eks. Firestore-reglene avviste det). */

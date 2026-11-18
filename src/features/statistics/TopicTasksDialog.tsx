@@ -1,6 +1,7 @@
 import { LevelBadge } from '../../components/ui/LevelBadge'
 import { Modal, ModalCloseButton } from '../../components/ui/Modal'
 import type { TopicInsight } from '../../types'
+import type { SemesterSession } from './semesterOverview'
 import { statusLabel, statusText } from './statusStyles'
 
 interface TopicTasksDialogProps {
@@ -8,11 +9,13 @@ interface TopicTasksDialogProps {
   /** Tema som ble valgt, også når det ikke finnes data for det. */
   topic: string | null
   classSize: number
+  /** Øktene i temaet dette semesteret (Temaoversikt). Vises når temaet ikke har oppgavedata ennå. */
+  sessions?: SemesterSession[]
   onClose: () => void
 }
 
 /** «Oppgaver i tema»: hvordan klassen har gjort det på hver oppgave i temaet. */
-export function TopicTasksDialog({ insight, topic, classSize, onClose }: TopicTasksDialogProps) {
+export function TopicTasksDialog({ insight, topic, classSize, sessions, onClose }: TopicTasksDialogProps) {
   return (
     <Modal
       open={topic !== null}
@@ -34,13 +37,27 @@ export function TopicTasksDialog({ insight, topic, classSize, onClose }: TopicTa
             )}
           </div>
           <p className="text-small text-secondary">
-            Oppgavene til venstre, og hva klassen trenger hjelp med til høyre.
+            {!insight && sessions?.length
+              ? 'Øktene som er planlagt i temaet.'
+              : 'Oppgavene til venstre, og hva klassen trenger hjelp med til høyre.'}
           </p>
         </div>
         <ModalCloseButton onClick={onClose} />
       </div>
 
-      {!insight ? (
+      {!insight && sessions?.length ? (
+        <div className="flex flex-col gap-2 rounded-xl bg-tertiary p-6 text-small text-on-surface">
+          <h3 className="font-medium">Planlagte økter i temaet</h3>
+          <ul className="flex flex-col gap-1">
+            {sessions.map((s) => (
+              <li key={s.id} className="flex justify-between gap-4">
+                <span>{s.label}</span>
+                <span className="shrink-0 text-secondary">{s.when}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : !insight ? (
         <p className="rounded-xl bg-tertiary p-6 text-small text-secondary">
           Det er ikke gjort nok oppgaver i dette temaet ennå til å vise detaljer.
         </p>

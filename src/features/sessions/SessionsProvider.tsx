@@ -4,7 +4,7 @@ import { describeSlots, timeSlots, weekdays, type WeekRef } from '../calendar/mo
 import { topicDetails, unitById } from '../topics/mockData'
 import { initialProgress, initialTasks, sessionBase, sessions as initialSessions } from './mockData'
 import { scheduled } from './schedule'
-import { mergeTasks, refreshStoredTasks } from './sessionTasks'
+import { evenLevels, mergeTasks, refreshStoredTasks, trimStoredTasks } from './sessionTasks'
 import { browserStorage, loadTaskSets, saveTaskSets, type TaskSets } from './taskStorage'
 import { worksheetTasks } from './worksheetTasks'
 import { SessionsContext, type SessionInput } from './sessionsContext'
@@ -52,12 +52,17 @@ export function SessionsProvider({ children }: { children: ReactNode }) {
   const savedSets = useRef<TaskSets>(stored.sets)
   const [storageNotice, setStorageNotice] = useState<string | null>(stored.notice)
   const [tasks, setTasks] = useState<Record<string, SessionTask[]>>(() => {
-    const all: Record<string, SessionTask[]> = { ...initialTasks, ...scheduled.tasks }
+    const full: Record<string, SessionTask[]> = { ...initialTasks, ...scheduled.tasks }
     // Oppgavene fra arbeidsarkene kommer først i øktene sine. Like oppgaver på samme nivå tas med én gang.
-    for (const [sessionId, added] of Object.entries(worksheetTasks)) all[sessionId] = mergeTasks(added, all[sessionId] ?? [])
+    for (const [sessionId, added] of Object.entries(worksheetTasks)) full[sessionId] = mergeTasks(added, full[sessionId] ?? [])
+    // Like mange standardoppgaver på hvert nivå (TASKS_PER_LEVEL), også i økter med arbeidsark.
+    const all = Object.fromEntries(Object.entries(full).map(([id, list]) => [id, evenLevels(list)]))
     // Oppgavesett læreren har lagret, går foran standardoppgavene. Uendrede grunnoppgaver i et eldre lagret sett får
-    // svaret som rettes automatisk og inputboksene fra grunnoppgavene (se refreshStoredTasks).
-    const refreshed = Object.fromEntries(Object.entries(stored.sets).map(([id, set]) => [id, refreshStoredTasks(set, all[id] ?? [])]))
+    // svaret som rettes automatisk og inputboksene fra grunnoppgavene (se refreshStoredTasks), og standardoppgaver som
+    // er tatt ut av økta, fjernes – men aldri oppgaver læreren har endret eller laget (se trimStoredTasks).
+    const refreshed = Object.fromEntries(
+      Object.entries(stored.sets).map(([id, set]) => [id, trimStoredTasks(refreshStoredTasks(set, full[id] ?? []), full[id] ?? [], all[id] ?? [])]),
+    )
     return { ...all, ...refreshed }
   })
 

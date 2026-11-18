@@ -11,8 +11,9 @@ export const roster: Omit<Student, 'photo'>[] = [
   { id: 'ella', name: 'Ella Andersen', level: 2 },
   { id: 'noah', name: 'Noah Dahl', level: 2 },
   { id: 'ada', name: 'Ada Strand', level: 3 },
-  // Nora har testkontoen nora@teigen.no i Firebase (fiktiv elev, se README).
-  { id: 'nora', name: 'Nora Lie', level: 3, email: 'nora@teigen.no' },
+  // Nora har testkontoen nora@teigen.no i Firebase (fiktiv elev, se README). Profilen der heter «Nora Teigen», men i
+  // appen vises hun som «Nora L.». Kontoen kobles til denne raden på e-post (eller uid), aldri på navn.
+  { id: 'nora', name: 'Nora L.', level: 3, email: 'nora@teigen.no' },
   { id: 'aksel', name: 'Aksel Olsen', level: 2 },
   { id: 'filip', name: 'Filip Nilsen', level: 1 },
   { id: 'jakob', name: 'Jakob Solberg', level: 2 },

@@ -62,7 +62,7 @@ export function MasteryTable({ rows, columns, onSelect }: MasteryTableProps) {
             <>
               <span className="flex w-[130px] shrink-0 flex-col gap-0.5 py-1">
                 <span className="text-body text-on-background">{row.topic}</span>
-                <span className={`text-small ${statusText[row.status]}`}>{statusLabel[row.status]}</span>
+                <span className={`text-small ${statusText[row.status]}`}>{row.label ?? statusLabel[row.status]}</span>
               </span>
               <MasteryBar status={row.status} filled={row.filled} />
               <span className="min-w-[140px] flex-1 text-small text-insufficient">{row.note}</span>

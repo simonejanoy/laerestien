@@ -95,6 +95,57 @@ export function mergeTasks(...lists: SessionTask[][]): SessionTask[] {
   })
 }
 
+/** Antall standardoppgaver på hvert nivå i en økt. */
+export const TASKS_PER_LEVEL = 5
+
+/** Hvor «stort» et regnestykke er – brukes til å ordne standardoppgavene fra lett til vanskelig. */
+const mathSize = (task: SessionTask) => {
+  if (task.kind === 'text') return 0
+  if (task.operator === '*') return task.a * task.b
+  if (task.operator === '+') return task.a + task.b
+  return task.a
+}
+
+/**
+ * Standardoppgavene i en økt med like mange oppgaver på hvert nivå (høyst `perLevel`). Arbeidsarkene og oppgavene fra
+ * årsplanen legges sammen, så et nivå med ark fikk tidligere flere oppgaver enn de andre. Har et nivå for mange, velges
+ * oppgaver jevnt utover lista (første og siste er alltid med), så både arkoppgavene og årsplanoppgavene er med og hele
+ * spennet i vanskelighetsgrad beholdes. Regnestykkene ordnes fra lett til vanskelig, og tekstoppgavene (som oftest krever
+ * mest) kommer etter dem i samme rekkefølge som før. Nivåer med `perLevel` eller færre oppgaver endres ikke.
+ */
+export function evenLevels(tasks: SessionTask[], perLevel = TASKS_PER_LEVEL): SessionTask[] {
+  return ([1, 2, 3] as const).flatMap((level) => {
+    const list = tasks.filter((t) => t.level === level)
+    if (list.length <= perLevel) return list
+    const picked = Array.from({ length: perLevel }, (_, i) => list[Math.round((i * (list.length - 1)) / (perLevel - 1))])
+    const math = picked.filter((t) => t.kind !== 'text').sort((a, b) => mathSize(a) - mathSize(b))
+    return [...math, ...picked.filter((t) => t.kind === 'text')]
+  })
+}
+
+/** Oppgaven er ikke endret av læreren og ikke laget med AI – samme innhold som standardoppgaven. */
+const untouched = (task: SessionTask, standard: SessionTask) =>
+  task.source !== 'teacher' && !task.aiGenerated && sessionTaskKey(task) === sessionTaskKey(standard)
+
+/**
+ * Et lagret oppgavesett fra før nivåene ble jevnet ut kan ha for mange standardoppgaver. Standardoppgaver som er tatt ut
+ * (`full` minus `kept`), fjernes fra settet så lenge nivået har flere enn `perLevel` oppgaver. Oppgaver læreren har
+ * endret eller laget selv, og AI-oppgaver, røres aldri.
+ */
+export function trimStoredTasks(stored: SessionTask[], full: SessionTask[], kept: SessionTask[], perLevel = TASKS_PER_LEVEL): SessionTask[] {
+  const keptIds = new Set(kept.map((t) => t.id))
+  const dropped = new Map(full.filter((t) => !keptIds.has(t.id)).map((t) => [t.id, t]))
+  if (dropped.size === 0) return stored
+  const counts = new Map<number, number>()
+  for (const task of stored) counts.set(task.level, (counts.get(task.level) ?? 0) + 1)
+  return stored.filter((task) => {
+    const standard = dropped.get(task.id)
+    if (!standard || !untouched(task, standard) || (counts.get(task.level) ?? 0) <= perLevel) return true
+    counts.set(task.level, (counts.get(task.level) ?? 0) - 1)
+    return false
+  })
+}
+
 /**
  * Lagrede oppgavesett går foran grunnoppgavene. Et sett lagret før en grunnoppgave fikk svaret som rettes automatisk
  * (`expected`) eller inputboksene i tallrekka (`answerBoxes`), mangler dem. En lagret grunnoppgave med samme ID, tekst og

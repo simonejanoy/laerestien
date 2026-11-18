@@ -10,6 +10,7 @@ import { ProgressChart } from './ProgressChart'
 import { StudentCarousel } from './StudentCarousel'
 import { SuggestedTasksDialog } from './SuggestedTasksDialog'
 import { months, statsFor } from './mockData'
+import { suggestionPlan } from './simulatedSuggestions'
 import { DotTag, MasteryTable, PatternContent, StatPanel } from './parts'
 import { Breadcrumbs } from '../../components/ui/Breadcrumbs'
 
@@ -27,6 +28,8 @@ export function StudentStatsPage() {
   const { addStudentTasks } = useSessions()
   // Det AI-en får vite om eleven i «Foreslåtte oppgaver»: anonym ID og resultater, ikke navn.
   const profile = useMemo(() => student && anonProfile(student, statsFor(student, index)), [student, index])
+  // Temaer, nivå og eksempeloppgaver, så forslagsboksen aldri står tom (simulert når eleven har for lite data).
+  const plan = useMemo(() => student && suggestionPlan(student, statsFor(student, index)), [student, index])
 
   // Rolig inntoning når man bytter elev. Siden beholdes (ingen remount); bare innholdet tones inn.
   useEffect(() => {
@@ -36,7 +39,7 @@ export function StudentStatsPage() {
     contentRef.current?.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: 180, easing: 'ease-out' })
   }, [student])
 
-  if (!student || !profile) return <FullPageMessage text="Fant ikke eleven." />
+  if (!student || !profile || !plan) return <FullPageMessage text="Fant ikke eleven." />
 
   const stats = statsFor(student, index)
   const firstName = student.name.split(' ')[0]
@@ -95,6 +98,7 @@ export function StudentStatsPage() {
           studentId={student.id}
           classId={studentsClassId}
           profile={profile}
+          plan={plan}
           onClose={() => setDialogOpen(false)}
           onConfirm={(tasks) => {
             addStudentTasks(student.id, tasks)
@@ -183,7 +187,7 @@ function StudentSummary({
           onClick={onShowSuggestions}
           className="flex w-full cursor-pointer items-center sm:w-auto sm:min-w-[19rem] justify-center gap-2 rounded-md border border-on-primary py-[9px] pr-3.5 pl-4 text-on-primary hover:bg-on-primary/10"
         >
-          Lag forslag med AI
+          Lag oppgaveforslag med AI
           <ArrowRight className="size-[18px]" />
         </button>
       </div>

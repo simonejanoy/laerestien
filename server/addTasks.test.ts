@@ -104,9 +104,12 @@ describe('8. manuell opprettelse har ikke AI-assistentfelt', () => {
 })
 
 describe('9. AI-opprettelse beholder eksisterende funksjonalitet', () => {
-  it('kompetansemål, andre ønsker, nivåvalg, antall per nivå og alt-eller-ingenting', () => {
+  it('andre ønsker, nivåvalg, antall per nivå og alt-eller-ingenting – uten kompetansemål-feltet', () => {
     const ai = read('AiTaskGenerator.tsx')
-    for (const label of ['Kompetansemål (valgfritt)', 'Andre ønsker (valgfritt)', 'Velg nivå', 'Antall per nivå']) assert.ok(ai.includes(label), label)
+    for (const label of ['Andre ønsker (valgfritt)', 'Velg nivå', 'Antall per nivå']) assert.ok(ai.includes(label), label)
+    // Kompetansemål-feltet er fjernet: bestillingen sender tomt, som et tomt felt gjorde før.
+    assert.ok(!ai.includes('Kompetansemål (valgfritt)'))
+    assert.match(ai, /officialGoals: '',/)
     assert.match(ai, /kind: 'general'/)
     assert.match(ai, /buildLevelContexts\(session\.levels, currentTasks, profile\)/)
     assert.match(ai, /const complete = isCompletePackage\(tasks, perLevel, levels\)/)

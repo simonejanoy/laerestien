@@ -140,6 +140,17 @@ describe('elevprofiler (users)', () => {
     await assertFails(updateDoc(doc(as('nora'), 'users/nora'), { role: 'teacher' }))
   })
 
+  it('eleven kan legge inn sin egen e-post fra innloggingen, men ingen annen e-post og ingen andre felt', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users/nora'), { name: 'Nora Teigen', role: 'student', classId: '4A' })
+    })
+    const nora = env.authenticatedContext('nora', { email: 'nora@teigen.no' }).firestore()
+    await assertFails(updateDoc(doc(nora, 'users/nora'), { email: 'annen@teigen.no' }))
+    await assertFails(updateDoc(doc(nora, 'users/nora'), { email: 'nora@teigen.no', name: 'Nora L.' }))
+    await assertSucceeds(updateDoc(doc(nora, 'users/nora'), { email: 'nora@teigen.no' }))
+    await assertFails(updateDoc(doc(as('sofie'), 'users/nora'), { email: 'nora@teigen.no' }))
+  })
+
   it('læreren i klassen kan endre nivået, men ikke flytte eleven; andre lærere kan ingenting', async () => {
     await assertSucceeds(updateDoc(doc(as('laerer4a'), 'users/nora'), { level: 2 }))
     await assertFails(updateDoc(doc(as('laerer4a'), 'users/nora'), { classId: '4B' }))

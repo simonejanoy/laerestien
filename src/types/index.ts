@@ -312,6 +312,8 @@ export interface TopicMastery {
   filled: number
   /** «Trenger mer øving på» eller «Neste steg». */
   note?: string
+  /** Statusteksten under temaet, når den skal være noe annet enn statusen (f.eks. «Pågår nå» i Temaoversikt). */
+  label?: string
 }
 
 export interface Pattern {

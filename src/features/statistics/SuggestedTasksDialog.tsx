@@ -2,13 +2,13 @@ import { EyeOff, LoaderCircle, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { AiError, SLOW_AI_HINT, fallbackNotice, newTaskId, requestTasks, subjectContext, toTextTask } from '../../ai/client'
 import type { AnonStudentProfile } from '../../ai/contract'
-import { AiBadge } from '../../components/ui/AiBadge'
 import { Button } from '../../components/ui/Button'
 import { Modal, ModalCloseButton } from '../../components/ui/Modal'
 import { levelStyles } from '../../components/ui/levelStyles'
 import { useSlowAiHint } from '../../hooks/useSlowAiHint'
 import type { TextTask } from '../../types'
 import { AiReviseForm } from '../tasks/AiReviseForm'
+import type { SuggestionPlan } from './simulatedSuggestions'
 
 /** Vises bare når den er åpen – forslagene lages hver gang den åpnes. */
 interface SuggestedTasksDialogProps {
@@ -18,6 +18,11 @@ interface SuggestedTasksDialogProps {
   classId: string
   /** Anonymiserte elevdata som AI-en får. */
   profile: AnonStudentProfile
+  /**
+   * Temaer, nivå og eksempeloppgaver (se simulatedSuggestions.ts). Har eleven for lite data, vises eksemplene uten å
+   * spørre AI-en; ellers brukes de bare når AI-en ikke svarer eller ikke lager noen forslag – så dialogen aldri er tom.
+   */
+  plan: SuggestionPlan
   onClose: () => void
   onConfirm: (tasks: TextTask[]) => void
 }
@@ -25,7 +30,7 @@ interface SuggestedTasksDialogProps {
 type State =
   | { status: 'loading' }
   | { status: 'error'; message: string }
-  | { status: 'ready'; message: string; notice: string | null }
+  | { status: 'ready'; message: string; notice: string | null; examples: boolean }
 
 /**
  * «Forslag fra AI til …»: individuelt tilpassede oppgaver. De er bare forslag – ingenting
@@ -36,6 +41,7 @@ export function SuggestedTasksDialog({
   studentId,
   classId,
   profile,
+  plan,
   onClose,
   onConfirm,
 }: SuggestedTasksDialogProps) {
@@ -49,24 +55,37 @@ export function SuggestedTasksDialog({
 
   useEffect(() => {
     let cancelled = false
+    /** Eksempelforslagene fra planen – bare vist her, aldri lagret som resultater. */
+    const showExamples = (notice: string | null) => {
+      setTasks(plan.tasks)
+      setSelectedId(plan.tasks[0]?.id)
+      setSeen(new Set(plan.tasks.slice(0, 1).map((t) => t.id)))
+      setState({ status: 'ready', message: '', notice, examples: true })
+    }
+    if (plan.simulated) {
+      showExamples(null)
+      return
+    }
     requestTasks({ kind: 'individual', classId, context: subjectContext(classId), student: profile, count: 4, wishes: '' })
       .then(({ tasks: drafts, message, meta }) => {
         if (cancelled) return
+        if (drafts.length === 0) return showExamples('AI-en laget ingen forslag denne gangen. Her er eksempelforslag ut fra resultatene.')
         const suggestions = drafts.map((d) => toTextTask(d, newTaskId(studentId), meta))
         setTasks(suggestions)
         setSelectedId(suggestions[0]?.id)
         setSeen(new Set(suggestions.slice(0, 1).map((t) => t.id)))
-        setState({ status: 'ready', message, notice: fallbackNotice(meta, 'Forslagene') })
+        setState({ status: 'ready', message, notice: fallbackNotice(meta, 'Forslagene'), examples: false })
       })
       .catch((err: unknown) => {
         if (cancelled) return
         if (!(err instanceof AiError)) console.error('Uventet feil ved individuelle oppgaveforslag:', err)
-        setState({ status: 'error', message: err instanceof AiError ? err.message : 'Noe gikk galt. Prøv igjen.' })
+        // Prototypen: i stedet for en tom boks vises eksempelforslag ut fra elevens resultater.
+        showExamples(`${err instanceof AiError ? err.message : 'AI-en svarte ikke.'} Her er eksempelforslag ut fra resultatene.`)
       })
     return () => {
       cancelled = true
     }
-  }, [attempt, classId, profile, studentId])
+  }, [attempt, classId, profile, studentId, plan])
 
   const selected = tasks.find((t) => t.id === selectedId)
   const unseen = tasks.filter((t) => !seen.has(t.id)).length
@@ -93,12 +112,8 @@ export function SuggestedTasksDialog({
       <div className="flex items-start gap-4">
         <div className="flex flex-1 flex-col gap-1.5">
           <h2 id="forslag-tittel" className="text-h2 text-on-background">
-            Forslag fra AI til {studentName}
+            Oppgaveforslag fra AI til {studentName}
           </h2>
-          <p className="flex flex-wrap items-center gap-2 text-small text-secondary">
-            <AiBadge status="suggestion" />
-            Oppgavene er ikke lagt til ennå. Åpne og vurder hvert forslag før du legger dem til.
-          </p>
         </div>
         <ModalCloseButton onClick={onClose} />
       </div>
@@ -130,6 +145,30 @@ export function SuggestedTasksDialog({
 
       {state.status === 'ready' && (
         <>
+          <section aria-label="Grunnlaget for forslagene" className="flex flex-col gap-1.5 rounded-md bg-surface-light px-3 py-2 text-small text-on-background">
+            <p>
+              <span className="font-medium">Bør øve mer på:</span> {plan.focus.join(', ')} ·{' '}
+              <span className="font-medium">Foreslått nivå:</span> {plan.level}
+            </p>
+            <p className="text-xs text-secondary">{plan.reason}</p>
+            {state.examples && (
+              <p className="text-xs text-secondary">
+                Eksempelforslag (simulert i prototypen). De lagres ikke som resultater og påvirker ikke statistikken.
+              </p>
+            )}
+            {state.examples && !plan.simulated && (
+              <button
+                type="button"
+                onClick={() => {
+                  setState({ status: 'loading' })
+                  setAttempt((a) => a + 1)
+                }}
+                className="cursor-pointer self-start text-xs text-primary underline"
+              >
+                Prøv AI-en igjen
+              </button>
+            )}
+          </section>
           {state.message && (
             <p className="rounded-md bg-surface-light px-3 py-2 text-small text-on-background">
               <span className="font-medium">Fra AI-assistenten:</span> {state.message}

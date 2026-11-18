@@ -20,6 +20,8 @@ interface StudentTaskFlowProps {
   /** Oppgaven eleven er på (0-basert). Etter siste oppgave vises avslutningen. */
   index: number
   onNext: () => void
+  /** «Forrige oppgave» nederst til venstre i oppgavekortet. Uten denne vises ingen slik knapp. */
+  onPrevious?: () => void
   /** Uten denne holder hver oppgaveskjerm sin egen tilstand. */
   preview?: PreviewAnswers
   /** Bare i elevvisningen: hvilke oppgaver som er levert (eleven kan bla fritt mellom oppgavene). */
@@ -37,7 +39,7 @@ interface StudentTaskFlowProps {
  * elevvisningen og i lærerens forhåndsvisning. Hvor framdriften og svarene lagres (eller ikke),
  * bestemmer den som bruker flyten.
  */
-export function StudentTaskFlow({ tasks, index, onNext, preview, topicId, onResult, doneSteps, ending }: StudentTaskFlowProps) {
+export function StudentTaskFlow({ tasks, index, onNext, onPrevious, preview, topicId, onResult, doneSteps, ending }: StudentTaskFlowProps) {
   const task = tasks[index]
   if (!task && ending) return <>{ending}</>
   if (!task) return <MessageCard title="Bra jobba!" text="Du har gjort alle oppgavene i denne økta." />
@@ -55,6 +57,7 @@ export function StudentTaskFlow({ tasks, index, onNext, preview, topicId, onResu
           index={index}
           total={tasks.length}
           onNext={onNext}
+          onPrevious={onPrevious}
           splitParts={topicId === 'regning'}
           textBoxes={topicId === 'regning'}
           equationLines={topicId === 'multiplikasjon'}
@@ -69,6 +72,7 @@ export function StudentTaskFlow({ tasks, index, onNext, preview, topicId, onResu
           index={index}
           total={tasks.length}
           onNext={onNext}
+          onPrevious={onPrevious}
           controlled={preview && { state: saved && isMathState(saved) ? saved : initialMathState(), onChange }}
           onResult={report}
           doneSteps={doneSteps}

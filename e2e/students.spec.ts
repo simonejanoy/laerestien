@@ -3,12 +3,12 @@ import { expect, test, type Page } from '@playwright/test'
 import { roster } from '../src/features/class/roster.ts'
 
 // Siden «Elever» (ikke i sidemenyen lenger): en elevkonto som lages, kobles til eleven som allerede står i klasselista –
-// aldri en elev til – og eleven får framdriften i økta. Testeleven er Nora Lie (nivå 3). Lokal erstatning for Firebase
-// (se e2e/liveHarness.tsx).
+// aldri en elev til – og eleven får framdriften i økta. Testeleven er Nora (nivå 3): kontoen heter «Nora Teigen», og hun
+// vises som «Nora L.». Lokal erstatning for Firebase (se e2e/liveHarness.tsx).
 // Passordet lages tilfeldig i testen; ingen passord ligger i koden.
 
 const base = '/e2e/harness.html?visning=okt&okt=okt-1-2&kontoer=ingen'
-const noraRows = (page: Page) => page.locator('li[data-student="Nora Lie"]')
+const noraRows = (page: Page) => page.locator('li[data-student="Nora L."]')
 
 async function createAccount(page: Page, name: string, email: string) {
   await page.getByLabel('Navn').fill(name)
@@ -28,17 +28,18 @@ test('ny konto for Nora kobles til Nora i klasselista, på nivå 3, og gir framd
   await expect(noraRows(teacher)).toContainText('Ingen konto ennå')
   await expect(teacher.locator('li[data-student]')).toHaveCount(roster.length)
 
-  await createAccount(teacher, 'Nora Lie', 'nora@teigen.no')
-  await expect(teacher.getByRole('status')).toContainText('koblet til Nora Lie i klasselista (nivå 3)')
+  // Kontoen heter «Nora Teigen» (som i Firebase), men kobles på e-posten til raden «Nora L.».
+  await createAccount(teacher, 'Nora Teigen', 'nora@teigen.no')
+  await expect(teacher.getByRole('status')).toContainText('koblet til Nora L. i klasselista (nivå 3)')
   await expect(noraRows(teacher)).toHaveCount(1)
   await expect(noraRows(teacher)).toContainText('nora@teigen.no')
-  await expect(teacher.getByLabel('Nivå for Nora Lie')).toHaveValue('3')
+  await expect(teacher.getByLabel('Nivå for Nora L.')).toHaveValue('3')
   await expect(teacher.locator('li[data-student]')).toHaveCount(roster.length)
 
   // Samme e-post en gang til, eller samme navn med en annen e-post: avvises, fortsatt én Nora.
-  await createAccount(teacher, 'Nora Lie', 'NORA@teigen.no')
+  await createAccount(teacher, 'Nora Teigen', 'NORA@teigen.no')
   await expect(teacher.getByRole('alert')).toContainText('har allerede en konto')
-  await createAccount(teacher, 'Nora Lie', 'nora.lie@teigen.no')
+  await createAccount(teacher, 'Nora L.', 'nora.lie@teigen.no')
   await expect(teacher.getByRole('alert')).toContainText('har allerede en konto')
   await expect(noraRows(teacher)).toHaveCount(1)
   await expect(teacher.locator('li[data-student]')).toHaveCount(roster.length)
@@ -47,6 +48,9 @@ test('ny konto for Nora kobles til Nora i klasselista, på nivå 3, og gir framd
   await teacher.goto(`${base}&rolle=laerer`)
   await expect(noraRows(teacher)).toHaveCount(1)
   await expect(teacher.locator('li[data-student]')).toHaveCount(roster.length)
+  // Med bildet hennes, og ingen Nora Teigen uten bilde.
+  await expect(noraRows(teacher).locator('img')).toHaveCount(1)
+  await expect(teacher.locator('li[data-student="Nora Teigen"]')).toHaveCount(0)
   await teacher.getByRole('button', { name: 'Start økt' }).click()
 
   const student = await context.newPage()

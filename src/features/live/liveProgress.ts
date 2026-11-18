@@ -359,10 +359,9 @@ export function checkNewStudent(
   const name = norm(input.name)
   const sameEmail = roster.find((s) => s.uid && norm(s.email) === email)
   if (sameEmail) return { error: `${sameEmail.name} har allerede en konto med e-posten ${input.email.trim()}.` }
+  // Samme e-post som en elev i klasselista: kontoen kobles til eleven, også når navnet på kontoen er et annet
+  // (navnet i klasselista er det som vises i appen).
   const byEmail = roster.find((s) => !s.uid && norm(s.email) === email)
-  if (byEmail && norm(byEmail.name) !== name) {
-    return { error: `E-posten ${input.email.trim()} hører til ${byEmail.name} i klasselista. Bruk det navnet, eller en annen e-post.` }
-  }
   const match = byEmail ?? roster.find((s) => !s.uid && !norm(s.email) && norm(s.name) === name) ?? null
   if (!match) {
     const sameName = roster.find((s) => norm(s.name) === name)
@@ -498,6 +497,15 @@ export function saveRun(storage: StorageLike | null, key: string, run: SavedRun)
   } catch {
     // Ikke kritisk – svarene ligger fortsatt hos læreren (levert) og i minnet.
   }
+}
+
+/**
+ * Lengst fram eleven kan gå: den første oppgaven som ikke er levert, eller avslutningen (antall oppgaver) når alle er
+ * levert. Eleven kan gå tilbake til alt før, men ikke hoppe over en oppgave som ikke er fullført.
+ */
+export function furthestReachable(done: boolean[]) {
+  const firstOpen = done.indexOf(false)
+  return firstOpen === -1 ? done.length : firstOpen
 }
 
 /** Leverte oppgaver i den lagrede gjennomføringen (det eleven ser som «ferdig»). */

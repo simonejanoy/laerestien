@@ -30,10 +30,18 @@ service cloud.firestore {
       );
 
       // Læreren kan endre (f.eks. nivå) og fjerne elever i egen klasse, men ikke flytte dem.
-      allow update: if resource.data.role == 'student'
+      // Eleven kan bare legge inn sin egen e-post fra innloggingen (så læreren kan koble kontoen til klasselista på
+      // e-post) – ingen andre felt.
+      allow update: if (resource.data.role == 'student'
         && teacherOfClass(resource.data.classId)
         && request.resource.data.role == 'student'
-        && request.resource.data.classId == resource.data.classId;
+        && request.resource.data.classId == resource.data.classId)
+        || (signedIn()
+        && request.auth.uid == uid
+        && resource.data.role == 'student'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['email'])
+        && request.auth.token.email != null
+        && request.resource.data.email == request.auth.token.email);
       allow delete: if resource.data.role == 'student' && teacherOfClass(resource.data.classId);
     }
 

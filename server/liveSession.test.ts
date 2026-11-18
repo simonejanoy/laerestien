@@ -1,13 +1,14 @@
 // Tester for den reelle flyten mellom lærer, aktiv økt, elevsvar og framdrift. Kjør: npm test
 // Firebase brukes ikke her: den lokale backenden (localLiveBackend.ts) følger de samme reglene som firestore.rules,
 // og lærer- og elevvisningen bruker de samme rene funksjonene (liveProgress.ts) som testes her.
-// Testeleven er Nora Lie (nivå 3), som har kontoen nora@teigen.no i Firebase. Alle elevene er fiktive.
+// Testeleven er Nora (nivå 3), som har kontoen nora@teigen.no i Firebase. Profilen der heter «Nora Teigen», men i appen
+// vises hun som «Nora L.» – kontoen kobles til raden hennes på e-post eller uid, ikke på navn. Alle elevene er fiktive.
 
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { describe, it } from 'node:test'
 import { roster, studentsClassId } from '../src/features/class/roster.ts'
-import { checkProfile, unreadableProfile } from '../src/features/auth/profileCheck.ts'
+import { checkProfile, emailToSync, unreadableProfile } from '../src/features/auth/profileCheck.ts'
 import { authErrorMessage } from '../src/features/auth/authErrors.ts'
 import { createLocalLiveBackend } from '../src/features/live/localLiveBackend.ts'
 import { makeSnapshot, snapshotTasks } from '../src/features/live/liveSnapshot.ts'
@@ -49,7 +50,7 @@ function memoryStorage() {
 
 // Noras elevkonto slik den ligger i Firestore (users/{uid}). Uten level på kontoen: nivået kommer fra klasselista (3).
 const NORA_UID = 'uid-nora'
-const noraProfile: UserProfile = { uid: NORA_UID, name: 'Nora Lie', email: 'nora@teigen.no', role: 'student', classId: '4A' }
+const noraProfile: UserProfile = { uid: NORA_UID, name: 'Nora Teigen', email: 'nora@teigen.no', role: 'student', classId: '4A' }
 const CLASS = '4A'
 const SESSION = 'okt-1-2'
 
@@ -72,50 +73,62 @@ const noraRow = (list: { name: string; id: string }[]) => list.findIndex((s) => 
 /** Regnestykket levert med riktig svar. */
 const solved = (task: Task) => checkMathAnswer({ ...initialMathState(), answer: String(task.a + task.b) }, task)
 
-describe('Nora Lie – testelev i 4A', () => {
-  it('1. Nora står i klasselista for 4A med e-posten sin, og kontoen hennes har rollen elev', () => {
+describe('Nora (nora@teigen.no) – testelev i 4A, vist som «Nora L.»', () => {
+  it('1. kontoen «Nora Teigen» kobles til raden «Nora L.» med bildet og plassen hennes – ingen ekstra Nora', () => {
     assert.equal(studentsClassId, '4A')
-    const listed = roster.find((s) => s.name === 'Nora Lie')
-    assert.equal(listed?.email, 'nora@teigen.no')
+    const listed = roster.find((s) => s.id === 'nora')!
+    assert.equal(listed.name, 'Nora L.')
+    assert.equal(listed.email, 'nora@teigen.no')
+    // Bildet hennes (students.ts henter assets/students/<id>.jpg).
+    assert.ok(existsSync(new URL('../src/assets/students/nora.jpg', import.meta.url)))
     const list = buildRoster(studentsWithPhotos, [noraProfile])
     assert.equal(list.length, roster.length, 'ingen ekstra rader – Nora står på sin vanlige plass')
     assert.equal(list[noraRow(roster)].uid, NORA_UID)
+    assert.equal(list[noraRow(roster)].name, 'Nora L.', 'visningsnavnet er fra klasselista, ikke fra profilen')
+    assert.equal(list.filter((s) => /nora/i.test(s.name)).length, 1)
+    // Backend-navnet endres ikke.
+    assert.equal(noraProfile.name, 'Nora Teigen')
     assert.equal(noraProfile.role, 'student')
     assert.equal(noraProfile.classId, '4A')
   })
 
-  it('1. kobles til sin vanlige plass også med små avvik i navnet eller uten e-post i profilen', () => {
-    const variants: Partial<UserProfile>[] = [
-      { name: 'nora lie' },
-      { name: '  Nora   Lie ' },
-      { name: 'NORA LIE', email: undefined },
-      { name: 'Nora Lie', email: ' Nora@Teigen.no ' },
-      // Skrivefeil i e-posten på profilen: ingen annen konto har nora@teigen.no, så navnet avgjør.
-      { name: 'Nora Lie', email: 'nora.lie@teigen.no' },
-      // Helt annet navn, men riktig e-post.
-      { name: 'Nora L.', email: 'nora@teigen.no' },
-    ]
-    for (const variant of variants) {
-      const profile = { ...noraProfile, ...variant }
-      const list = buildRoster(studentsWithPhotos, [profile])
+  it('1. kobles på e-post uansett navn på kontoen (og uten å skille på store/små bokstaver)', () => {
+    for (const variant of [{ name: 'Nora Teigen' }, { name: 'Helt Annet Navn' }, { email: ' Nora@Teigen.no ' }, { email: 'NORA@teigen.no' }]) {
+      const list = buildRoster(studentsWithPhotos, [{ ...noraProfile, ...variant }])
       assert.equal(list.length, roster.length, `ingen ekstra rad for ${JSON.stringify(variant)}`)
       assert.equal(list[noraRow(roster)].uid, NORA_UID, `koblet for ${JSON.stringify(variant)}`)
     }
   })
 
+  it('1. ikke på navn: uten e-post i profilen kobles «Nora Teigen» ikke – derfor skriver eleven e-posten inn ved innlogging', () => {
+    const withoutEmail = { ...noraProfile, email: undefined }
+    const before = buildRoster(studentsWithPhotos, [withoutEmail])
+    assert.equal(before[noraRow(roster)].uid, undefined)
+    // Profilen i Firestore mangler e-post: eleven skriver inn e-posten fra innloggingen (navnet røres ikke).
+    const synced = emailToSync({ name: 'Nora Teigen', role: 'student', classId: '4A' }, 'nora@teigen.no')
+    assert.equal(synced, 'nora@teigen.no')
+    const after = buildRoster(studentsWithPhotos, [{ ...withoutEmail, email: synced! }])
+    assert.equal(after.length, roster.length)
+    assert.equal(after[noraRow(roster)].uid, NORA_UID)
+    // Ingenting å skrive når e-posten finnes, for lærere eller uten e-post i innloggingen.
+    assert.equal(emailToSync({ role: 'student', email: 'Nora@teigen.no' }, 'nora@teigen.no'), null)
+    assert.equal(emailToSync({ role: 'teacher' }, 'laerer@teigen.no'), null)
+    assert.equal(emailToSync({ role: 'student' }, null), null)
+  })
+
   it('1. uid i klasselista kobler sikrest: går foran både e-post og navn', () => {
     const withUid = studentsWithPhotos.map((s) => (s.id === 'nora' ? { ...s, uid: 'uid-ekte-nora', email: undefined } : s))
-    const impostor: UserProfile = { uid: 'uid-annen', name: 'Nora Lie', role: 'student', classId: '4A' }
-    const real: UserProfile = { uid: 'uid-ekte-nora', name: 'N. Lie', role: 'student', classId: '4A' }
+    const impostor: UserProfile = { uid: 'uid-annen', name: 'Nora L.', role: 'student', classId: '4A' }
+    const real: UserProfile = { uid: 'uid-ekte-nora', name: 'Nora Teigen', role: 'student', classId: '4A' }
     const list = buildRoster(withUid, [impostor, real])
     assert.equal(list[noraRow(roster)].uid, 'uid-ekte-nora')
-    assert.equal(list.find((s) => s.uid === 'uid-annen')?.duplicateOf, 'Nora Lie')
+    assert.equal(list.find((s) => s.uid === 'uid-annen')?.duplicateOf, 'Nora L.')
   })
 
   it('2. Nora får nivå 3 fra klasselista, og et nivå på kontoen går foran', () => {
     assert.equal(roster.find((s) => s.id === 'nora')?.level, 3)
     assert.equal(studentLevel(noraProfile, roster), 3)
-    assert.equal(studentLevel({ ...noraProfile, email: undefined, name: ' nora  lie' }, roster), 3)
+    assert.equal(studentLevel({ ...noraProfile, email: 'NORA@teigen.no' }, roster), 3)
     assert.equal(studentLevel({ ...noraProfile, level: 2 }, roster), 2)
     assert.equal(buildRoster(studentsWithPhotos, [{ ...noraProfile, level: 2 }])[noraRow(roster)].level, 2)
     // En elev som ikke står i lista, og uten nivå, starter på nivå 1.
@@ -139,25 +152,25 @@ describe('Nora Lie – testelev i 4A', () => {
 describe('ingen doble elever', () => {
   const list = () => buildRoster(studentsWithPhotos, [])
 
-  it('en ny konto med Noras e-post kobles til Nora i klasselista, med nivået hennes', () => {
-    const check = checkNewStudent(list(), { name: 'Nora Lie', email: 'Nora@Teigen.no ' })
-    assert.ok('match' in check && check.match?.id === 'nora' && check.match.level === 3)
+  it('en ny konto med Noras e-post kobles til Nora i klasselista, med nivået hennes – også med et annet navn', () => {
+    for (const name of ['Nora L.', 'Nora Teigen']) {
+      const check = checkNewStudent(list(), { name, email: 'Nora@Teigen.no ' })
+      assert.ok('match' in check && check.match?.id === 'nora' && check.match.level === 3, name)
+    }
   })
 
   it('samme e-post kan aldri få to kontoer', () => {
     const withAccount = buildRoster(studentsWithPhotos, [noraProfile])
-    const again = checkNewStudent(withAccount, { name: 'Nora Lie', email: 'NORA@teigen.no' })
+    const again = checkNewStudent(withAccount, { name: 'Nora Teigen', email: 'NORA@teigen.no' })
     assert.ok('error' in again && again.error.includes('har allerede en konto'))
     assert.ok('error' in checkNewStudent(withAccount, { name: 'Noen Andre', email: 'nora@teigen.no' }))
   })
 
-  it('samme navn: avvises når eleven har konto, eller når eleven står i lista med en annen e-post', () => {
+  it('samme navn som i klasselista: avvises når eleven har konto, eller når eleven står i lista med en annen e-post', () => {
     const withAccount = buildRoster(studentsWithPhotos, [noraProfile])
-    assert.ok('error' in checkNewStudent(withAccount, { name: 'nora lie', email: 'ny@teigen.no' }))
-    const withoutAccount = checkNewStudent(list(), { name: 'Nora Lie', email: 'ny@teigen.no' })
+    assert.ok('error' in checkNewStudent(withAccount, { name: 'nora l.', email: 'ny@teigen.no' }))
+    const withoutAccount = checkNewStudent(list(), { name: 'Nora L.', email: 'ny@teigen.no' })
     assert.ok('error' in withoutAccount && withoutAccount.error.includes('nora@teigen.no'))
-    // E-posten til en elev i lista kan ikke brukes med et annet navn.
-    assert.ok('error' in checkNewStudent(list(), { name: 'Sofie Lund', email: 'nora@teigen.no' }))
   })
 
   it('elever uten e-post i lista kobles på navn; helt nye elever er lov', () => {
@@ -168,11 +181,11 @@ describe('ingen doble elever', () => {
   })
 
   it('en konto med riktig e-post vinner over en konto med samme navn, og en dobbel konto merkes', () => {
-    const twin: UserProfile = { uid: 'uid-twin', name: 'Nora Lie', email: 'nora.l@teigen.no', role: 'student', classId: '4A' }
+    const twin: UserProfile = { uid: 'uid-twin', name: 'Nora L.', email: 'nora.l@teigen.no', role: 'student', classId: '4A' }
     // Dobbelkontoen står først i lista fra Firestore, men Nora kobles likevel til kontoen med hennes e-post.
     const rows = buildRoster(studentsWithPhotos, [twin, noraProfile])
     assert.equal(rows.find((r) => r.id === 'nora')?.uid, NORA_UID)
-    assert.equal(rows.find((r) => r.uid === 'uid-twin')?.duplicateOf, 'Nora Lie')
+    assert.equal(rows.find((r) => r.uid === 'uid-twin')?.duplicateOf, 'Nora L.')
     assert.equal(rows.length, roster.length + 1)
   })
 })
@@ -206,7 +219,7 @@ describe('innlogging: tydelig beskjed om hva som mangler', () => {
   })
 
   it('en hel profil slipper inn; en profil som ikke kan leses, gir beskjed om reglene', () => {
-    const check = checkProfile(NORA_UID, 'nora@teigen.no', { name: 'Nora Lie', email: 'nora@teigen.no', role: 'student', classId: '4A' })
+    const check = checkProfile(NORA_UID, 'nora@teigen.no', { name: 'Nora Teigen', email: 'nora@teigen.no', role: 'student', classId: '4A' })
     assert.ok('profile' in check)
     assert.deepEqual(check.profile, noraProfile)
     assert.match(unreadableProfile(NORA_UID, 'permission-denied'), /firestore\.rules/)
@@ -345,19 +358,19 @@ describe('levering og framdrift', () => {
     assert.equal(updates, 4, 'læreren fikk én oppdatering per levering')
 
     const rows = overview()
-    const nora = rows.find((r) => r.student.name === 'Nora Lie')!
+    const nora = rows.find((r) => r.student.name === 'Nora L.')!
     assert.equal(nora.summary.done, 3)
     assert.equal(nora.summary.percent, 50)
     assert.equal(nora.summary.status, 'working')
-    const others = rows.filter((r) => r.student.name !== 'Nora Lie')
+    const others = rows.filter((r) => r.student.name !== 'Nora L.')
     assert.equal(others.length, roster.length - 1)
     assert.ok(others.every((r) => r.summary.percent === 0 && r.summary.done === 0 && r.summary.status === 'notStarted'))
 
     for (const task of level3.slice(3)) await backend.saveDelivery(CLASS, base, task.id, deliveryOf(solved(task as Task))!)
-    const finished = overview().find((r) => r.student.name === 'Nora Lie')!
+    const finished = overview().find((r) => r.student.name === 'Nora L.')!
     assert.equal(finished.summary.percent, 100)
     assert.equal(finished.summary.status, 'finished')
-    assert.ok(overview().filter((r) => r.student.name !== 'Nora Lie').every((r) => r.summary.percent === 0))
+    assert.ok(overview().filter((r) => r.student.name !== 'Nora L.').every((r) => r.summary.percent === 0))
   })
 
   it('en annen elev som leverer, registreres på samme måte (ingenting er låst til Nora)', () => {
@@ -367,7 +380,7 @@ describe('levering og framdrift', () => {
     const rows = classOverview(buildRoster(studentsWithPhotos, [noraProfile, sofie]), [doc], runId, tasks, true)
     assert.equal(rows.find((r) => r.student.name === 'Sofie Lund')?.summary.done, 1)
     assert.equal(rows.find((r) => r.student.name === 'Sofie Lund')?.summary.wrong, 1)
-    assert.equal(rows.find((r) => r.student.name === 'Nora Lie')?.summary.done, 0)
+    assert.equal(rows.find((r) => r.student.name === 'Nora L.')?.summary.done, 0)
   })
 
   it('9. svarene og hvor Nora var, er der etter omlasting av siden', () => {
@@ -420,12 +433,12 @@ describe('økt uten oppgaver på elevens nivå', () => {
     const missing = levelsWithoutTasks(buildRoster(studentsWithPhotos, [noraProfile]), onlyLevel1)
     assert.deepEqual(missing.map((m) => m.level), [2, 3])
     const level3Missing = missing.find((m) => m.level === 3)!
-    assert.ok(level3Missing.students.includes('Nora Lie'))
+    assert.ok(level3Missing.students.includes('Nora L.'))
     const [, text3] = missingLevelsText(missing)
-    assert.match(text3, /^Økta har ingen oppgaver på nivå 3\. .*Nora Lie.* får ingen oppgaver\.$/)
+    assert.match(text3, /^Økta har ingen oppgaver på nivå 3\. .*Nora L\..* får ingen oppgaver\.$/)
     // Nivået på kontoen teller: flyttes Nora til nivå 1, gjelder advarselen ikke henne lenger.
     const moved = levelsWithoutTasks(buildRoster(studentsWithPhotos, [{ ...noraProfile, level: 1 }]), onlyLevel1)
-    assert.ok(!moved.find((m) => m.level === 3)?.students.includes('Nora Lie'))
+    assert.ok(!moved.find((m) => m.level === 3)?.students.includes('Nora L.'))
     // Alle nivåene har oppgaver: ingen advarsel.
     assert.deepEqual(levelsWithoutTasks(roster, [math('a', 1, 1, 1), math('b', 1, 1, 2), math('c', 1, 1, 3)]), [])
   })

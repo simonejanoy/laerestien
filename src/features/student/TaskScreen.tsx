@@ -1,4 +1,5 @@
 import { ChevronRight } from 'lucide-react'
+import { PreviousTaskButton } from './PreviousTaskButton'
 import { useRef, type KeyboardEvent } from 'react'
 import check from '../../assets/student/hake.svg'
 import lightbulb from '../../assets/student/lyspaere.svg'
@@ -16,6 +17,8 @@ interface TaskScreenProps {
   index: number
   total: number
   onNext: () => void
+  /** «Forrige oppgave» nederst til venstre i kortet (bare når det går an å gå tilbake). */
+  onPrevious?: () => void
   /** Bare i lærerens forhåndsvisning: tilstanden holdes utenfor, så den beholdes når læreren blar. */
   controlled?: ControlledTaskState<MathTaskState>
   /** Bare i elevvisningen: resultatet når oppgaven er ferdig rettet (lagres for repetisjonen). */
@@ -25,7 +28,7 @@ interface TaskScreenProps {
 }
 
 /** Én oppgave for eleven: svar, sjekk, hint og videre. */
-export function TaskScreen({ task, index, total, onNext, controlled, onResult, doneSteps }: TaskScreenProps) {
+export function TaskScreen({ task, index, total, onNext, onPrevious, controlled, onResult, doneSteps }: TaskScreenProps) {
   const [state, setState] = useTaskState(initialMathState, controlled, onResult)
   const { answer, phase, attemptsLeft, showHint, dialogOpen } = state
   const inputRef = useRef<HTMLInputElement>(null)
@@ -143,17 +146,20 @@ export function TaskScreen({ task, index, total, onNext, controlled, onResult, d
 
         <hr className="h-px w-full border-0 bg-rule" />
 
-        <div className="flex min-h-[125px] w-full items-center justify-between">
-          <button
-            type="button"
-            onClick={() => setState({ ...state, showHint: true })}
-            className={`flex w-[236px] shrink-0 cursor-pointer items-center justify-center gap-2.5 rounded-lg bg-surface-variant p-2.5 text-body text-primary hover:brightness-95 ${
-              phase === 'answering' && !showHint ? '' : 'invisible'
-            }`}
-          >
-            <img src={lightbulb} alt="" width={22} height={22} />
-            Jeg trenger et hint
-          </button>
+        <div className="flex min-h-[125px] w-full items-center justify-between gap-4">
+          <div className="flex shrink-0 items-center gap-3">
+            {onPrevious && <PreviousTaskButton onClick={onPrevious} />}
+            <button
+              type="button"
+              onClick={() => setState({ ...state, showHint: true })}
+              className={`flex w-[236px] shrink-0 cursor-pointer items-center justify-center gap-2.5 rounded-lg bg-surface-variant p-2.5 text-body text-primary hover:brightness-95 ${
+                phase === 'answering' && !showHint ? '' : 'invisible'
+              }`}
+            >
+              <img src={lightbulb} alt="" width={22} height={22} />
+              Jeg trenger et hint
+            </button>
+          </div>
 
           <TaskStepper total={total} current={index} currentDone={phase !== 'answering'} done={doneSteps} />
 

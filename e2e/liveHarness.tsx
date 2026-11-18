@@ -24,8 +24,9 @@ import { EditTasksPage } from '../src/features/tasks/EditTasksPage'
 import { answerOf } from '../src/features/tasks/taskUtils'
 import type { UserProfile } from '../src/types'
 
-// Fiktive kontoer. Nora har ikke nivå på kontoen, så hun får nivået i klasselista (nivå 3).
-const nora: UserProfile = { uid: 'uid-nora', name: 'Nora Lie', email: 'nora@teigen.no', role: 'student', classId: '4A' }
+// Fiktive kontoer. Nora har ikke nivå på kontoen, så hun får nivået i klasselista (nivå 3). Profilen heter «Nora Teigen»
+// som i Firebase, men læreren ser henne som «Nora L.» (kobles på e-post).
+const nora: UserProfile = { uid: 'uid-nora', name: 'Nora Teigen', email: 'nora@teigen.no', role: 'student', classId: '4A' }
 const teacher: UserProfile = { uid: 'uid-laerer', name: 'Testlærer', role: 'teacher', title: 'Kontaktlærer', classId: '4A' }
 
 const params = new URLSearchParams(location.search)

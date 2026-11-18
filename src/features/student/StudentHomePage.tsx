@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import type { SessionTask } from '../../types'
@@ -8,6 +8,7 @@ import {
   answersKey,
   canDeliver,
   deliveryOf,
+  furthestReachable,
   isValidLive,
   loadRun,
   runIdOf,
@@ -89,8 +90,12 @@ export function StudentHomePage() {
 
   const done = tasks.map((t) => deliveryOf(run.answers[t.id]) !== null)
   const doneCount = done.filter(Boolean).length
-  const index = Math.min(run.index, tasks.length)
-  const goTo = (next: number) => setRun({ ...run, index: Math.max(0, Math.min(next, tasks.length)) })
+  const firstOpen = done.indexOf(false)
+  // Eleven kommer ikke forbi en oppgave som ikke er fullført: lengst fram er den første som ikke er levert (eller
+  // avslutningen når alle er levert). Gjelder også en lagret plass fra før.
+  const furthest = furthestReachable(done)
+  const index = Math.min(run.index, furthest)
+  const goTo = (next: number) => setRun({ ...run, index: Math.max(0, Math.min(next, furthest)) })
 
   // Ferdig rettet oppgave: lagres anonymt (undertema, nivå, riktig/galt og forsøk) til repetisjonen.
   const saveResult = (task: SessionTask, result: TaskResultSummary) => {
@@ -110,7 +115,6 @@ export function StudentHomePage() {
   }
 
   const greeting = view === 'tasks' ? `Hei, ${firstName}! ${verbFor(tasks)}` : `Hei, ${firstName}!`
-  const firstOpen = done.indexOf(false)
 
   return (
     <StudentLayout label={label} onLogout={logout}>
@@ -126,28 +130,25 @@ export function StudentHomePage() {
         />
       ) : (
         <>
-          <nav aria-label="Bla mellom oppgavene" className="flex items-center justify-between gap-4 px-20 pb-4">
-            <button
-              type="button"
-              onClick={() => goTo(index - 1)}
-              disabled={index === 0}
-              className="flex h-10 cursor-pointer items-center gap-1.5 rounded-lg border border-card-border bg-background px-3 text-small text-primary hover:bg-surface-light disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <ChevronLeft className="size-5" aria-hidden />
-              Forrige oppgave
-            </button>
+          {/* «Forrige oppgave» og «Neste oppgave» står i oppgavekortet. Bare etter siste oppgave, der det ikke er noe kort,
+              står «Forrige oppgave» her, så eleven kan gå tilbake og se svarene sine. */}
+          <nav aria-label="Bla mellom oppgavene" className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-20 pb-4">
+            <span>
+              {index > 0 && index >= tasks.length && (
+                <button
+                  type="button"
+                  onClick={() => goTo(index - 1)}
+                  className="flex h-10 cursor-pointer items-center gap-1.5 rounded-lg border border-card-border bg-background px-3 text-small text-primary hover:bg-surface-light"
+                >
+                  <ChevronLeft className="size-5" aria-hidden />
+                  Forrige oppgave
+                </button>
+              )}
+            </span>
             <p className="text-small text-muted" aria-live="polite">
               {index < tasks.length ? `Oppgave ${index + 1} av ${tasks.length}` : 'Oversikt'} · {doneCount} av {tasks.length} levert
             </p>
-            <button
-              type="button"
-              onClick={() => goTo(index + 1)}
-              disabled={index >= tasks.length}
-              className="flex h-10 cursor-pointer items-center gap-1.5 rounded-lg border border-card-border bg-background px-3 text-small text-primary hover:bg-surface-light disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Neste oppgave
-              <ChevronRight className="size-5" aria-hidden />
-            </button>
+            <span aria-hidden />
           </nav>
           {sendFailed && (
             <p role="alert" className="mx-20 mb-4 rounded-lg bg-surface-variant px-4 py-2 text-small text-error">
@@ -158,6 +159,7 @@ export function StudentHomePage() {
             tasks={tasks}
             index={index}
             onNext={() => goTo(index + 1)}
+            onPrevious={index > 0 ? () => goTo(index - 1) : undefined}
             topicId={session.topicId}
             onResult={saveResult}
             preview={{ answers: run.answers, onAnswer: answer }}

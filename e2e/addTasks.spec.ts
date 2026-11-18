@@ -50,7 +50,7 @@ test('7. læreren kan bytte mellom «Lag med AI» og «Lag selv» med mus og pil
   await d.getByRole('tab', { name: 'Lag selv' }).press('ArrowLeft')
   await expect(d.getByRole('tab', { name: 'Lag med AI' })).toHaveAttribute('aria-selected', 'true')
   await expect(d.getByRole('tab', { name: 'Lag med AI' })).toBeFocused()
-  await expect(d.getByRole('tabpanel')).toContainText('Kompetansemål (valgfritt)')
+  await expect(d.getByRole('tabpanel')).toContainText('Andre ønsker (valgfritt)')
   await page.keyboard.press('ArrowRight')
   await expect(d.getByRole('tab', { name: 'Lag selv' })).toHaveAttribute('aria-selected', 'true')
 })
@@ -122,7 +122,8 @@ test('9. «Lag med AI» har de samme valgene og kontrollene som før', async ({ 
   await open(page)
   await page.getByRole('button', { name: 'Legg til oppgaver' }).click()
   const panel = dialog(page).getByRole('tabpanel')
-  await expect(panel.getByLabel('Kompetansemål (valgfritt)')).toBeVisible()
+  // Kompetansemål-feltet er fjernet (AI-en kobler ikke oppgavene til kompetansemål).
+  await expect(panel.getByLabel('Kompetansemål (valgfritt)')).toHaveCount(0)
   await expect(panel.getByLabel('Andre ønsker (valgfritt)')).toBeVisible()
   for (const level of [1, 2, 3]) await expect(panel.getByLabel(`Nivå ${level}`)).toBeChecked()
   await expect(panel.getByLabel('Antall per nivå')).toHaveValue('2')
