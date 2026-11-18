@@ -1,6 +1,7 @@
 import lightbulb from '../../assets/student/lyspaere.svg'
 import retry from '../../assets/student/prov-igjen.svg'
 import { Modal } from '../../components/ui/Modal'
+import { FEEDBACK } from './studentTasks'
 
 interface WrongAnswerDialogProps {
   open: boolean
@@ -10,7 +11,7 @@ interface WrongAnswerDialogProps {
   onRetry: () => void
 }
 
-/** «Det ble ikke riktig denne gangen» – eleven velger hint eller nytt forsøk. */
+/** «Ikke helt – prøv igjen»: eleven velger hint eller nytt forsøk. */
 export function WrongAnswerDialog({ open, attemptsLeft, retryText, onHint, onRetry }: WrongAnswerDialogProps) {
   return (
     <Modal
@@ -21,7 +22,7 @@ export function WrongAnswerDialog({ open, attemptsLeft, retryText, onHint, onRet
       className="gap-5 shadow-[0_16px_48px_rgba(36,59,94,0.25)]"
     >
       <h2 id="feil-svar-tittel" className="text-h2 text-on-background">
-        Det ble ikke riktig denne gangen
+        {FEEDBACK.retry}
       </h2>
       <p className="text-body text-secondary">Hva vil du gjøre nå?</p>
 

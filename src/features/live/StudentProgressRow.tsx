@@ -1,6 +1,6 @@
 import { levelStyles } from '../../components/ui/levelStyles'
 import type { SessionTask } from '../../types'
-import { PROGRESS_STATUS_LABELS, type StudentOverview } from './liveProgress'
+import { PROGRESS_STATUS_LABELS, shownAnswer, type StudentOverview } from './liveProgress'
 
 interface StudentProgressRowProps {
   row: StudentOverview
@@ -81,6 +81,28 @@ export function StudentProgressRow({ row, tasks }: StudentProgressRowProps) {
           </ol>
         )}
       </div>
+      {tasks.some((t) => delivered[t.id]?.answer) && (
+        <details className="text-small text-primary">
+          <summary className="cursor-pointer text-xs text-secondary hover:text-primary">Se svarene til {student.name}</summary>
+          <ol aria-label={`Leverte svar fra ${student.name}`} className="mt-2 flex flex-col gap-1.5">
+            {tasks.map((task, i) => {
+              const d = delivered[task.id]
+              if (!d?.answer) return null
+              const result = d.correct === true ? 'Riktig' : d.correct === false ? 'Feil' : 'Vurderes av deg'
+              const tries = d.correct !== null && d.attempts > 1 ? ` · ${d.attempts} forsøk` : ''
+              return (
+                <li key={task.id} className="flex flex-col gap-0.5 rounded-md bg-surface-light px-2.5 py-1.5">
+                  <span className="text-xs text-secondary">
+                    Oppgave {i + 1} · {result}
+                    {tries}
+                  </span>
+                  <span className="whitespace-pre-wrap break-words">{shownAnswer(task, d.answer)}</span>
+                </li>
+              )
+            })}
+          </ol>
+        </details>
+      )}
     </li>
   )
 }

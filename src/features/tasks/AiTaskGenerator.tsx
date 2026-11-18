@@ -1,12 +1,11 @@
-import { LoaderCircle, Sparkles, X } from 'lucide-react'
+import { LoaderCircle, Sparkles } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import { AiError, SLOW_AI_HINT, fallbackNotice, newTaskId, requestTasks, subjectContext, toSessionTask } from '../../ai/client'
+import { AiError, newTaskId, requestTasks, subjectContext, toSessionTask } from '../../ai/client'
 import { AREA_TITLES, MAX_PER_LEVEL, type AiLevel } from '../../ai/contract'
 import { isCompletePackage } from '../../ai/drafts'
 import { buildLevelContexts, toAiProfile } from '../../ai/referenceTasks'
 import { aiProfileFor } from '../../ai/sessionProfile'
 import { Button } from '../../components/ui/Button'
-import { useSlowAiHint } from '../../hooks/useSlowAiHint'
 import type { Session, SessionTask } from '../../types'
 
 interface AiTaskGeneratorProps {
@@ -15,6 +14,8 @@ interface AiTaskGeneratorProps {
   tasks: SessionTask[]
   /** Oppgavene legges i utkastet. Læreren lagrer dem med «Lagre endringer». */
   onAdd: (tasks: SessionTask[]) => void
+  /** Lukker popupen «Legg til oppgaver» («Avbryt» før noe er lagt til, «Lukk» etterpå). */
+  onClose: () => void
 }
 
 const fieldClass =
@@ -31,9 +32,12 @@ function validationError(levels: AiLevel[], count: string) {
   return null
 }
 
-/** «Lag oppgaver med AI»: generelle oppgaver på nivåene læreren velger, ut fra temaet for økta. */
-export function AiTaskGenerator({ session, tasks: currentTasks, onAdd }: AiTaskGeneratorProps) {
-  const [open, setOpen] = useState(false)
+/**
+ * «Lag med AI» i popupen «Legg til oppgaver»: generelle oppgaver på nivåene læreren velger, ut fra temaet for økta.
+ * Referansebanker, nivåstyring, kvalitetskontroller og utfylling ligger på serveren; læreren får nøyaktig det bestilte
+ * antallet per nivå, eller ingen.
+ */
+export function AiTaskGenerator({ session, tasks: currentTasks, onAdd, onClose }: AiTaskGeneratorProps) {
   // Alle nivåene er valgt som standard. Antallet holdes som tekst, så feltet kan valideres slik læreren skrev det.
   const [selectedLevels, setSelectedLevels] = useState<AiLevel[]>(ALL_LEVELS)
   const [count, setCount] = useState('2')
@@ -42,8 +46,7 @@ export function AiTaskGenerator({ session, tasks: currentTasks, onAdd }: AiTaskG
   const [wishes, setWishes] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [result, setResult] = useState<{ count: number; message: string; warning?: string; failed: boolean; notice: string | null } | null>(null)
-  const slow = useSlowAiHint(loading, 'tasks')
+  const [result, setResult] = useState<{ count: number; message: string; warning?: string; failed: boolean } | null>(null)
 
   const invalid = validationError(selectedLevels, count)
   // Fagområdet bestillingen styres etter: øktas egen profil, eller en profil fra årsplanen ut fra undertemaene
@@ -89,7 +92,6 @@ export function AiTaskGenerator({ session, tasks: currentTasks, onAdd }: AiTaskG
         message,
         warning: failed ? `AI-en laget ikke hele det bestilte antallet (${perLevel * levels.length} oppgaver). Ingen oppgaver ble lagt til. Prøv igjen.` : warning,
         failed: failed || !!incomplete,
-        notice: fallbackNotice(meta, 'Oppgavene'),
       })
     } catch (err) {
       if (!(err instanceof AiError)) console.error('Uventet feil ved oppgavegenerering:', err)
@@ -99,46 +101,19 @@ export function AiTaskGenerator({ session, tasks: currentTasks, onAdd }: AiTaskG
     }
   }
 
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="flex h-[38px] cursor-pointer items-center gap-[7px] self-start rounded-[7px] bg-secondary px-3.5 text-small text-on-secondary hover:bg-secondary/90"
-      >
-        <Sparkles className="size-4" aria-hidden />
-        Lag oppgaver med AI
-      </button>
-    )
-  }
-
   return (
-    <section aria-labelledby="ai-generator-tittel" className="flex flex-col gap-3 rounded-lg border border-surface bg-surface-light p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-col gap-0.5">
-          <h2 id="ai-generator-tittel" className="flex items-center gap-2 text-h3 text-primary">
-            <Sparkles className="size-5" aria-hidden />
-            Lag oppgaver med AI
-          </h2>
-          <p className="text-small text-secondary">
-            Oppgaver på nivåene du velger om «{session.heading}». De legges i utkastet, merket som ikke gjennomgått, og du kan
-            endre dem før og etter du lagrer.
+    <section aria-label="Lag med AI" className="flex flex-col gap-3">
+      <div className="flex flex-col gap-0.5">
+        <p className="text-small text-secondary">
+          Oppgaver på nivåene du velger om «{session.heading}». De legges i utkastet, merket som AI-generert og ikke
+          gjennomgått, og du kan endre dem før og etter du lagrer.
+        </p>
+        {areas.length > 0 && (
+          <p className="text-xs text-secondary">
+            Fagområde: {areas.join(', ')}
+            {derived?.source !== 'session' && ' (hentet fra årsplanen ut fra undertemaene og overskriften)'}
           </p>
-          {areas.length > 0 && (
-            <p className="text-xs text-secondary">
-              Fagområde: {areas.join(', ')}
-              {derived?.source !== 'session' && ' (hentet fra årsplanen ut fra undertemaene og overskriften)'}
-            </p>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          aria-label="Lukk «Lag oppgaver med AI»"
-          className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-primary hover:bg-surface"
-        >
-          <X className="size-[18px]" aria-hidden />
-        </button>
+        )}
       </div>
 
       <form onSubmit={generate} className="flex flex-col gap-3">
@@ -204,12 +179,15 @@ export function AiTaskGenerator({ session, tasks: currentTasks, onAdd }: AiTaskG
           </p>
         )}
         <div className="flex flex-wrap items-center gap-3">
+          <Button type="button" variant="neutral" onClick={onClose}>
+            {result && result.count > 0 ? 'Lukk' : 'Avbryt'}
+          </Button>
           <Button type="submit" disabled={loading || (touched && !!invalid)}>
             {loading ? <LoaderCircle className="size-4 motion-safe:animate-spin" aria-hidden /> : <Sparkles className="size-4" aria-hidden />}
             {loading ? 'Lager oppgaver …' : 'Lag oppgaver'}
           </Button>
           <p aria-live="polite" className="text-xs text-secondary">
-            {loading && (slow ? SLOW_AI_HINT : 'AI-en lager og kontrollerer oppgavene. Det kan ta litt tid.')}
+            {loading && 'AI-en lager og kontrollerer oppgavene. Det kan ta litt tid.'}
           </p>
         </div>
       </form>
@@ -241,7 +219,6 @@ export function AiTaskGenerator({ session, tasks: currentTasks, onAdd }: AiTaskG
               <span className="font-medium">Fra AI-assistenten:</span> {result.message}
             </p>
           )}
-          {result.notice && <p className="text-xs text-secondary">{result.notice}</p>}
         </div>
       )}
     </section>

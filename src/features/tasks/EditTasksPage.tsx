@@ -1,10 +1,10 @@
 import { Check, Eye, Plus } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import type { Level, SessionTask, Task } from '../../types'
 import { FullPageMessage } from '../auth/ProtectedRoute'
 import { sessionLabel, useSessions } from '../sessions/sessionsContext'
-import { AiTaskGenerator } from './AiTaskGenerator'
+import { AddTasksDialog } from './AddTasksDialog'
 import { isPeriod } from '../repetition/analysis'
 import { RepetitionPlanner } from '../repetition/RepetitionPlanner'
 import { LevelTabs } from './LevelTabs'
@@ -30,6 +30,14 @@ export function EditTasksPage() {
   // Forhåndsvisningen viser utkastet (starter på valgt nivå). Den endrer ikke utkastet og lagrer ingenting.
   const [previewOpen, setPreviewOpen] = useState(false)
   const closePreview = useCallback(() => setPreviewOpen(false), [])
+  // «Legg til oppgaver»: popupen med «Lag med AI» og «Lag selv». Fokus går tilbake til knappen når den lukkes.
+  const [adding, setAdding] = useState(false)
+  const [addedNote, setAddedNote] = useState('')
+  const addButtonRef = useRef<HTMLButtonElement>(null)
+  const closeAdding = useCallback(() => {
+    setAdding(false)
+    setTimeout(() => addButtonRef.current?.focus())
+  }, [])
 
   if (!session) return <FullPageMessage text="Fant ikke økten." />
 
@@ -47,24 +55,26 @@ export function EditTasksPage() {
     setEditing(null)
   }
 
-  const addTask = () => {
-    const task: Task = {
-      id: `ny-${Date.now()}`,
-      level,
-      type: 'Hoderegning',
-      instruction: 'Regn ut.',
-      a: 0,
-      operator: '+',
-      b: 0,
-      source: 'teacher',
-    }
-    update([...draft, task])
-    setEditing({ id: task.id, original: task })
-  }
-
   const save = () => {
     saveTasks(session.id, draft)
     setDirty(false)
+  }
+
+  // AI-oppgaver legges i utkastet (merket som ikke gjennomgått) og lagres med «Lagre endringer», som før.
+  const addAiTasks = (tasks: SessionTask[]) => {
+    update([...draft, ...tasks])
+    setAddedNote('')
+  }
+
+  // En oppgave læreren har laget selv, lagres med en gang på nivået den hører til. Siden blir stående der den var: valgt
+  // nivå og rulleposisjon endres ikke.
+  const addManualTask = (task: SessionTask) => {
+    const next = [...draft, task]
+    setDraft(next)
+    saveTasks(session.id, next)
+    setDirty(false)
+    setAddedNote(task.level === level ? `Oppgaven er lagt til nederst på nivå ${task.level}.` : `Oppgaven er lagt til på nivå ${task.level}.`)
+    closeAdding()
   }
 
   const isChanged = (task: Task) => {
@@ -126,8 +136,6 @@ export function EditTasksPage() {
         <RepetitionPlanner session={session} period={session.topicId} tasks={draft} onAdd={(tasks) => update([...draft, ...tasks])} />
       )}
 
-      <AiTaskGenerator session={session} tasks={draft} onAdd={(tasks) => update([...draft, ...tasks])} />
-
       <LevelTabs
         levels={session.levels}
         selected={level}
@@ -153,19 +161,24 @@ export function EditTasksPage() {
               Forhåndsvis
             </button>
             <button
+              ref={addButtonRef}
               type="button"
-              onClick={addTask}
-              className="flex h-[38px] cursor-pointer items-center gap-[7px] rounded-[7px] border border-surface bg-background px-3.5 text-small text-primary hover:bg-surface-light"
+              onClick={() => setAdding(true)}
+              aria-haspopup="dialog"
+              className="flex h-[38px] cursor-pointer items-center gap-[7px] rounded-[7px] bg-primary px-3.5 text-small text-on-primary hover:bg-primary/90"
             >
-              <Plus className="size-4" strokeWidth={2.2} />
-              Legg til oppgave
+              <Plus className="size-4" strokeWidth={2.2} aria-hidden />
+              Legg til oppgaver
             </button>
           </div>
         </div>
+        <p role="status" className="text-small text-secondary empty:hidden">
+          {addedNote}
+        </p>
 
         {levelTasks.length === 0 ? (
           <p className="rounded-lg border border-dashed border-surface p-8 text-center text-small text-secondary">
-            Ingen oppgaver på dette nivået ennå. Trykk «Legg til oppgave» for å lage den første.
+            Ingen oppgaver på dette nivået ennå. Trykk «Legg til oppgaver» for å lage den første.
           </p>
         ) : (
           <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
@@ -208,6 +221,9 @@ export function EditTasksPage() {
         )}
       </section>
 
+      {adding && (
+        <AddTasksDialog session={session} tasks={draft} level={level} onAddAi={addAiTasks} onAddManual={addManualTask} onClose={closeAdding} />
+      )}
       {previewOpen && <StudentPreviewDialog session={session} level={level} tasks={draft} onClose={closePreview} />}
     </div>
   )

@@ -13,7 +13,8 @@ import { aiConfig, timeoutsFor, type AiUse, type ThinkingLevelName } from '../sr
 import { HttpError } from './errors.ts'
 
 // Alle kall til Gemini går herfra. Systemprompten sendes som systemInstruction.
-// Primærmodellen prøves én gang. Når den når tidsgrensen eller svarer 500/503/504,
+// Oppgavegenerering sender `directModel` (aiConfig.taskModel): den modellen kalles én gang, uten primær- og reservemodell.
+// Ellers (elevforslag og chat) prøves primærmodellen én gang. Når den når tidsgrensen eller svarer 500/503/504,
 // prøves reservemodellen én gang med nøyaktig samme forespørsel.
 
 const systemPrompt = readFileSync(new URL('../src/ai/systemPrompt.md', import.meta.url), 'utf8')
@@ -24,7 +25,7 @@ const thinkingLevels: Record<ThinkingLevelName, ThinkingLevel> = {
   high: ThinkingLevel.HIGH,
 }
 
-/** Meldingen læreren får når verken primær- eller reservemodellen svarte. */
+/** Meldingen læreren får når modellen (eller verken primær- eller reservemodellen) svarte. */
 export const UNAVAILABLE_MESSAGE = 'AI-tjenesten er midlertidig utilgjengelig. Prøv igjen om litt.'
 
 /** Statuskoder som betyr at modellen er midlertidig utilgjengelig – da prøves reservemodellen. */
@@ -129,11 +130,11 @@ interface GenerateOptions {
 }
 
 /**
- * Valg for ett kall. `startWith: 'fallback'` går rett til reservemodellen – brukes når en utfylling
- * skal gjenbruke modellen som svarte, og primærmodellen nettopp fikk timeout.
+ * Valg for ett kall. `directModel` kaller bare den modellen, én gang, med reservemodellens tidsgrense – ingen primær- og
+ * reservemodell. Brukes til oppgavegenerering (aiConfig.taskModel). Svaret regnes ikke som et reservesvar.
  */
 export interface CallOptions {
-  startWith?: Role
+  directModel?: string
 }
 
 /** Lager `generate`. Testene sender inn egen modellfunksjon, korte tidsgrenser og egen logg. */
@@ -148,7 +149,7 @@ export function createGenerate({ callModel = callGemini, timeoutMs = timeoutsFor
     contents: Content[],
     schema?: Schema,
     trace: AiLogEntry = {},
-    { startWith = 'primary' }: CallOptions = {},
+    { directModel }: CallOptions = {},
   ): Promise<GenerateResult> {
     // Siste tur må være fra læreren – en forhåndsutfylt modell-tur (prefill) gir feil.
     if (contents[contents.length - 1]?.role !== 'user') {
@@ -167,16 +168,32 @@ export function createGenerate({ callModel = callGemini, timeoutMs = timeoutsFor
 
     const { rulesVersion } = aiConfig
     const limits = limitsFor(use)
-    const attempt = async (model: string, role: Role) => {
+    // Et direkte kall får tidsgrensen modellen hadde som reserve (se aiConfig.taskModel).
+    const limitOf = (role: Role | 'direct') => limits[role === 'direct' ? 'fallback' : role]
+    const attempt = async (model: string, role: Role | 'direct') => {
       const started = Date.now()
       try {
-        const response = await withTimeout(callModel, { model, contents, config }, limits[role])
-        log({ ...trace, use, rulesVersion, model, role, outcome: 'ok', timeoutMs: limits[role], durationMs: Date.now() - started })
+        const response = await withTimeout(callModel, { model, contents, config }, limitOf(role))
+        log({ ...trace, use, rulesVersion, model, role, outcome: 'ok', timeoutMs: limitOf(role), durationMs: Date.now() - started })
         return response
       } catch (error) {
-        log({ ...trace, use, rulesVersion, model, role, ...outcomeOf(error), timeoutMs: limits[role], durationMs: Date.now() - started })
+        log({ ...trace, use, rulesVersion, model, role, ...outcomeOf(error), timeoutMs: limitOf(role), durationMs: Date.now() - started })
         throw error
       }
+    }
+
+    if (directModel) {
+      // Oppgavegenerering: bare denne modellen, én gang. Utilgjengelig eller tidsgrensen nådd gir 503, som før.
+      let direct: GenerateContentResponse
+      try {
+        direct = await attempt(directModel, 'direct')
+      } catch (error) {
+        if (!shouldFallback(error)) throw toHttpError(error)
+        log({ ...trace, use, rulesVersion, outcome: 'unavailable', fallbackUsed: false })
+        throw new HttpError(503, UNAVAILABLE_MESSAGE)
+      }
+      log({ ...trace, use, rulesVersion, outcome: 'answered', servedBy: directModel, fallbackUsed: false })
+      return { ...readResponse(direct), model: directModel, fallbackUsed: false }
     }
 
     let model = aiConfig.fallbackModel
@@ -190,18 +207,13 @@ export function createGenerate({ callModel = callGemini, timeoutMs = timeoutsFor
         throw new HttpError(503, UNAVAILABLE_MESSAGE)
       }
     }
-    if (startWith === 'fallback') {
-      // Bare reservemodellen – primærmodellen prøves ikke igjen.
+    try {
+      response = await attempt(aiConfig.primaryModel, 'primary')
+      model = aiConfig.primaryModel
+      fallbackUsed = false
+    } catch (error) {
+      if (!shouldFallback(error)) throw toHttpError(error)
       response = await tryFallback()
-    } else {
-      try {
-        response = await attempt(aiConfig.primaryModel, 'primary')
-        model = aiConfig.primaryModel
-        fallbackUsed = false
-      } catch (error) {
-        if (!shouldFallback(error)) throw toHttpError(error)
-        response = await tryFallback()
-      }
     }
 
     log({ ...trace, use, rulesVersion, outcome: 'answered', servedBy: model, fallbackUsed })

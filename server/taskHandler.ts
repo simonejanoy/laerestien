@@ -127,7 +127,9 @@ export function createTaskHandler({
 
     if (request.kind === 'general') return generalTasks(request, trace)
 
-    const answer: GenerateResult = await generate('tasks', [userTurn(taskPrompt(request))], taskSchema, { requestId })
+    // «Juster med AI» er oppgavegenerering: rett til oppgavemodellen. Elevforslag bruker primær- og reservemodell som før.
+    const options: CallOptions | undefined = request.kind === 'revise' ? { directModel: aiConfig.taskModel } : undefined
+    const answer: GenerateResult = await generate('tasks', [userTurn(taskPrompt(request))], taskSchema, { requestId }, options)
     const meta: AiResponseMeta = { ...trace, model: answer.model, fallbackUsed: answer.fallbackUsed }
     let result = parseAnswer(answer, requestId)
     if (result.tasks.length === 0 && !result.message) {
@@ -180,8 +182,8 @@ export function createTaskHandler({
    * 1. Første generering ber om en reservekandidat per nivå i tillegg.
    * 2. Alle kandidatene går gjennom kvalitetskontrollene.
    * 3. Mangler et nivå fortsatt oppgaver, bes det bare om erstatninger for de nivåene – med en
-   *    reserve til, og en liste over det som ikke kan brukes. Høyst `maxRefillAttempts` ganger,
-   *    med samme modell som svarte første gang (rett til reservemodellen hvis den svarte).
+   *    reserve til, og en liste over det som ikke kan brukes. Høyst `maxRefillAttempts` ganger.
+   *    Alle kallene går direkte til oppgavemodellen (aiConfig.taskModel), uten primær- og reservemodell.
    * 4. Bare det bestilte antallet returneres. Ubrukte reserver kastes. Mangler det fortsatt noe,
    *    returneres ingen oppgaver.
    */
@@ -230,10 +232,9 @@ export function createTaskHandler({
                 allowSwappedFactors: request.profile?.allowSwappedFactors,
               },
             }
-      // Utfylling gjenbruker modellen som svarte første gang: rett til reservemodellen hvis den svarte.
-      const options: CallOptions | undefined = attempt === 0 ? undefined : { startWith: firstAnswer?.fallbackUsed ? 'fallback' : 'primary' }
+      // Første generering og utfyllingene går direkte til oppgavemodellen.
       if (attempt > 0) refillAttempts = attempt
-      const answer = await generate('tasks', [userTurn(taskPrompt(request, plan))], taskSchema, { requestId, attempt }, options)
+      const answer = await generate('tasks', [userTurn(taskPrompt(request, plan))], taskSchema, { requestId, attempt }, { directModel: aiConfig.taskModel })
       firstAnswer ??= answer
 
       let candidates: AiTaskDraft[]

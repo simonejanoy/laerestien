@@ -5,7 +5,7 @@ import lightbulb from '../../assets/student/lyspaere.svg'
 import type { Task } from '../../types'
 import { answerOf, formatNumber, hintFor, operatorSymbol } from '../tasks/taskUtils'
 import { AppleGroup } from './AppleGroup'
-import { checkMathAnswer, cleanMathAnswer, initialMathState, retryMathAnswer, type MathTaskState, type TaskResultSummary } from './studentTasks'
+import { FEEDBACK, checkMathAnswer, cleanMathAnswer, initialMathState, retryMathAnswer, type MathTaskState, type TaskResultSummary } from './studentTasks'
 import { TaskStepper } from './TaskStepper'
 import { useTaskState, type ControlledTaskState } from './useTaskState'
 import { WrongAnswerDialog } from './WrongAnswerDialog'
@@ -127,6 +127,11 @@ export function TaskScreen({ task, index, total, onNext, controlled, onResult, d
             <p className="mx-auto flex items-center gap-2.5 rounded-lg bg-surface-variant px-4 py-3 text-body text-primary">
               <img src={lightbulb} alt="" width={22} height={22} />
               {hintFor(task)}
+            </p>
+          )}
+          {correct && (
+            <p role="status" className="mx-auto text-h3 text-level2">
+              {FEEDBACK.correct}
             </p>
           )}
           {phase === 'revealed' && (

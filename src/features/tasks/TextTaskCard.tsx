@@ -11,6 +11,8 @@ import { AiReviseForm } from './AiReviseForm'
 import { DiscardChangesDialog } from './DiscardChangesDialog'
 import { keepPatternDisplay } from '../../ai/drafts'
 import { hasDataBlock } from '../../ai/taskText'
+import { autoAnswerOf } from '../../ai/autoAnswer'
+import { formatExpected } from '../../ai/patternDisplay'
 import { TaskText } from '../../components/ui/TaskText'
 
 interface TextTaskCardProps {
@@ -33,6 +35,8 @@ export function TextTaskCard({ task, number, topic, className, onChange, onDelet
   const [confirming, setConfirming] = useState(false)
   const [aiNote, setAiNote] = useState('')
 
+  // Hvordan elevens svar håndteres: rettet av appen, eller åpent (læreren vurderer det).
+  const autoAnswer = autoAnswerOf(task)
   const changed = editing !== null && (editing.text !== task.text || editing.solution !== task.solution)
   const close = () => {
     setEditing(null)
@@ -127,6 +131,9 @@ export function TextTaskCard({ task, number, topic, className, onChange, onDelet
               Fasit og løsningsforslag · bare for læreren
             </h4>
             <p className="text-small whitespace-pre-wrap text-on-background">{task.solution}</p>
+            <p className="text-xs text-secondary">
+              {autoAnswer ? `Appen retter svaret: ${formatExpected(autoAnswer)}` : 'Åpent svar – du vurderer det i øktvisningen.'}
+            </p>
           </section>
         </>
       )}

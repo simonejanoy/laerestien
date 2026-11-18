@@ -623,9 +623,9 @@ describe('15. visning og automatisk retting i Regning', () => {
     // Svaret lagres med oppgaven og forsvinner når teksten justeres.
     assert.deepEqual(readStoredTask(JSON.parse(JSON.stringify(t))), t)
     assert.equal(applyRevision(t, { message: '', tasks: [text(t.level, `${t.text} Forklar.`, t.solution)] }).task!.expected, undefined)
-    // Påstander og oppgaver uten svar som kan rettes, får «Ferdig! Fortell læreren hva du svarte.».
+    // Påstander og oppgaver uten svar som kan rettes, sendes til læreren («Svaret er sendt til læreren.»).
     assert.ok(buildTasks(session(DIAGRAMS)).filter((x) => x.level === 3).every((x) => x.kind === 'text' && !x.expected))
-    assert.match(read('src/features/student/StudentTaskFlow.tsx'), /honestDone=\{topicId === 'monster-og-algoritmer' \|\| topicId === 'regning'\}/)
+    assert.match(read('src/features/student/TextTaskScreen.tsx'), /\{FEEDBACK\.sent\}/)
     // Repetisjonsøktene med undertema fra Regning har ingen automatisk retting.
     const repetition = unitSpecs.flatMap((u) => planned(u.unitId)).filter((s) => s.spec.unitId !== 'regning' && s.skills.some((k) => k.startsWith('reg.')))
     assert.ok(repetition.flatMap(buildTasks).every((x) => x.kind !== 'text' || !x.expected))
@@ -710,7 +710,7 @@ describe('16. det går an å skrive i boksene, og svaret rettes med tallene i bo
 
   it('skrivefeltet under er bare for forklaringen, og gjelder både elevvisningen og forhåndsvisningen', () => {
     const screen = readFileSync(new URL('../src/features/student/TextTaskScreen.tsx', import.meta.url), 'utf8')
-    assert.match(screen, /\{!row && !choices && !operatorButtons && !inText && !parts && !questionParts && !equation && \(/)
+    assert.match(screen, /\{!row && !choices && !operatorButtons && !inText && !parts && !questionParts && !equation && !equations && !numberBox && \(/)
     assert.match(screen, /onChange: \(i, v\) => change\(typeInSlot\(answer, slotTotal, i, v\)\)/)
     // Elevvisningen og forhåndsvisningen bruker samme flyt og samme skjerm.
     const flow = readFileSync(new URL('../src/features/student/StudentTaskFlow.tsx', import.meta.url), 'utf8')

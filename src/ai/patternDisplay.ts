@@ -212,6 +212,81 @@ export type ExpectedAnswer =
    * fikk håndball? Hva fikk flest stemmer?»). Hvert spørsmål får sitt eget svarfelt og rettes for seg.
    */
   | { kind: 'parts'; parts: QuestionPart[] }
+  /**
+   * Ett eller flere regnestykker eleven skriver selv («Lag to regnestykker: ett med pluss og ett med gange»). Eleven får
+   * ferdige rader med regnetegn og =, og skriver bare tallene: «[ ] + [ ] = [ ]». Rekkefølgen på leddene og faktorene
+   * betyr ikke noe for + og · (2 · 4 = 8 og 4 · 2 = 8), og radene med samme regnetegn kan komme i hvilken som helst
+   * rekkefølge. Se equationsStatus.
+   */
+  | { kind: 'equations'; equations: EquationAnswer[] }
+
+/** Regnetegnene appen bruker i svar: pluss, typografisk minus, gangeprikk og kolon for deling. */
+export type EquationSign = '+' | '−' | '·' | ':'
+
+/** Ett regnestykke i svaret: leddene eller faktorene (minst to) og resultatet. Det er alltid regnet riktig. */
+export interface EquationAnswer {
+  sign: EquationSign
+  operands: number[]
+  result: number
+}
+
+/** Antall tallbokser eleven fyller ut: ett per ledd og ett for resultatet, i hver rad. */
+export const equationBoxCount = (equations: EquationAnswer[]) => equations.reduce((n, e) => n + e.operands.length + 1, 0)
+
+/** «4 + 4 = 8» */
+export const formatEquation = (e: EquationAnswer) => `${e.operands.join(` ${e.sign} `)} = ${e.result}`
+
+/** Elevens tall i boksene (lagret som «4, 4, 8, 2, 4, 8»), delt i én rad per regnestykke. */
+export function equationRows(answer: string, equations: EquationAnswer[]): string[][] {
+  const values = splitBoxAnswers(answer, equationBoxCount(equations))
+  let at = 0
+  return equations.map((e) => {
+    const row = values.slice(at, at + e.operands.length + 1)
+    at += e.operands.length + 1
+    return row
+  })
+}
+
+const sameNumbers = (a: number[], b: number[], ordered: boolean) => {
+  if (a.length !== b.length) return false
+  if (ordered) return a.every((x, i) => x === b[i])
+  const sorted = (xs: number[]) => [...xs].sort((x, y) => x - y)
+  return sameList(sorted(a), sorted(b))
+}
+
+/**
+ * Om regnestykkene eleven skrev er riktige. En rad er riktig når resultatet og leddene stemmer med et av de riktige
+ * regnestykkene med samme regnetegn – i hvilken som helst rekkefølge for + og ·, i fast rekkefølge for − og :. Hvert
+ * riktige regnestykke kan bare brukes én gang, og ber oppgaven om to ulike stykker (3 · 4 og 4 · 3), må eleven skrive to
+ * ulike stykker.
+ */
+export function equationsStatus(equations: EquationAnswer[], answer: string): 'correct' | 'wrong' {
+  const rows = equationRows(answer, equations)
+  if (rows.some((row) => row.some((v) => !/^\d+$/.test(v)))) return 'wrong'
+  const written = rows.map((row) => row.map(Number))
+  const used = new Set<number>()
+  const fits = (i: number): boolean => {
+    if (i === written.length) return true
+    const sign = equations[i].sign
+    const operands = written[i].slice(0, -1)
+    const result = written[i].at(-1)
+    for (let j = 0; j < equations.length; j++) {
+      const e = equations[j]
+      if (used.has(j) || e.sign !== sign || e.result !== result) continue
+      if (!sameNumbers(operands, e.operands, sign === '−' || sign === ':')) continue
+      used.add(j)
+      if (fits(i + 1)) return true
+      used.delete(j)
+    }
+    return false
+  }
+  if (!fits(0)) return 'wrong'
+  // To ulike stykker i oppgaven (f.eks. 3 · 4 og 4 · 3) må være to ulike stykker hos eleven også.
+  const key = (xs: number[]) => xs.join(',')
+  const distinctExpected = new Set(equations.map((e) => `${e.sign}${key([...e.operands, e.result])}`)).size
+  const distinctWritten = new Set(written.map((row, i) => `${equations[i].sign}${key(row)}`)).size
+  return distinctWritten >= distinctExpected ? 'correct' : 'wrong'
+}
 
 /** Svaret på ett spørsmål: et tall (tallboks), et regnetegn (fire knapper) eller et navn fra diagrammet eller tabellen (knapper). */
 export type PartAnswer = { kind: 'number'; value: number } | { kind: 'operator'; value: '+' | '−' | '·' | ':' } | { kind: 'choice'; value: string }
@@ -281,6 +356,7 @@ function answerNumbers(answer: string, given: Set<number>, expected?: number): n
  * («trekant» for ▲) og tallrekker skrevet med komma, mellomrom eller «og».
  */
 export function answerStatus(expected: ExpectedAnswer, answer: string, taskText = ''): 'correct' | 'wrong' | 'several' {
+  if (expected.kind === 'equations') return equationsStatus(expected.equations, answer)
   if (expected.kind === 'operator') return normalizeOperator(answer) === expected.value ? 'correct' : 'wrong'
   if (expected.kind === 'parts') {
     const values = answer.split('\n')
@@ -319,6 +395,7 @@ export function formatExpected(expected: ExpectedAnswer): string {
   if (expected.kind === 'numbers') return expected.values.join(', ')
   if (expected.kind === 'item' || expected.kind === 'operator') return expected.value
   if (expected.kind === 'parts') return expected.parts.map((p) => formatPart(p.answer)).join('; ')
+  if (expected.kind === 'equations') return expected.equations.map(formatEquation).join(' og ')
   return expected.values.join(expected.values.every((v) => v in PATTERN_COLORS) ? ', ' : ' ')
 }
 
@@ -333,11 +410,40 @@ export function readExpected(value: unknown): ExpectedAnswer | undefined {
   if (v.kind === 'item' && isItem(v.value)) return { kind: 'item', value: v.value }
   if (v.kind === 'items' && Array.isArray(v.values) && v.values.length > 0 && v.values.every(isItem)) return { kind: 'items', values: v.values }
   if (v.kind === 'operator' && typeof v.value === 'string' && ['+', '−', '·', ':'].includes(v.value)) return { kind: 'operator', value: v.value as '+' | '−' | '·' | ':' }
+  if (v.kind === 'equations' && Array.isArray(v.equations) && v.equations.length > 0 && v.equations.length <= MAX_EQUATIONS) {
+    const equations = (v.equations as unknown[]).map(readEquation)
+    if (equations.every((e): e is EquationAnswer => e !== null)) return { kind: 'equations', equations }
+  }
   if (v.kind === 'parts' && Array.isArray(v.parts) && v.parts.length > 0) {
     const parts = (v.parts as unknown[]).map(readPart)
     if (parts.every((p): p is QuestionPart => p !== null)) return { kind: 'parts', parts }
   }
   return undefined
+}
+
+/** Høyst så mange regnestykker i ett svar, og høyst så mange ledd i hvert. */
+export const MAX_EQUATIONS = 4
+export const MAX_EQUATION_OPERANDS = 6
+
+/** Et regnestykke som er regnet riktig, ellers null (se evaluate). */
+function readEquation(value: unknown): EquationAnswer | null {
+  if (typeof value !== 'object' || value === null) return null
+  const { sign, operands, result } = value as Record<string, unknown>
+  if (typeof sign !== 'string' || !['+', '−', '·', ':'].includes(sign)) return null
+  if (!Array.isArray(operands) || operands.length < 2 || operands.length > MAX_EQUATION_OPERANDS) return null
+  if (!operands.every((n) => Number.isInteger(n) && n >= 0) || !Number.isInteger(result)) return null
+  const equation = { sign: sign as EquationSign, operands: operands as number[], result: result as number }
+  return evaluate(equation.sign, equation.operands) === equation.result ? equation : null
+}
+
+/** Verdien av regnestykket, eller null når det ikke går (minus og deling har to tall, og delingen må gå opp). */
+export function evaluate(sign: EquationSign, operands: number[]): number | null {
+  if (sign === '+') return operands.reduce((a, b) => a + b, 0)
+  if (sign === '·') return operands.reduce((a, b) => a * b, 1)
+  if (operands.length !== 2) return null
+  const [a, b] = operands
+  if (sign === '−') return a - b >= 0 ? a - b : null
+  return b !== 0 && a % b === 0 ? a / b : null
 }
 
 // ---------------------------------------------------------------------------------------------

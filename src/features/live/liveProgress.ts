@@ -1,5 +1,8 @@
+import { autoAnswerOf } from '../../ai/autoAnswer.ts'
+import { equationRows } from '../../ai/patternDisplay.ts'
 import type { Level, SessionTask, Student, UserProfile } from '../../types/index.ts'
 import { finalResultOf, isMathState, type TaskAnswerState } from '../student/studentTasks.ts'
+import { expressionOf } from '../tasks/taskUtils.ts'
 
 // Elevenes framdrift i økta som pågår: hvilke oppgaver eleven har levert, og hva læreren ser.
 // Rene funksjoner (ingen React og ingen Firebase), så de kan testes i Node. Importene har .ts-endelse.
@@ -123,11 +126,19 @@ export interface DeliveredTask {
   correct: boolean | null
   attempts: number
   at: number
+  /**
+   * Svaret eleven leverte (siste forsøk), så læreren kan se det i øktvisningen og vurdere åpne svar. Høyst
+   * MAX_ANSWER_LENGTH tegn. Mangler i leveringer fra før feltet fantes.
+   */
+  answer?: string
 }
 
+/** Lengste svar som lagres med leveringen. */
+export const MAX_ANSWER_LENGTH = 1000
+
 /**
- * Elevens framdrift i én gjennomføring (Firestore: liveSessions/{classId}/progress/{runId}__{uid}). Ingen navn og
- * ingen svartekst – bare hvilke oppgaver som er levert, og om de ble riktige.
+ * Elevens framdrift i én gjennomføring (Firestore: liveSessions/{classId}/progress/{runId}__{uid}). Ingen navn – bare
+ * hvilke oppgaver som er levert, om de ble riktige, og svaret eleven leverte. Bare læreren i klassen kan lese det.
  */
 export interface ProgressDoc {
   studentId: string
@@ -150,9 +161,31 @@ export const progressDocId = (runId: string, studentId: string) => `${runId}__${
 export function deliveryOf(state: TaskAnswerState | undefined, at = Date.now()): DeliveredTask | null {
   if (!state) return null
   const result = finalResultOf(state)
-  if (isMathState(state)) return result ? { correct: result.correct, attempts: result.attempts, at } : null
+  const answer = answerTextOf(state)
+  const withAnswer = answer ? { answer } : {}
+  if (isMathState(state)) return result ? { correct: result.correct, attempts: result.attempts, at, ...withAnswer } : null
   if (!state.submitted) return null
-  return result ? { correct: result.correct, attempts: result.attempts, at } : { correct: null, attempts: 1, at }
+  return result ? { correct: result.correct, attempts: result.attempts, at, ...withAnswer } : { correct: null, attempts: 1, at, ...withAnswer }
+}
+
+/** Svaret slik det lagres for læreren: det eleven skrev (og forklaringen, når oppgaven ba om en), forkortet ved behov. */
+export function answerTextOf(state: TaskAnswerState): string {
+  const explanation = !isMathState(state) && state.explanation?.trim() ? `\nForklaring: ${state.explanation.trim()}` : ''
+  return `${state.answer.trim()}${explanation}`.slice(0, MAX_ANSWER_LENGTH)
+}
+
+/**
+ * Det leverte svaret slik læreren ser det. Regnestykker vises med stykket («7 · 8 = 56»), og regnestykker eleven
+ * skrev i bokser vises som regnestykker («4 + 4 = 8; 2 · 4 = 8»). Ellers vises svaret som det ble skrevet.
+ */
+export function shownAnswer(task: SessionTask | undefined, answer: string): string {
+  if (!task) return answer
+  if (task.kind !== 'text') return `${expressionOf(task)} = ${answer}`
+  const expected = autoAnswerOf(task)
+  if (expected?.kind !== 'equations') return answer
+  return equationRows(answer, expected.equations)
+    .map((row, i) => `${row.slice(0, -1).join(` ${expected.equations[i].sign} `)} = ${row.at(-1)}`)
+    .join('; ')
 }
 
 /** Det eleven sender når en oppgave er levert (slås sammen med det som er lagret fra før). */
@@ -175,9 +208,14 @@ export function readProgressDoc(value: unknown): ProgressDoc | null {
   if (typeof v.delivered === 'object' && v.delivered !== null) {
     for (const [taskId, d] of Object.entries(v.delivered as Record<string, unknown>)) {
       if (typeof d !== 'object' || d === null) continue
-      const { correct, attempts, at } = d as Record<string, unknown>
+      const { correct, attempts, at, answer } = d as Record<string, unknown>
       if (correct !== null && typeof correct !== 'boolean') continue
-      delivered[taskId] = { correct: correct as boolean | null, attempts: Number(attempts) || 1, at: Number(at) || 0 }
+      delivered[taskId] = {
+        correct: correct as boolean | null,
+        attempts: Number(attempts) || 1,
+        at: Number(at) || 0,
+        ...(typeof answer === 'string' && answer && { answer: answer.slice(0, MAX_ANSWER_LENGTH) }),
+      }
     }
   }
   return {

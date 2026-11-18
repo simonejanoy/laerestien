@@ -12,7 +12,7 @@ import { AREA_TITLES, PATTERN_AREAS, parseTaskResult, topicOfArea, type AiLevel,
 import { applyRevision, toSessionTask } from '../src/ai/drafts.ts'
 import { PATTERN_COLORS, SYMBOL_NAMES, answerStatus, blankRowIn, boxesComplete, colorOptions, colorRowsIn, dotCountsIn, dotLayout, formatExpected, isCorrect, itemOptions, joinBoxAnswers, readExpected, splitBoxAnswers, symbolRowIn, withoutColorRow, withoutDotSentences, type ExpectedAnswer } from '../src/ai/patternDisplay.ts'
 import { readStoredTask } from '../src/features/sessions/taskStorage.ts'
-import { TEXT_ATTEMPTS, checkTextAnswer, hasAnswerState, initialTextState, previewProblem, showsSolution, solutionHeading } from '../src/features/student/studentTasks.ts'
+import { FEEDBACK, TEXT_ATTEMPTS, checkTextAnswer, hasAnswerState, initialTextState, previewProblem, showsSolution, solutionHeading } from '../src/features/student/studentTasks.ts'
 import { buildLevelContexts, summarizeExisting, toAiProfile } from '../src/ai/referenceTasks.ts'
 import { buildTasks, levelsFor, planned, type Planned } from '../src/features/sessions/sessionTasks.ts'
 import { worksheetTasks } from '../src/features/sessions/worksheetTasks.ts'
@@ -763,7 +763,7 @@ describe('16. tallrekker med inputbokser', () => {
     assert.match(screen, /const row = task\.answerBoxes \? blankRowIn\(text\) : null/)
     assert.match(screen, /<ol className="flex flex-wrap/)
     assert.match(screen, /inputMode="numeric"/)
-    assert.match(screen, /\{!row && !choices && !operatorButtons && !inText && !parts && !questionParts && !equation && \(/)
+    assert.match(screen, /\{!row && !choices && !operatorButtons && !inText && !parts && !questionParts && !equation && !equations && !numberBox && \(/)
     assert.match(screen, /disabled=\{!submitted && !ready\}/)
   })
 })
@@ -854,7 +854,7 @@ describe('18. fargemønstre: ingen dobbel fargelinje, og svaralternativer fra re
       assert.equal(checkTextAnswer({ answer: wrong, submitted: false }, t).result, 'retry')
     }
     const screen = readFileSync(new URL('../src/features/student/TextTaskScreen.tsx', import.meta.url), 'utf8')
-    assert.match(screen, /task\.figure\?\.kind === 'colors' && task\.expected\.value in PATTERN_COLORS\s*\? colorOptions\(task\.figure\.items\)/)
+    assert.match(screen, /task\.figure\?\.kind === 'colors' && expected\.value in PATTERN_COLORS\s*\? colorOptions\(task\.figure\.items\)/)
     assert.match(screen, /role="radiogroup"/)
   })
 })
@@ -918,7 +918,8 @@ describe('19. automatisk tilbakemelding i Mønster og algoritmer', () => {
     assert.equal(solutionHeading({ ...base, text: 'Hvor mange prikker har figur 4?' }), 'Løsningsforslag')
     const screen = readFileSync(new URL('../src/features/student/TextTaskScreen.tsx', import.meta.url), 'utf8')
     assert.match(screen, /\{showsSolution\(task\) && \(/)
-    assert.match(screen, /result === 'correct'\s*\? 'Riktig!'[\s\S]*?questionParts\s*\? 'Se riktig svar ved hvert spørsmål\.'\s*: task\.expected && `Riktig svar: \$\{formatExpected\(task\.expected\)\}`/)
+    assert.match(screen, /result === 'correct'\s*\? FEEDBACK\.correct[\s\S]*?questionParts\s*\? 'Se riktig svar ved hvert spørsmål\.'\s*: expected && `Riktig svar: \$\{formatExpected\(expected\)\}`/)
+    assert.equal(FEEDBACK.correct, 'Riktig!')
   })
 
   it('grunnoppgavene i øktene har svar som rettes, og svaret stemmer med fasiten', () => {
@@ -989,7 +990,7 @@ describe('20. figurmønstre med svaralternativer, skjult prikklinje, ett svar og
     // AI-oppgaver får det samme: svaret er figuren kontrollen regnet ut, og alternativene lages av appen fra rekka.
     const ai = checkCandidates([text(1, 'Her gjentar figurene seg:\n■ ▲ ■ ▲ ■ ▲\nHvilken figur står på plass 9?', '■. Oddetallsplassene er ■.')], serverRequest(session(EXPLORE))).accepted[0] as { expected?: ExpectedAnswer }
     assert.deepEqual(ai.expected, { kind: 'item', value: '■' })
-    assert.match(screen(), /symbols && symbols\.includes\(task\.expected\.value\)\s*\? itemOptions\(symbols\)/)
+    assert.match(screen(), /symbols && symbols\.includes\(expected\.value\)\s*\? itemOptions\(symbols\)/)
     // Knappene viser bare figuren eller fargesirkelen; navnet er skjult tekst for skjermlesere.
     assert.match(screen(), /aria-label=\{colors \? color : SYMBOL_NAMES\[color\]\}/)
     assert.ok(!/\{colors \? color : SYMBOL_NAMES\[color\]\}\s*<\/button>/.test(screen()))
@@ -1026,15 +1027,14 @@ describe('20. figurmønstre med svaralternativer, skjult prikklinje, ett svar og
     assert.match(screen(), /Skriv bare ett svar\./)
   })
 
-  it('oppgaver som ikke rettes automatisk: ny melding og knapp bare i Mønster og algoritmer (og Regning)', () => {
+  it('oppgaver som ikke rettes automatisk: svaret sendes til læreren i alle temaer (svarene lagres nå)', () => {
     const s = screen()
-    assert.match(s, /honestDone \? 'Ferdig! Fortell læreren hva du svarte\.' : 'Svaret ditt er levert\. Læreren ser på det\.'/)
-    assert.match(s, /honestDone \? 'Ferdig med oppgaven' : 'Lever svaret'/)
+    assert.match(s, /\{FEEDBACK\.sent\}/)
+    assert.match(s, /auto \? 'Sjekk svaret mitt' : 'Send til læreren'/)
+    assert.equal(FEEDBACK.sent, 'Svaret er sendt til læreren.')
     const flow = readFileSync(new URL('../src/features/student/StudentTaskFlow.tsx', import.meta.url), 'utf8')
-    assert.match(flow, /honestDone=\{topicId === 'monster-og-algoritmer' \|\| topicId === 'regning'\}/)
+    assert.doesNotMatch(flow, /honestDone/)
     const preview = readFileSync(new URL('../src/features/tasks/StudentPreviewDialog.tsx', import.meta.url), 'utf8')
     assert.match(preview, /topicId=\{session\.topicId\}/)
-    // Repetisjonsøktene hører til egne perioder og får meldingen som før.
-    assert.equal(planned('repetisjon-var').find((x) => x.id === 'repetisjon-var-3')!.spec.unitId, 'repetisjon-var')
   })
 })

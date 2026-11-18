@@ -2,8 +2,11 @@ import { expect, test, type Locator, type Page } from '@playwright/test'
 import { buildTasks, planned } from '../src/features/sessions/sessionTasks.ts'
 import { worksheetTasks } from '../src/features/sessions/worksheetTasks.ts'
 
-// Regnestykke-malene i Multiplikasjon (økt 1): tallbokser og regnetegnknapper i stedet for ett stort skrivefelt, flere
-// ledd i pluss-linjen, og automatisk retting ut fra figuren – i elevvisningen og i lærerens forhåndsvisning.
+// Regnestykke-malene i Multiplikasjon (økt 1): tallbokser i stedet for ett stort skrivefelt, flere ledd i pluss-linjen,
+// og automatisk retting ut fra figuren – i elevvisningen og i lærerens forhåndsvisning. Oppgavene her bestemmer selv
+// regnearten («ett med pluss og ett med gange», «Skriv som gangestykke»), så regnetegnet står ferdig og låst, og eleven
+// skriver bare tall. (At eleven velger regnetegnet når oppgaven ikke bestemmer regnearten, testes i
+// server/equationTemplates.test.ts.)
 
 const SESSION = 'multiplikasjon-1'
 const tasks = [...(worksheetTasks[SESSION] ?? []), ...buildTasks(planned('multiplikasjon')[0])].filter((t) => t.level === 1)
@@ -30,8 +33,9 @@ async function fillLine(page: Page, kind: 'plus' | 'times', terms: string[], sig
     await page.keyboard.type(value)
     await expect(input).toHaveValue(value)
   }
-  await line.getByRole('radio', { name: sign }).click()
-  await expect(line.getByRole('radio', { name: sign })).toHaveAttribute('aria-checked', 'true')
+  // Regnetegnet er ferdig utfylt og låst: ingen knapper å velge, bare tallene.
+  await expect(line.getByRole('radio')).toHaveCount(0)
+  await expect(line.getByLabel(`${name}: regnetegnet er ${sign}`).first()).toBeVisible()
   await box(line, `${name}: svar`).fill(result)
 }
 
@@ -71,18 +75,33 @@ for (const visning of ['elev', 'forhandsvisning'] as const) {
       expect(errors).toEqual([])
     })
 
+    test('«ett med pluss og ett med gange»: regnetegnene står ferdig og låst, også mellom nye ledd', async ({ page }) => {
+      const errors = await open(page, pictureIndex, visning)
+      const plus = lineOf(page, 'plus')
+      const times = lineOf(page, 'times')
+      await expect(page.getByRole('radio')).toHaveCount(0)
+      await expect(plus.locator('[data-fixed-operator]')).toHaveText(['+'])
+      await expect(times.locator('[data-fixed-operator]')).toHaveText(['·'])
+      // Flere ledd: hvert nye ledd får et låst pluss foran seg.
+      await plus.getByRole('button', { name: 'legg til tall' }).click()
+      await plus.getByRole('button', { name: 'legg til tall' }).click()
+      await expect(plus.locator('[data-fixed-operator]')).toHaveText(['+', '+', '+'])
+      await expect(plus).toContainText('=')
+      expect(errors).toEqual([])
+    })
+
     test('hver linje rettes for seg: «Ikke riktig.», ett nytt forsøk, og «Riktig!»', async ({ page }) => {
       const errors = await open(page, pictureIndex, visning)
       await fillLine(page, 'plus', ['4', '4'], 'pluss', '8')
-      // Feil regnetegn i gange-linjen.
-      await fillLine(page, 'times', ['2', '4'], 'pluss', '8')
+      // Feil tall i gange-linjen (regnetegnet kan ikke være feil – det er låst).
+      await fillLine(page, 'times', ['2', '3'], 'gange', '8')
       await page.getByRole('button', { name: 'Sjekk svaret mitt' }).click()
       await expect(lineOf(page, 'plus')).toContainText('Riktig.')
       await expect(lineOf(page, 'times')).toContainText('Ikke riktig.')
-      await expect(page.getByText('Ikke riktig. Prøv én gang til.')).toBeVisible()
+      await expect(page.getByText('Ikke helt – prøv igjen.')).toBeVisible()
       // Riktig linje er låst; den andre rettes.
       await expect(box(lineOf(page, 'plus'), 'Med pluss: tall 1')).toHaveAttribute('readonly', '')
-      await lineOf(page, 'times').getByRole('radio', { name: 'gange' }).click()
+      await box(lineOf(page, 'times'), 'Med gange: tall 2').fill('4')
       await page.getByRole('button', { name: 'Sjekk svaret mitt' }).click()
       await expect(page.getByRole('status').filter({ hasText: 'Riktig!' })).toBeVisible()
       expect(errors).toEqual([])

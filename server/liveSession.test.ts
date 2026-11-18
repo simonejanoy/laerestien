@@ -300,14 +300,15 @@ describe('levering og framdrift', () => {
   })
 
   it('levert oppgave tar vare på om svaret var riktig eller feil; tekstsvar læreren vurderer, er levert uten retting', () => {
-    assert.deepEqual(deliveryOf(solved(level3[0] as Task), 1), { correct: true, attempts: 1, at: 1 })
+    const right = solved(level3[0] as Task)
+    assert.deepEqual(deliveryOf(right, 1), { correct: true, attempts: 1, at: 1, answer: right.answer })
     let state = initialMathState()
     for (let i = 0; i < 3; i++) state = { ...checkMathAnswer({ ...state, answer: '99' }, level3[0] as Task), dialogOpen: false }
     assert.equal(state.phase, 'revealed')
-    assert.deepEqual(deliveryOf(state, 2), { correct: false, attempts: 3, at: 2 })
+    assert.deepEqual(deliveryOf(state, 2), { correct: false, attempts: 3, at: 2, answer: '99' })
     const text: TextTask = { kind: 'text', id: 'x', level: 1, text: 'Forklar.', solution: '', competenceGoal: '', adaptation: '', aiGenerated: false, reviewed: false }
     const submitted = checkTextAnswer({ ...initialTextState(), answer: 'Fordi …' }, text)
-    assert.deepEqual(deliveryOf(submitted, 3), { correct: null, attempts: 1, at: 3 })
+    assert.deepEqual(deliveryOf(submitted, 3), { correct: null, attempts: 1, at: 3, answer: 'Fordi …' })
   })
 
   it('6. tre av seks leverte oppgaver gir 50 %, seks av seks 100 % og «Fullført»', () => {

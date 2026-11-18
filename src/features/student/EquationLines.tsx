@@ -1,6 +1,6 @@
 import { Minus, Plus } from 'lucide-react'
 import { NumberInput } from '../../components/ui/TaskText'
-import { LINE_LABELS, MAX_TERMS, MIN_TERMS, decodeLine, exampleLine, type EquationLine, type EquationSpec } from './equationTemplates'
+import { LINE_LABELS, MAX_TERMS, MIN_TERMS, exampleLine, lineAt, type EquationLine, type EquationSpec } from './equationTemplates'
 import { OperatorChoices } from './OperatorChoices'
 import type { TextTaskState } from './studentTasks'
 
@@ -11,15 +11,16 @@ interface EquationLinesProps {
 }
 
 /**
- * Regnestykke-malene i Multiplikasjon: én linje per regnestykke («Med pluss», «Med gange»), bygd av tallbokser og
- * knapper for regnetegnet – de samme som i Regning. Pluss-linjen kan få flere ledd. Hver linje rettes for seg.
+ * Regnestykke-malene i Multiplikasjon: én linje per regnestykke («Med pluss», «Med gange»), bygd av tallbokser. Når
+ * oppgaven har bestemt regnearten, står regnetegnet ferdig og låst («[ ] + [ ] + [ ] = [ ]»), og eleven skriver bare
+ * tall. Ellers velger eleven regnetegnet med knappene fra Regning. Pluss-linjen kan få flere ledd. Hver linje rettes for seg.
  */
 export function EquationLines({ spec, state, onChange }: EquationLinesProps) {
   return (
     <ol className="flex w-full flex-col gap-6">
       {spec.lines.map((kind, i) => {
         const label = LINE_LABELS[kind]
-        const line = decodeLine(state.parts?.[i])
+        const line = lineAt(state, spec, i)
         const checked = state.partResults?.[i]
         // En linje som var riktig, låses (og beholder «Riktig.»); resten kan rettes til eleven er ferdig.
         const locked = state.submitted || checked === true
@@ -33,10 +34,15 @@ export function EquationLines({ spec, state, onChange }: EquationLinesProps) {
             <div className="flex flex-wrap items-center gap-2 text-2xl text-primary" aria-label={`Regnestykket ${label.toLowerCase()}`}>
               {/* Hver bit brytes for seg på smal skjerm. Tegnet mellom senere ledd viser regnetegnet eleven valgte. */}
               {line.terms.map((term, k) => [
-                k === 1 && (
+                k >= 1 && spec.fixedOperators && (
+                  <span key={`tegn-${k}`} aria-label={`${label}: regnetegnet er ${line.operator === '+' ? 'pluss' : 'gange'}`} data-fixed-operator className="w-5 text-center">
+                    {line.operator}
+                  </span>
+                ),
+                k === 1 && !spec.fixedOperators && (
                   <OperatorChoices key={`tegn-${k}`} value={line.operator} disabled={locked} onChange={(operator) => set({ operator })} label={`${label}: velg regnetegnet`} size="sm" />
                 ),
-                k > 1 && (
+                k > 1 && !spec.fixedOperators && (
                   <span key={`tegn-${k}`} aria-hidden className="w-5 text-center">
                     {line.operator || '?'}
                   </span>

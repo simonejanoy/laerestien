@@ -1,13 +1,12 @@
 import { CheckCircle2, ChevronDown, LoaderCircle, RotateCcw, Sparkles } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
-import { AiError, SLOW_AI_HINT, newTaskId, requestTasks, subjectContext, toSessionTask } from '../../ai/client'
+import { AiError, newTaskId, requestTasks, subjectContext, toSessionTask } from '../../ai/client'
 import { MAX_PER_LEVEL } from '../../ai/contract'
 import { isCompletePackage } from '../../ai/drafts'
 import { buildLevelContexts, toAiProfile } from '../../ai/referenceTasks'
 import { profileForSkills } from '../../ai/sessionProfile'
 import { Button } from '../../components/ui/Button'
 import { useAuth } from '../../hooks/useAuth'
-import { useSlowAiHint } from '../../hooks/useSlowAiHint'
 import { loadAnswers } from '../../lib/results'
 import type { Level, Session, SessionTask } from '../../types'
 import {
@@ -118,7 +117,6 @@ function Planner({ session, period, records, loadError, tasks: currentTasks, onA
   const [touched, setTouched] = useState(false)
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<{ level: Level; titles: string; ok: boolean; text: string }[] | null>(null)
-  const slow = useSlowAiHint(loading, 'tasks')
 
   const isSuggestion = selected.length === suggestion.skills.length && selected.every((s) => suggestion.skills.includes(s))
   const resultBySkill = new Map<string, AreaResult>([...areas.ranked, ...areas.insufficient].map((r) => [r.skill, r]))
@@ -314,7 +312,7 @@ function Planner({ session, period, records, loadError, tasks: currentTasks, onA
             {loading ? 'Lager oppgaver …' : 'Lag repetisjonsoppgaver'}
           </Button>
           <p aria-live="polite" className="text-xs text-secondary">
-            {loading ? (slow ? SLOW_AI_HINT : 'AI-en lager og kontrollerer oppgavene. Det kan ta litt tid.') : 'Oppgavene lages på alle tre nivåene for de valgte områdene.'}
+            {loading ? 'AI-en lager og kontrollerer oppgavene. Det kan ta litt tid.' : 'Oppgavene lages på alle tre nivåene for de valgte områdene.'}
           </p>
         </div>
       </form>

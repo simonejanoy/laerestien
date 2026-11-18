@@ -26,7 +26,7 @@ interface StudentTaskFlowProps {
   doneSteps?: boolean[]
   /** Det som vises etter siste oppgave. Standard er «Bra jobba!». */
   ending?: ReactNode
-  /** Perioden i årsplanen økta hører til (Session.topicId). Mønster og algoritmer og Regning har egen melding for tekstsvar. */
+  /** Perioden i årsplanen økta hører til (Session.topicId). Regning viser deloppgaver og bokser på sin egen måte. */
   topicId?: string
   /** Bare i elevvisningen: resultatet når en oppgave er ferdig rettet. Forhåndsvisningen sender den ikke. */
   onResult?: (task: SessionTask, result: TaskResultSummary) => void
@@ -55,7 +55,6 @@ export function StudentTaskFlow({ tasks, index, onNext, preview, topicId, onResu
           index={index}
           total={tasks.length}
           onNext={onNext}
-          honestDone={topicId === 'monster-og-algoritmer' || topicId === 'regning'}
           splitParts={topicId === 'regning'}
           textBoxes={topicId === 'regning'}
           equationLines={topicId === 'multiplikasjon'}

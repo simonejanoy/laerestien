@@ -1,7 +1,7 @@
 // Innstillinger for AI-assistenten. Brukes av API-serveren (server/). Appen leser bare
-// tidsgrensen, for å vise «Vi prøver en reservemodell» mens læreren venter.
-// Primærmodellen (gemini-3.8-flash) bruker «low» for oppgavegenerering.
-// Fri chat bruker også «low».
+// tidsgrensen, for å vise «Vi prøver en reservemodell» mens læreren venter på elevforslag eller chat.
+// Oppgavegenerering (generelle oppgaver, repetisjon og «Juster med AI») bruker gemini-3.5-flash-lite direkte.
+// Elevforslag og fri chat prøver gemini-3.8-flash først og har gemini-3.5-flash-lite som reserve. Alle bruker «low».
 // Ikke legg til temperature, top_p, top_k eller candidate_count – de er utfaset for modellen.
 
 /** Gemini 3.8 støtter bare disse nivåene. */
@@ -28,9 +28,14 @@ export const aiConfig = {
    *     og AI-en begrunner kort forslaget i melding (12.11.2026).
    */
   rulesVersion: '10',
-  /** Prøves først. */
+  /**
+   * Oppgavegenerering: generelle oppgaver (også repetisjon og utfyllingene) og «Juster med AI». Modellen kalles direkte,
+   * én gang per kall, uten primær- og reservemodell. Tidsgrensen er den samme som modellen hadde før (`timeoutMs.fallback`).
+   */
+  taskModel: 'gemini-3.5-flash-lite',
+  /** Elevforslag og fri chat: prøves først. */
   primaryModel: 'gemini-3.8-flash',
-  /** Brukes automatisk hvis primærmodellen når tidsgrensen eller svarer 500, 503 eller 504. */
+  /** Elevforslag og fri chat: brukes automatisk hvis primærmodellen når tidsgrensen eller svarer 500, 503 eller 504. */
   fallbackModel: 'gemini-3.5-flash-lite',
   /**
    * Standard tidsgrenser i millisekunder (chat). Samlet ventetid blir høyst omtrent
@@ -41,8 +46,8 @@ export const aiConfig = {
     fallback: 20_000,
   },
   /**
-   * Egne tidsgrenser per bruk. Oppgavegenerering går raskere over til reservemodellen: primærmodellen
-   * avbrytes etter 4 sekunder.
+   * Egne tidsgrenser per bruk. Elevforslag (bruk «tasks» med primær- og reservemodell) går raskere over til
+   * reservemodellen: primærmodellen avbrytes etter 4 sekunder. Oppgavegenerering bruker ikke primærmodellen.
    */
   timeoutMsByUse: {
     tasks: { primary: 4_000 },

@@ -16,6 +16,12 @@ export const LINE_OPERATOR: Record<LineKind, string> = { plus: '+', times: '·' 
 /** Like grupper: `groups` grupper med `size` i hver (rader og ruter per rad, eller ledd og tallet i hvert ledd). */
 export interface EquationSpec {
   lines: LineKind[]
+  /**
+   * Oppgaveteksten bestemmer regnearten («ett med pluss og ett med gange», «Skriv som gangestykke»): regnetegnet står
+   * ferdig og låst i hver linje, og eleven fyller bare inn tallene. Ellers («Lag et regnestykke») velger eleven
+   * regnetegnet med knapper.
+   */
+  fixedOperators: boolean
   groups: number
   size: number
   total: number
@@ -48,6 +54,12 @@ export function sumGroups(text: string): { groups: number; size: number } | null
   return { groups: terms.length, size: terms[0] }
 }
 
+/** Om oppgaveteksten selv sier hvilken regneart hvert regnestykke skal ha (pluss, gange eller begge). */
+export function operationGiven(text: string): boolean {
+  const t = text.toLowerCase()
+  return /plusstykke|addisjonsstykke|med pluss|som pluss|gangestykke|multiplikasjonsstykke|med gange|som gange/.test(t)
+}
+
 /** Hvilke regnestykker oppgaveteksten ber om – i rekkefølgen pluss, gange. Tom liste når den ikke ber om regnestykker. */
 export function requestedLines(text: string): LineKind[] {
   const t = text.toLowerCase()
@@ -70,7 +82,13 @@ export function equationSpec(task: TextTask): EquationSpec | null {
   if (lines.length === 0) return null
   const found = task.figure ? gridGroups(task.figure) : sumGroups(task.text)
   if (!found) return null
-  return { lines, ...found, total: found.groups * found.size }
+  return { lines, fixedOperators: operationGiven(task.text), ...found, total: found.groups * found.size }
+}
+
+/** Linje nr. `index` slik eleven har fylt den ut. Når regnearten er bestemt, har den alltid linjens regnetegn. */
+export function lineAt(state: Pick<TextTaskState, 'parts'>, spec: EquationSpec, index: number): EquationLine {
+  const line = decodeLine(state.parts?.[index])
+  return spec.fixedOperators ? { ...line, operator: LINE_OPERATOR[spec.lines[index]] } : line
 }
 
 const num = (value: string) => (/^\d+$/.test(value.trim()) ? Number(value) : NaN)
@@ -126,7 +144,10 @@ export const encodeLine = (line: EquationLine) => `${line.terms.join(',')}|${lin
 
 /** Ny tilstand etter at eleven har endret linje nr. `index`. Et nytt forsøk fjerner «Ikke riktig.»-beskjeden. */
 export function changeLine(state: TextTaskState, spec: EquationSpec, index: number, line: EquationLine): TextTaskState {
-  const lines = spec.lines.map((_, i) => (i === index ? line : decodeLine(state.parts?.[i])))
+  const lines = spec.lines.map((kind, i) => {
+    const current = i === index ? line : lineAt(state, spec, i)
+    return spec.fixedOperators ? { ...current, operator: LINE_OPERATOR[kind] } : current
+  })
   return {
     ...state,
     parts: lines.map(encodeLine),
@@ -140,7 +161,7 @@ export function changeLine(state: TextTaskState, spec: EquationSpec, index: numb
  * eksempel på riktig svar ved hver linje som var feil – som med flere spørsmål i Regning.
  */
 export function checkEquations(state: TextTaskState, spec: EquationSpec): TextTaskState {
-  const partResults = spec.lines.map((kind, i) => lineCorrect(kind, decodeLine(state.parts?.[i]), spec))
+  const partResults = spec.lines.map((kind, i) => lineCorrect(kind, lineAt(state, spec, i), spec))
   if (partResults.every(Boolean)) return { ...state, partResults, submitted: true, result: 'correct' }
   const wrongTries = (state.wrongTries ?? 0) + 1
   return wrongTries >= TEXT_ATTEMPTS
@@ -149,4 +170,4 @@ export function checkEquations(state: TextTaskState, spec: EquationSpec): TextTa
 }
 
 /** Om alle linjene er fylt ut, så eleven kan sjekke svaret. */
-export const equationsReady = (state: TextTaskState, spec: EquationSpec) => spec.lines.every((_, i) => lineComplete(decodeLine(state.parts?.[i])))
+export const equationsReady = (state: TextTaskState, spec: EquationSpec) => spec.lines.every((_, i) => lineComplete(lineAt(state, spec, i)))

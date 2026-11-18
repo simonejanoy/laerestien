@@ -414,9 +414,11 @@ describe('sporbarhet', () => {
     assert.equal(task.aiMeta?.model, aiConfig.fallbackModel)
   })
 
-  it('fallback gjennom den ekte generate-funksjonen gir riktig metadata og requestId i loggen', async () => {
+  it('oppgavegenerering gjennom den ekte generate-funksjonen går direkte til Flash-Lite, med requestId i loggen', async () => {
     const json = geminiJson([{ nivaa: 1, tall1: 3, tall2: 7 }])
+    const called: string[] = []
     const callModel = async (params: GenerateContentParameters) => {
+      called.push(params.model)
       if (params.model === aiConfig.primaryModel) throw new ApiError({ message: 'status 503', status: 503 })
       return Object.assign(new GenerateContentResponse(), { candidates: [{ content: { role: 'model', parts: [{ text: json }] }, finishReason: 'STOP' }] })
     }
@@ -424,8 +426,9 @@ describe('sporbarhet', () => {
     const generate = createGenerate({ callModel, timeoutMs: { primary: 50, fallback: 50 }, log: (e) => logs.push(e) })
     const handler = createTaskHandler({ generate, log: (e) => logs.push(e), newRequestId: () => 'req-fb' })
     const result = await handler(appRequest(plan('multiplikasjon-6')), teacher)
-    assert.equal(result.meta?.fallbackUsed, true)
-    assert.equal(result.meta?.model, aiConfig.fallbackModel)
+    assert.equal(result.meta?.fallbackUsed, false)
+    assert.equal(result.meta?.model, 'gemini-3.5-flash-lite')
+    assert.ok(!called.includes(aiConfig.primaryModel))
     assert.ok(logs.length >= 3 && logs.every((e) => e.requestId === 'req-fb'))
   })
 

@@ -1,3 +1,4 @@
+import { autoAnswerOf } from '../../ai/autoAnswer.ts'
 import { readStoredVisual } from '../../ai/contract.ts'
 import { answerStatus, blankRowIn, dotLayout, drawableColors, joinBoxAnswers, partCorrect, splitBoxAnswers } from '../../ai/patternDisplay.ts'
 import { slotCount } from '../../ai/taskText.ts'
@@ -157,20 +158,41 @@ export function hasAnswerState(state: TaskAnswerState | undefined) {
   return state.answer !== '' || state.submitted || state.result !== undefined || (state.wrongTries ?? 0) > 0 || !!state.explanation || !!state.parts?.some(Boolean)
 }
 
+/** Tilbakemeldingene eleven får. Fasiten vises aldri før eleven har levert. */
+export const FEEDBACK = {
+  correct: 'Riktig!',
+  retry: 'Ikke helt – prøv igjen.',
+  /** Åpne svar (forklaringer, tegninger og oppgaver uten entydig fasit): appen later ikke som den kan rette dem. */
+  sent: 'Svaret er sendt til læreren.',
+} as const
+
+/** Tilbakemeldingen etter at eleven har sjekket eller levert, eller null før det. */
+export function feedbackOf(state: TaskAnswerState): string | null {
+  if (isMathState(state)) return state.phase === 'correct' ? FEEDBACK.correct : state.dialogOpen ? FEEDBACK.retry : null
+  if (state.result === 'correct') return FEEDBACK.correct
+  if (state.result === 'retry') return FEEDBACK.retry
+  if (state.submitted && state.result === undefined) return FEEDBACK.sent
+  return null
+}
+
 /** Tekstoppgaver som rettes automatisk: eleven får ett nytt forsøk etter første feil svar. */
 export const TEXT_ATTEMPTS = 2
 
-/** «Sjekk svaret mitt» på en oppgave med et svar som rettes automatisk: riktig, ett forsøk til, eller riktig svar vises. */
+/**
+ * «Sjekk svaret mitt» på en oppgave med et svar som rettes automatisk (se autoAnswerOf): riktig, ett forsøk til, eller
+ * riktig svar vises. Åpne svar rettes ikke: de leveres og sendes til læreren.
+ */
 export function checkTextAnswer(state: TextTaskState, task: TextTask): TextTaskState {
-  if (!task.expected) return { ...state, submitted: true }
-  if (task.expected.kind === 'parts') {
+  const expected = autoAnswerOf(task)
+  if (!expected) return { ...state, submitted: true }
+  if (expected.kind === 'parts') {
     // Hver del rettes for seg. Er alle riktige: «Riktig!». Ellers ett nytt forsøk, og så vises riktig svar.
-    const partResults = task.expected.parts.map((p, i) => partCorrect(p.answer, state.parts?.[i] ?? ''))
+    const partResults = expected.parts.map((p, i) => partCorrect(p.answer, state.parts?.[i] ?? ''))
     if (partResults.every(Boolean)) return { ...state, partResults, submitted: true, result: 'correct' }
     const wrongTries = (state.wrongTries ?? 0) + 1
     return wrongTries >= TEXT_ATTEMPTS ? { ...state, partResults, wrongTries, submitted: true, result: 'revealed' } : { ...state, partResults, wrongTries, result: 'retry' }
   }
-  const status = answerStatus(task.expected, state.answer, task.text)
+  const status = answerStatus(expected, state.answer, task.text)
   if (status === 'correct') return { ...state, submitted: true, result: 'correct' }
   if (status === 'several') return { ...state, result: 'several' }
   const wrongTries = (state.wrongTries ?? 0) + 1

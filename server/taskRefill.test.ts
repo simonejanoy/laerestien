@@ -21,7 +21,6 @@ import { createTaskHandler, type GenerateCallOptions } from './taskHandler.ts'
 const plan = (id: string) => planned('multiplikasjon').find((p) => p.id === id)!
 const teacher = { uid: 'lærer', classId: '4A' }
 const PRIMARY = aiConfig.primaryModel
-const FALLBACK = aiConfig.fallbackModel
 
 function appRequest(p: Planned, existing: SessionTask[] = [], wishes = '', perLevel = 2): Extract<TaskRequest, { kind: 'general' }> {
   return {
@@ -171,39 +170,34 @@ describe('modellbruk ved utfylling', () => {
   const short = { tasks: [fact(1, 3, 7), fact(1, 4, 7), fact(2, 6, 8), fact(3, 6, 9), fact(3, 8, 7)] }
   const fill = { tasks: [fact(2, 9, 3)] }
 
-  it('7. modellen som svarte først, brukes til utfyllingen', async () => {
-    const primary = scripted([{ ...short, model: PRIMARY }, fill])
-    await primary.handler(appRequest(plan('multiplikasjon-6')), teacher)
-    assert.equal(primary.calls[0].options?.startWith, undefined)
-    assert.equal(primary.calls[1].options?.startWith, 'primary')
-
-    const fallback = scripted([{ ...short, model: FALLBACK, fallbackUsed: true }, { ...fill, model: FALLBACK, fallbackUsed: true }])
-    const result = await fallback.handler(appRequest(plan('multiplikasjon-6')), teacher)
-    assert.equal(fallback.calls[1].options?.startWith, 'fallback')
-    const refillLog = fallback.logs.find((e) => e.event === 'general_tasks_attempt' && e.attempt === 1)!
-    assert.equal(refillLog.model, FALLBACK)
-    // Hver oppgave har modellen som faktisk laget den.
+  it('7. første generering og utfyllingen går direkte til oppgavemodellen (Flash-Lite)', async () => {
+    const { handler, calls, logs } = scripted([{ ...short, model: aiConfig.taskModel }, { ...fill, model: aiConfig.taskModel }])
+    const result = await handler(appRequest(plan('multiplikasjon-6')), teacher)
+    assert.equal(calls.length, 2)
+    assert.ok(calls.every((c) => c.options?.directModel === 'gemini-3.5-flash-lite'))
+    const refillLog = logs.find((e) => e.event === 'general_tasks_attempt' && e.attempt === 1)!
+    assert.equal(refillLog.model, aiConfig.taskModel)
+    // Hver oppgave har modellen som faktisk laget den, og ingen er merket som reservesvar.
     const tasks = result.tasks.map((t, i) => toSessionTask(t, `n${i}`, readMeta(JSON.parse(JSON.stringify(result)))))
-    assert.ok(tasks.every((t) => t.aiMeta?.model === FALLBACK && t.aiMeta.fallbackUsed))
+    assert.ok(tasks.every((t) => t.aiMeta?.model === aiConfig.taskModel && t.aiMeta.fallbackUsed === false))
   })
 
-  it('8. Gemini 3.8 prøves ikke på nytt når den fikk timeout og reservemodellen svarte', async () => {
+  it('8. Gemini 3.8 Flash kalles aldri – heller ikke når utfyllingen trengs', async () => {
     const called: string[] = []
     let n = 0
     const responses = [json(short.tasks), json(fill.tasks)]
     const callModel = async (params: GenerateContentParameters) => {
       called.push(params.model)
-      if (params.model === PRIMARY) {
-        return new Promise<GenerateContentResponse>((_, reject) => params.config?.abortSignal?.addEventListener('abort', () => reject(new Error('aborted'))))
-      }
       const text = responses[Math.min(n++, responses.length - 1)]
       return Object.assign(new GenerateContentResponse(), { candidates: [{ content: { role: 'model', parts: [{ text }] }, finishReason: 'STOP' }] })
     }
     const generate = createGenerate({ callModel, timeoutMs: { primary: 30, fallback: 1_000 }, log: () => {} })
     const handler = createTaskHandler({ generate, log: () => {} })
     const result = await handler(appRequest(plan('multiplikasjon-6')), teacher)
-    assert.deepEqual(called, [PRIMARY, FALLBACK, FALLBACK])
+    assert.deepEqual(called, [aiConfig.taskModel, aiConfig.taskModel])
+    assert.ok(!called.includes(PRIMARY))
     assert.deepEqual(perLevelCount(result), [2, 2, 2])
+    assert.equal(result.meta?.fallbackUsed, false)
   })
 })
 
